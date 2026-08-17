@@ -11,7 +11,6 @@ type Message struct {
 	Error   *Error      `json:"error,omitempty"`
 }
 
-// Error is a stable machine-readable protocol error.
 type Error struct {
 	Code    string `json:"code"`
 	Message string `json:"message"`
@@ -27,16 +26,17 @@ const (
 	ServiceSession  = "session"
 	ServicePresence = "presence"
 	ServiceChat     = "chat"
+	ServiceBuddies  = "buddies"
 )
 
 const (
-	ErrBadRequest       = "bad_request"
-	ErrUnauthorized     = "unauthorized"
-	ErrForbidden        = "forbidden"
-	ErrNotFound         = "not_found"
-	ErrConflict         = "conflict"
-	ErrRateLimited      = "rate_limited"
-	ErrServer           = "server_error"
+	ErrBadRequest         = "bad_request"
+	ErrUnauthorized       = "unauthorized"
+	ErrForbidden          = "forbidden"
+	ErrNotFound           = "not_found"
+	ErrConflict           = "conflict"
+	ErrRateLimited        = "rate_limited"
+	ErrServer             = "server_error"
 	ErrInvalidCredentials = "invalid_credentials"
-	ErrSessionExpired   = "session_expired"
+	ErrSessionExpired     = "session_expired"
 )
