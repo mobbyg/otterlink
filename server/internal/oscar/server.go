@@ -60,20 +60,21 @@ func (s *Server) handle(conn net.Conn) {
 		switch frame.Channel {
 		case ChannelSignon:
 			if err := s.handleBOSSignon(conn, frame); err != nil { s.Logger.Printf("OSCAR BOS sign-on %s: %v", conn.RemoteAddr(), err); return }
+			if !loggedIn {
+				if bosUser, err := s.userFromBOSSignon(frame); err == nil {
+					user = bosUser
+					loggedIn = true
+					s.registerConnection(user.ID, conn)
+					if s.Presence != nil { s.Presence.OnlineConnection(user, connectionID) }
+					s.sendInitialBuddyPresence(conn, frame.Sequence, user)
+				}
+			}
 		case ChannelData:
 			snac, err := ParseSNAC(frame.Payload); if err != nil { s.Logger.Printf("OSCAR connection %s: %v", conn.RemoteAddr(), err); return }
 			switch {
 			case snac.Family == SNACBUCP && snac.Subtype == BUCPLoginRequest:
 				response, err := s.Authenticator.AuthenticateLogin(snac); if err != nil { s.writeError(conn, frame.Sequence, snac.RequestID); return }
 				if err := writeFrame(conn, Frame{Channel:ChannelData, Sequence:frame.Sequence, Payload:response.Encode()}); err != nil { return }
-				if !loggedIn && s.DB != nil {
-					if loginUser, err := s.userFromLogin(snac); err == nil {
-						user = loginUser; loggedIn = true; s.registerConnection(user.ID, conn)
-						if s.Presence != nil { s.Presence.OnlineConnection(user, connectionID) }
-						s.sendInitialBuddyPresence(conn, frame.Sequence, user)
-						s.broadcastBuddyPresence(user, true, false, frame.Sequence)
-					}
-				}
 			case snac.Family == SNACClientFamily && snac.Subtype == SNACClientReady:
 				if err := s.writeServerReady(conn, frame.Sequence, snac.RequestID); err != nil { return }
 			case snac.Family == SNACRateInfoFamily && snac.Subtype == SNACRateInfoRequest:
@@ -89,8 +90,10 @@ func (s *Server) handle(conn net.Conn) {
 			case snac.Family == SNACUserInfoFamily && snac.Subtype == SNACUserInfoClientReady:
 				if err := s.writeUserInfoReady(conn, frame.Sequence, snac.RequestID); err != nil { s.Logger.Printf("OSCAR buddy rights %s: %v", conn.RemoteAddr(), err); return }
 			case snac.Family == SNACUserInfoFamily && snac.Subtype == SNACBuddyAdd:
+				if !loggedIn { return }
 				if err := s.handleBuddyAdd(conn, frame.Sequence, snac.RequestID, user.ID, snac.Payload); err != nil { s.Logger.Printf("OSCAR buddy add %s: %v", conn.RemoteAddr(), err); return }
 			case snac.Family == SNACUserInfoFamily && snac.Subtype == SNACBuddyDel:
+				if !loggedIn { return }
 				if err := s.handleBuddyDel(conn, frame.Sequence, snac.RequestID, user.ID, snac.Payload); err != nil { s.Logger.Printf("OSCAR buddy delete %s: %v", conn.RemoteAddr(), err); return }
 			}
 		}
