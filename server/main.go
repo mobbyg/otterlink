@@ -16,6 +16,7 @@ import (
 	"github.com/mobbyg/otterlink/server/internal/accounts"
 	"github.com/mobbyg/otterlink/server/internal/api"
 	"github.com/mobbyg/otterlink/server/internal/db"
+	"github.com/mobbyg/otterlink/server/internal/presence"
 	"github.com/mobbyg/otterlink/server/internal/protocol"
 	_ "modernc.org/sqlite"
 )
@@ -54,6 +55,7 @@ func main() {
 	}
 
 	accountService := accounts.Service{DB: database}
+	presenceService := presence.NewService()
 	authAPI := api.AuthAPI{Accounts: accountService}
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/health", healthHandler)
@@ -68,7 +70,7 @@ func main() {
 
 	protocolServer := &protocol.Server{
 		Addr:    protocolAddr,
-		Handler: protocol.DefaultHandler{Accounts: accountService},
+		Handler: protocol.DefaultHandler{Accounts: accountService, Presence: presenceService},
 		Logger:  log.Default(),
 	}
 	protocolErr := make(chan error, 1)
