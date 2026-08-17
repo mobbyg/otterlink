@@ -41,6 +41,8 @@ func (s *Server) handle(conn net.Conn) {
 				if err := s.writeServerReady(conn, frame.Sequence, snac.RequestID); err != nil { return }
 			case snac.Family == SNACRateInfoFamily && snac.Subtype == SNACRateInfoRequest:
 				if err := s.writeRateInfo(conn, frame.Sequence, snac.RequestID); err != nil { return }
+			case snac.Family == SNACRateInfoFamily && snac.Subtype == 0x0008:
+				if err := s.handleRateInfoAck(snac); err != nil { s.Logger.Printf("OSCAR rate-info %s: %v", conn.RemoteAddr(), err); return }
 			}
 		}
 	}
