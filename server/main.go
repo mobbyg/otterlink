@@ -4,12 +4,14 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"path/filepath"
 	"syscall"
+	"time"
 
 	"github.com/mobbyg/otterlink/server/internal/accounts"
 	"github.com/mobbyg/otterlink/server/internal/api"
@@ -59,6 +61,7 @@ func main() {
 	mux.HandleFunc("POST /api/auth/logout", authAPI.Logout)
 	mux.HandleFunc("GET /api/me", authAPI.Me)
 
+	httpServer := &http.Server{Addr: addr, Handler: mux}
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
@@ -75,10 +78,42 @@ func main() {
 	log.Printf("Otter Link HTTP server listening on %s", addr)
 	log.Printf("Otter Link protocol listening on %s", protocolAddr)
 
-	if err := http.ListenAndServe(addr, mux); err != nil {
-		stop()
-		log.Fatalf("HTTP server stopped: %v", err)
+	httpErr := make(chan error, 1)
+	go func() {
+		httpErr <- httpServer.ListenAndServe()
+	}()
+
+	select {
+	case err := <-httpErr:
+		if err != nil && !errors.Is(err, http.ErrServerClosed) {
+			log.Fatalf("HTTP server stopped: %v", err)
+		}
+	case err := <-protocolErr:
+		if err != nil {
+			log.Fatalf("protocol server stopped: %v", err)
+		}
+	case <-ctx.Done():
+		log.Printf("Shutdown signal received")
 	}
+
+	stop()
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	if err := httpServer.Shutdown(shutdownCtx); err != nil {
+		log.Printf("HTTP shutdown: %v", err)
+	}
+
+	select {
+	case err := <-protocolErr:
+		if err != nil {
+			log.Printf("protocol shutdown: %v", err)
+		}
+	case <-shutdownCtx.Done():
+		log.Printf("shutdown timeout reached")
+	}
+
+	log.Printf("Otter Link stopped")
 }
 
 func healthHandler(w http.ResponseWriter, _ *http.Request) {
