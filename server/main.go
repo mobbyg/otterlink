@@ -17,16 +17,17 @@ import (
 	"github.com/mobbyg/otterlink/server/internal/api"
 	"github.com/mobbyg/otterlink/server/internal/buddies"
 	"github.com/mobbyg/otterlink/server/internal/db"
+	"github.com/mobbyg/otterlink/server/internal/oscar"
 	"github.com/mobbyg/otterlink/server/internal/presence"
 	"github.com/mobbyg/otterlink/server/internal/protocol"
 	_ "modernc.org/sqlite"
 )
 
-const ( defaultAddr = ":8080"; defaultProtocolAddr = ":8023"; defaultDB = "data/otterlink.db" )
+const ( defaultAddr = ":8080"; defaultProtocolAddr = ":8023"; defaultOscarAddr = ":5190"; defaultDB = "data/otterlink.db" )
 type healthResponse struct { Status string `json:"status"`; Service string `json:"service"` }
 
 func main() {
-	addr := getenv("OTTERLINK_ADDR", defaultAddr); protocolAddr := getenv("OTTERLINK_PROTOCOL_ADDR", defaultProtocolAddr); dbPath := getenv("OTTERLINK_DB", defaultDB)
+	addr := getenv("OTTERLINK_ADDR", defaultAddr); protocolAddr := getenv("OTTERLINK_PROTOCOL_ADDR", defaultProtocolAddr); oscarAddr := getenv("OTTERLINK_OSCAR_ADDR", defaultOscarAddr); dbPath := getenv("OTTERLINK_DB", defaultDB)
 	if err := os.MkdirAll(filepath.Dir(dbPath), 0o755); err != nil { log.Fatalf("create database directory: %v", err) }
 	database, err := sql.Open("sqlite", dbPath); if err != nil { log.Fatalf("open database: %v", err) }; defer database.Close()
 	if err := database.Ping(); err != nil { log.Fatalf("connect to database: %v", err) }
@@ -42,16 +43,21 @@ func main() {
 	protocolServer.Handler = protocolHandler
 	protocolErr := make(chan error, 1); go func() { protocolErr <- protocolServer.ListenAndServe(ctx) }()
 
-	log.Printf("Otter Link HTTP server listening on %s", addr); log.Printf("Otter Link protocol listening on %s", protocolAddr)
+	oscarServer := &oscar.Server{Addr: oscarAddr, Logger: log.Default(), Authenticator: oscar.Authenticator{Accounts: accountService, ReconnectURL: "127.0.0.1:5190"}}
+	oscarErr := make(chan error, 1); go func() { oscarErr <- oscarServer.ListenAndServe(ctx) }()
+
+	log.Printf("Otter Link HTTP server listening on %s", addr); log.Printf("Otter Link protocol listening on %s", protocolAddr); log.Printf("Otter Link OSCAR compatibility listening on %s", oscarAddr)
 	httpErr := make(chan error, 1); go func() { httpErr <- httpServer.ListenAndServe() }()
 	select {
 	case err := <-httpErr: if err != nil && !errors.Is(err, http.ErrServerClosed) { log.Fatalf("HTTP server stopped: %v", err) }
 	case err := <-protocolErr: if err != nil { log.Fatalf("protocol server stopped: %v", err) }
+	case err := <-oscarErr: if err != nil { log.Fatalf("OSCAR server stopped: %v", err) }
 	case <-ctx.Done(): log.Printf("Shutdown signal received")
 	}
 	stop(); shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second); defer cancel()
 	if err := httpServer.Shutdown(shutdownCtx); err != nil { log.Printf("HTTP shutdown: %v", err) }
 	select { case err := <-protocolErr: if err != nil { log.Printf("protocol shutdown: %v", err) }; case <-shutdownCtx.Done(): log.Printf("shutdown timeout reached") }
+	select { case err := <-oscarErr: if err != nil { log.Printf("OSCAR shutdown: %v", err) }; case <-shutdownCtx.Done(): log.Printf("OSCAR shutdown timeout reached") }
 	log.Printf("Otter Link stopped")
 }
 
