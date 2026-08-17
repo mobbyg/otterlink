@@ -33,7 +33,8 @@ func (s *Server) handleBuddyAdd(conn net.Conn, sequence uint16, requestID uint32
 		buddy, err := s.Buddies.Add(userID, name)
 		if err != nil { return s.writeBuddyReject(conn, sequence, requestID, name) }
 		if online, ok := s.Presence.Get(buddy.ID); ok {
-			return s.writeBuddyPresence(conn, sequence, online, false)
+			user := accounts.User{ID: online.ID, Username: online.Username, DisplayName: online.DisplayName, Status: online.Status}
+			if err := s.writeBuddyPresence(conn, sequence, user, true, false); err != nil { return err }
 		}
 	}
 	return s.writeBuddyAck(conn, sequence, requestID)
@@ -52,6 +53,7 @@ func (s *Server) writeBuddyAck(conn net.Conn, sequence uint16, requestID uint32)
 }
 
 func (s *Server) writeBuddyReject(conn net.Conn, sequence uint16, requestID uint32, name string) error {
+	if len(name) > 255 { name = name[:255] }
 	payload := append([]byte{byte(len(name))}, []byte(name)...)
 	response := SNAC{Family: SNACUserInfoFamily, Subtype: 0x000A, RequestID: requestID, Payload: payload}
 	return writeFrame(conn, Frame{Channel: ChannelData, Sequence: sequence, Payload: response.Encode()})
@@ -62,25 +64,15 @@ func buddyUserInfo(user accounts.User, online bool) ([]byte, error) {
 	payload := []byte{byte(len(user.Username))}
 	payload = append(payload, user.Username...)
 	payload = append(payload, 0, 0) // warning level
-
-	class := uint16(0)
-	if online { class = 1 }
+	class := uint16(0); if online { class = 1 }
 	classValue := make([]byte, 2); binary.BigEndian.PutUint16(classValue, class)
-	tlvs, err := EncodeTLVs([]TLV{{Tag: 0x0001, Value: classValue}})
-	if err != nil { return nil, err }
+	tlvs, err := EncodeTLVs([]TLV{{Tag: 0x0001, Value: classValue}}); if err != nil { return nil, err }
 	count := make([]byte, 2); binary.BigEndian.PutUint16(count, 1)
-	payload = append(payload, count...)
-	payload = append(payload, tlvs...)
+	payload = append(payload, count...); payload = append(payload, tlvs...)
 	return payload, nil
 }
 
-func (s *Server) writeBuddyPresence(conn net.Conn, sequence uint16, user presenceUser, departed bool) error {
-	return s.writeBuddyPresenceAccounts(conn, sequence, user.user, user.online, departed)
-}
-
-type presenceUser struct { user accounts.User; online bool }
-
-func (s *Server) writeBuddyPresenceAccounts(conn net.Conn, sequence uint16, user accounts.User, online, departed bool) error {
+func (s *Server) writeBuddyPresence(conn net.Conn, sequence uint16, user accounts.User, online, departed bool) error {
 	payload, err := buddyUserInfo(user, online); if err != nil { return fmt.Errorf("encode buddy presence: %w", err) }
 	subtype := SNACBuddyArrived; if departed { subtype = SNACBuddyDeparted }
 	response := SNAC{Family: SNACUserInfoFamily, Subtype: subtype, Payload: payload}
