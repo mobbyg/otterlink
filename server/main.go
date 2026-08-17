@@ -43,7 +43,7 @@ func main() {
 	protocolServer.Handler = protocolHandler
 	protocolErr := make(chan error, 1); go func() { protocolErr <- protocolServer.ListenAndServe(ctx) }()
 
-	oscarServer := &oscar.Server{Addr: oscarAddr, Logger: log.Default(), Authenticator: oscar.Authenticator{Accounts: accountService, ReconnectURL: "127.0.0.1:5190"}}
+	oscarServer := &oscar.Server{Addr: oscarAddr, Logger: log.Default(), Authenticator: oscar.Authenticator{Accounts: accountService, ReconnectURL: "127.0.0.1:5190"}, DB: database, Buddies: buddyService, Presence: presenceService}
 	oscarErr := make(chan error, 1); go func() { oscarErr <- oscarServer.ListenAndServe(ctx) }()
 
 	log.Printf("Otter Link HTTP server listening on %s", addr); log.Printf("Otter Link protocol listening on %s", protocolAddr); log.Printf("Otter Link OSCAR compatibility listening on %s", oscarAddr)
