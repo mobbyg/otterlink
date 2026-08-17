@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/mobbyg/otterlink/server/internal/db"
 	_ "modernc.org/sqlite"
 )
 
@@ -29,14 +30,17 @@ func main() {
 		log.Fatalf("create database directory: %v", err)
 	}
 
-	db, err := sql.Open("sqlite", dbPath)
+	database, err := sql.Open("sqlite", dbPath)
 	if err != nil {
 		log.Fatalf("open database: %v", err)
 	}
-	defer db.Close()
+	defer database.Close()
 
-	if err := db.Ping(); err != nil {
+	if err := database.Ping(); err != nil {
 		log.Fatalf("connect to database: %v", err)
+	}
+	if err := db.Initialize(database); err != nil {
+		log.Fatalf("initialize database: %v", err)
 	}
 
 	mux := http.NewServeMux()
