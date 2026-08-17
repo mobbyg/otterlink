@@ -53,7 +53,8 @@ func main() {
 		log.Fatalf("initialize database: %v", err)
 	}
 
-	authAPI := api.AuthAPI{Accounts: accounts.Service{DB: database}}
+	accountService := accounts.Service{DB: database}
+	authAPI := api.AuthAPI{Accounts: accountService}
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/health", healthHandler)
 	mux.HandleFunc("POST /api/auth/register", authAPI.Register)
@@ -67,7 +68,7 @@ func main() {
 
 	protocolServer := &protocol.Server{
 		Addr:    protocolAddr,
-		Handler: protocol.DefaultHandler{},
+		Handler: protocol.DefaultHandler{Accounts: accountService},
 		Logger:  log.Default(),
 	}
 	protocolErr := make(chan error, 1)
