@@ -77,3 +77,10 @@ func (s Service) List(userID int64) ([]Buddy, error) {
 	}
 	return result, nil
 }
+
+// IsBuddy reports whether buddyID is on userID's buddy list.
+func (s Service) IsBuddy(userID, buddyID int64) bool {
+	var exists int
+	err := s.DB.QueryRow(`SELECT 1 FROM buddies WHERE user_id = ? AND buddy_id = ? LIMIT 1`, userID, buddyID).Scan(&exists)
+	return err == nil && exists == 1
+}
