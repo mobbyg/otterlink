@@ -2,11 +2,12 @@ package oscar
 
 import (
 	"bufio"
+	"net"
 	"testing"
 )
 
 func TestWriteServerReady(t *testing.T) {
-	server, client := netPipe(t)
+	server, client := net.Pipe()
 	defer server.Close()
 	defer client.Close()
 
@@ -42,11 +43,4 @@ func TestWriteServerReady(t *testing.T) {
 	if len(snac.Payload)%4 != 0 || len(snac.Payload) == 0 {
 		t.Fatalf("server-ready payload length = %d, want nonzero multiple of 4", len(snac.Payload))
 	}
-}
-
-// netPipe keeps this test file independent of the concrete listener setup.
-func netPipe(t *testing.T) (server, client interface{ Close() error }) {
-	t.Helper()
-	a, b := net.Pipe()
-	return a, b
 }
