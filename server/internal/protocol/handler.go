@@ -16,6 +16,7 @@ type DefaultHandler struct {
 	Accounts accounts.Service
 	Presence *presence.Service
 	Events   func(Message)
+	SendToConnection func(uint64, Message)
 	mu sync.Mutex
 	connections map[uint64]int64
 }
@@ -23,6 +24,7 @@ type DefaultHandler struct {
 type loginPayload struct { Username string `json:"username"`; Password string `json:"password"` }
 type tokenPayload struct { Token string `json:"token"` }
 type chatSendPayload struct { Token string `json:"token"`; Message string `json:"message"` }
+type chatWhisperPayload struct { Token string `json:"token"`; To string `json:"to"`; Message string `json:"message"` }
 type chatMessage struct { From chatUser `json:"from"`; Message string `json:"message"`; Timestamp string `json:"timestamp"` }
 type chatUser struct { ID int64 `json:"id"`; Username string `json:"username"`; DisplayName string `json:"display_name"` }
 
@@ -47,9 +49,22 @@ func (h *DefaultHandler) handlePresence(msg Message) Message {
 	switch msg.Action { case "list":return SuccessResponse(msg.ID,ServicePresence,"list",map[string]interface{}{"users":h.Presence.List()}); case "get": entry,ok:=h.Presence.Get(user.ID); if !ok{return SuccessResponse(msg.ID,ServicePresence,"get",map[string]interface{}{"online":false})}; return SuccessResponse(msg.ID,ServicePresence,"get",entry); default:return ErrorResponse(msg.ID,ErrNotFound,"service or action not found") }
 }
 func (h *DefaultHandler) handleChat(msg Message) Message {
-	user,err:=h.authenticate(msg); if err!=nil{return ErrorResponse(msg.ID,ErrUnauthorized,"valid session token required")}; if msg.Action!="send"{return ErrorResponse(msg.ID,ErrNotFound,"service or action not found")}
-	var input chatSendPayload; if err:=decodePayload(msg.Payload,&input);err!=nil||strings.TrimSpace(input.Message)==""{return ErrorResponse(msg.ID,ErrBadRequest,"message is required")}; message:=strings.TrimSpace(input.Message); if len([]rune(message))>2000{return ErrorResponse(msg.ID,ErrBadRequest,"message exceeds 2000 characters")}
-	event:=Message{Type:TypeEvent,Service:ServiceChat,Action:"message",Payload:chatMessage{From:chatUser{ID:user.ID,Username:user.Username,DisplayName:user.DisplayName},Message:message,Timestamp:time.Now().UTC().Format(time.RFC3339)}}; if h.Events!=nil{h.Events(event)}; return SuccessResponse(msg.ID,ServiceChat,"send",map[string]string{"status":"sent"})
+	user,err:=h.authenticate(msg); if err!=nil{return ErrorResponse(msg.ID,ErrUnauthorized,"valid session token required")}
+	switch msg.Action {
+	case "send":
+		var input chatSendPayload; if err:=decodePayload(msg.Payload,&input);err!=nil||strings.TrimSpace(input.Message)==""{return ErrorResponse(msg.ID,ErrBadRequest,"message is required")}; message:=strings.TrimSpace(input.Message); if len([]rune(message))>2000{return ErrorResponse(msg.ID,ErrBadRequest,"message exceeds 2000 characters")}
+		event:=Message{Type:TypeEvent,Service:ServiceChat,Action:"message",Payload:chatMessage{From:chatUser{ID:user.ID,Username:user.Username,DisplayName:user.DisplayName},Message:message,Timestamp:time.Now().UTC().Format(time.RFC3339)}}; if h.Events!=nil{h.Events(event)}; return SuccessResponse(msg.ID,ServiceChat,"send",map[string]string{"status":"sent"})
+	case "whisper":
+		var input chatWhisperPayload; if err:=decodePayload(msg.Payload,&input);err!=nil||strings.TrimSpace(input.To)==""||strings.TrimSpace(input.Message)==""{return ErrorResponse(msg.ID,ErrBadRequest,"recipient and message are required")}
+		message:=strings.TrimSpace(input.Message); if len([]rune(message))>2000{return ErrorResponse(msg.ID,ErrBadRequest,"message exceeds 2000 characters")}
+		target:=strings.TrimSpace(input.To); var targetIDs []uint64
+		h.mu.Lock(); for id,uid:=range h.connections{ if u,err:=h.Accounts.GetByID(uid);err==nil&&strings.EqualFold(u.Username,target){targetIDs=append(targetIDs,id)} }; h.mu.Unlock()
+		if len(targetIDs)==0{return ErrorResponse(msg.ID,ErrNotFound,"recipient is not online")}
+		event:=Message{Type:TypeEvent,Service:ServiceChat,Action:"whisper",Payload:chatMessage{From:chatUser{ID:user.ID,Username:user.Username,DisplayName:user.DisplayName},Message:message,Timestamp:time.Now().UTC().Format(time.RFC3339)}}
+		if h.SendToConnection!=nil{for _,id:=range targetIDs{h.SendToConnection(id,event)}}
+		return SuccessResponse(msg.ID,ServiceChat,"whisper",map[string]string{"status":"sent"})
+	default:return ErrorResponse(msg.ID,ErrNotFound,"service or action not found")
+	}
 }
 func (h *DefaultHandler) markOnline(ctx context.Context,user accounts.User){id:=connectionID(ctx);if id==0||h.Presence==nil{return};h.mu.Lock();if h.connections==nil{h.connections=make(map[uint64]int64)};if old,ok:=h.connections[id];ok&&old!=user.ID{h.mu.Unlock();h.markOffline(ctx,old);h.mu.Lock()};h.connections[id]=user.ID;h.mu.Unlock();entry,becameOnline:=h.Presence.OnlineConnection(user,id);if becameOnline&&h.Events!=nil{h.Events(Message{Type:TypeEvent,Service:ServicePresence,Action:"online",Payload:entry})}}
 func (h *DefaultHandler) markOffline(ctx context.Context,userID int64){id:=connectionID(ctx);if id==0||h.Presence==nil{return};h.mu.Lock();if h.connections!=nil{delete(h.connections,id)};h.mu.Unlock();entry,becameOffline:=h.Presence.OfflineConnection(userID,id);if becameOffline&&h.Events!=nil{h.Events(Message{Type:TypeEvent,Service:ServicePresence,Action:"offline",Payload:entry})}}
