@@ -15,6 +15,7 @@ import (
 
 	"github.com/mobbyg/otterlink/server/internal/accounts"
 	"github.com/mobbyg/otterlink/server/internal/api"
+	"github.com/mobbyg/otterlink/server/internal/buddies"
 	"github.com/mobbyg/otterlink/server/internal/db"
 	"github.com/mobbyg/otterlink/server/internal/presence"
 	"github.com/mobbyg/otterlink/server/internal/protocol"
@@ -31,13 +32,13 @@ func main() {
 	if err := database.Ping(); err != nil { log.Fatalf("connect to database: %v", err) }
 	if err := db.Initialize(database); err != nil { log.Fatalf("initialize database: %v", err) }
 
-	accountService := accounts.Service{DB: database}; presenceService := presence.NewService(); authAPI := api.AuthAPI{Accounts: accountService}
+	accountService := accounts.Service{DB: database}; buddyService := buddies.Service{DB: database}; presenceService := presence.NewService(); authAPI := api.AuthAPI{Accounts: accountService}
 	mux := http.NewServeMux(); mux.HandleFunc("GET /api/health", healthHandler); mux.HandleFunc("POST /api/auth/register", authAPI.Register); mux.HandleFunc("POST /api/auth/login", authAPI.Login); mux.HandleFunc("POST /api/auth/logout", authAPI.Logout); mux.HandleFunc("GET /api/me", authAPI.Me)
 	httpServer := &http.Server{Addr: addr, Handler: mux}
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM); defer stop()
 
 	protocolServer := &protocol.Server{Addr: protocolAddr, Logger: log.Default()}
-	protocolHandler := &protocol.DefaultHandler{Accounts: accountService, Presence: presenceService, Events: protocolServer.Broadcast, SendToConnection: protocolServer.SendToConnection}
+	protocolHandler := &protocol.DefaultHandler{Accounts: accountService, Buddies: buddyService, Presence: presenceService, Events: protocolServer.Broadcast, SendToConnection: protocolServer.SendToConnection}
 	protocolServer.Handler = protocolHandler
 	protocolErr := make(chan error, 1); go func() { protocolErr <- protocolServer.ListenAndServe(ctx) }()
 
