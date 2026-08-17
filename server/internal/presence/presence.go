@@ -16,26 +16,66 @@ type User struct {
 }
 
 type Service struct {
-	mu    sync.RWMutex
-	online map[int64]User
+	mu          sync.RWMutex
+	online      map[int64]User
+	connections map[int64]map[uint64]struct{}
 }
 
 func NewService() *Service {
-	return &Service{online: make(map[int64]User)}
+	return &Service{online: make(map[int64]User), connections: make(map[int64]map[uint64]struct{})}
 }
 
 func (s *Service) Online(user accounts.User) User {
+	entry, _ := s.OnlineConnection(user, 0)
+	return entry
+}
+
+// OnlineConnection associates a connection with a user. The boolean is true
+// only when this connection makes the user transition from offline to online.
+func (s *Service) OnlineConnection(user accounts.User, connectionID uint64) (User, bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	entry := User{ID: user.ID, Username: user.Username, DisplayName: user.DisplayName, Status: "online", Since: time.Now().UTC().Format(time.RFC3339)}
-	s.online[user.ID] = entry
-	return entry
+	entry, exists := s.online[user.ID]
+	if !exists {
+		entry = User{ID: user.ID, Username: user.Username, DisplayName: user.DisplayName, Status: "online", Since: time.Now().UTC().Format(time.RFC3339)}
+		s.online[user.ID] = entry
+	}
+	if connectionID != 0 {
+		if s.connections[user.ID] == nil {
+			s.connections[user.ID] = make(map[uint64]struct{})
+		}
+		s.connections[user.ID][connectionID] = struct{}{}
+	}
+	return entry, !exists
 }
 
 func (s *Service) Offline(userID int64) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	delete(s.online, userID)
+	delete(s.connections, userID)
+}
+
+// OfflineConnection removes one connection. The boolean is true only when
+// that was the user's final active connection.
+func (s *Service) OfflineConnection(userID int64, connectionID uint64) (User, bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	entry, exists := s.online[userID]
+	if !exists {
+		return User{}, false
+	}
+	if connectionID != 0 {
+		if conns := s.connections[userID]; conns != nil {
+			delete(conns, connectionID)
+			if len(conns) > 0 {
+				return entry, false
+			}
+		}
+	}
+	delete(s.online, userID)
+	delete(s.connections, userID)
+	return entry, true
 }
 
 func (s *Service) List() []User {
