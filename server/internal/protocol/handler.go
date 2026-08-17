@@ -3,6 +3,7 @@ package protocol
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"strings"
 
 	"github.com/mobbyg/otterlink/server/internal/accounts"
@@ -85,7 +86,7 @@ func tokenFromPayload(payload interface{}) (string, error) {
 	}
 	input.Token = strings.TrimSpace(input.Token)
 	if input.Token == "" {
-		return "", ErrUnauthorized
+		return "", errors.New("missing session token")
 	}
 	return input.Token, nil
 }
