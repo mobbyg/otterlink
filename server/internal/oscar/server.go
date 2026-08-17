@@ -47,6 +47,8 @@ func (s *Server) handle(conn net.Conn) {
 				if err := s.writeLocationReady(conn, frame.Sequence, snac.RequestID); err != nil { s.Logger.Printf("OSCAR location %s: %v", conn.RemoteAddr(), err); return }
 			case snac.Family == SNACLocationFamily && snac.Subtype == SNACLocationRequestInfo:
 				if err := s.handleLocationRequestInfo(conn, frame.Sequence, snac.RequestID, snac.Payload); err != nil { s.Logger.Printf("OSCAR user-info %s: %v", conn.RemoteAddr(), err); return }
+			case snac.Family == SNACLocationFamily && snac.Subtype == SNACLocationRequestInfo2:
+				if err := s.handleLocationRequestInfo2(conn, frame.Sequence, snac.RequestID, snac.Payload); err != nil { s.Logger.Printf("OSCAR user-info query2 %s: %v", conn.RemoteAddr(), err); return }
 			case snac.Family == SNACUserInfoFamily && snac.Subtype == SNACUserInfoClientReady:
 				if err := s.writeUserInfoReady(conn, frame.Sequence, snac.RequestID); err != nil { s.Logger.Printf("OSCAR user-info %s: %v", conn.RemoteAddr(), err); return }
 			}
