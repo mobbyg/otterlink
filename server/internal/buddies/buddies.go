@@ -4,8 +4,6 @@ import (
 	"database/sql"
 	"errors"
 	"strings"
-
-	"github.com/mobbyg/otterlink/server/internal/accounts"
 )
 
 type Buddy struct {
