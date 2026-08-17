@@ -39,6 +39,8 @@ func (s *Server) handle(conn net.Conn) {
 				if err := writeFrame(conn, Frame{Channel:ChannelData, Sequence:frame.Sequence, Payload:response.Encode()}); err != nil { return }
 			case snac.Family == SNACClientFamily && snac.Subtype == SNACClientReady:
 				if err := s.writeServerReady(conn, frame.Sequence, snac.RequestID); err != nil { return }
+			case snac.Family == SNACRateInfoFamily && snac.Subtype == SNACRateInfoRequest:
+				if err := s.writeRateInfo(conn, frame.Sequence, snac.RequestID); err != nil { return }
 			}
 		}
 	}
