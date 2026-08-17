@@ -20,6 +20,7 @@ type Server struct {
 	nextID atomic.Uint64
 	mu sync.RWMutex
 	clients map[*Connection]struct{}
+	connections map[uint64]*Connection
 }
 
 func (s *Server) ListenAndServe(ctx context.Context) error {
@@ -27,6 +28,7 @@ func (s *Server) ListenAndServe(ctx context.Context) error {
 	if err != nil { return err }
 	defer ln.Close()
 	if s.clients == nil { s.clients = make(map[*Connection]struct{}) }
+	if s.connections == nil { s.connections = make(map[uint64]*Connection) }
 	go func() { <-ctx.Done(); _ = ln.Close(); s.closeClients() }()
 	for {
 		conn, err := ln.Accept()
@@ -38,8 +40,9 @@ func (s *Server) ListenAndServe(ctx context.Context) error {
 		c := NewConnection(conn)
 		s.mu.Lock()
 		s.clients[c] = struct{}{}
-		s.mu.Unlock()
 		id := s.nextID.Add(1)
+		s.connections[id] = c
+		s.mu.Unlock()
 		go s.serve(ctx, c, id)
 	}
 }
@@ -49,6 +52,7 @@ func (s *Server) serve(ctx context.Context, c *Connection, connectionID uint64) 
 		_ = c.Close()
 		s.mu.Lock()
 		delete(s.clients, c)
+		delete(s.connections, connectionID)
 		s.mu.Unlock()
 		if h, ok := s.Handler.(DisconnectHandler); ok {
 			h.OnDisconnect(withConnectionID(ctx, connectionID))
@@ -77,6 +81,13 @@ func (s *Server) Broadcast(msg Message) {
 	for c := range s.clients { clients = append(clients, c) }
 	s.mu.RUnlock()
 	for _, c := range clients { _ = c.WriteMessage(msg) }
+}
+
+func (s *Server) SendToConnection(connectionID uint64, msg Message) {
+	s.mu.RLock()
+	c := s.connections[connectionID]
+	s.mu.RUnlock()
+	if c != nil { _ = c.WriteMessage(msg) }
 }
 
 func (s *Server) closeClients() {
