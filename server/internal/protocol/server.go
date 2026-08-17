@@ -2,6 +2,7 @@ package protocol
 
 import (
 	"context"
+	"errors"
 	"log"
 	"net"
 	"strings"
@@ -27,10 +28,6 @@ func (s *Server) ListenAndServe(ctx context.Context) error {
 	}
 	defer ln.Close()
 
-	if s.Logger != nil {
-		s.Logger.Printf("Otter Link protocol listening on %s", s.Addr)
-	}
-
 	go func() {
 		<-ctx.Done()
 		_ = ln.Close()
@@ -39,8 +36,8 @@ func (s *Server) ListenAndServe(ctx context.Context) error {
 	for {
 		conn, err := ln.Accept()
 		if err != nil {
-			if ctx.Err() != nil {
-				return ctx.Err()
+			if ctx.Err() != nil || errors.Is(err, net.ErrClosed) {
+				return nil
 			}
 			if s.Logger != nil {
 				s.Logger.Printf("accept protocol connection: %v", err)
