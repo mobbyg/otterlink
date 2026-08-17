@@ -8,6 +8,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/mobbyg/otterlink/server/internal/accounts"
+	"github.com/mobbyg/otterlink/server/internal/api"
 	"github.com/mobbyg/otterlink/server/internal/db"
 	_ "modernc.org/sqlite"
 )
@@ -43,8 +45,13 @@ func main() {
 		log.Fatalf("initialize database: %v", err)
 	}
 
+	authAPI := api.AuthAPI{Accounts: accounts.Service{DB: database}}
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/health", healthHandler)
+	mux.HandleFunc("POST /api/auth/register", authAPI.Register)
+	mux.HandleFunc("POST /api/auth/login", authAPI.Login)
+	mux.HandleFunc("POST /api/auth/logout", authAPI.Logout)
+	mux.HandleFunc("GET /api/me", authAPI.Me)
 
 	log.Printf("Otter Link server listening on %s", addr)
 	if err := http.ListenAndServe(addr, mux); err != nil {
