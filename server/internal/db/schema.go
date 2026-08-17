@@ -28,6 +28,16 @@ CREATE TABLE IF NOT EXISTS sessions (
 
 CREATE INDEX IF NOT EXISTS idx_sessions_token_hash ON sessions(token_hash);
 CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions(user_id);
+
+CREATE TABLE IF NOT EXISTS buddies (
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    buddy_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (user_id, buddy_id),
+    CHECK (user_id <> buddy_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_buddies_buddy_id ON buddies(buddy_id);
 `
 
 func Initialize(db *sql.DB) error {
