@@ -7,10 +7,12 @@ import (
 	"strings"
 
 	"github.com/mobbyg/otterlink/server/internal/accounts"
+	"github.com/mobbyg/otterlink/server/internal/presence"
 )
 
 type DefaultHandler struct {
 	Accounts accounts.Service
+	Presence *presence.Service
 }
 
 type loginPayload struct {
@@ -23,10 +25,17 @@ type tokenPayload struct {
 }
 
 func (h DefaultHandler) Handle(_ context.Context, msg Message) Message {
-	if msg.Service != ServiceSession {
+	switch msg.Service {
+	case ServiceSession:
+		return h.handleSession(msg)
+	case ServicePresence:
+		return h.handlePresence(msg)
+	default:
 		return ErrorResponse(msg.ID, ErrNotFound, "service or action not found")
 	}
+}
 
+func (h DefaultHandler) handleSession(msg Message) Message {
 	switch msg.Action {
 	case "ping":
 		return SuccessResponse(msg.ID, ServiceSession, "pong", map[string]string{"status": "ok"})
@@ -38,6 +47,9 @@ func (h DefaultHandler) Handle(_ context.Context, msg Message) Message {
 		user, token, err := h.Accounts.Authenticate(input.Username, input.Password)
 		if err != nil {
 			return ErrorResponse(msg.ID, ErrInvalidCredentials, "invalid username or password")
+		}
+		if h.Presence != nil {
+			h.Presence.Online(user)
 		}
 		return SuccessResponse(msg.ID, ServiceSession, "login", map[string]interface{}{"user": user, "token": token})
 	case "whoami":
@@ -51,13 +63,40 @@ func (h DefaultHandler) Handle(_ context.Context, msg Message) Message {
 		if err != nil {
 			return ErrorResponse(msg.ID, ErrUnauthorized, "valid session token required")
 		}
-		if _, err := h.Accounts.FromToken(token); err != nil {
+		user, err := h.Accounts.FromToken(token)
+		if err != nil {
 			return ErrorResponse(msg.ID, ErrUnauthorized, "invalid session")
 		}
 		if err := h.Accounts.Logout(token); err != nil {
 			return ErrorResponse(msg.ID, ErrServer, "unable to end session")
 		}
+		if h.Presence != nil {
+			h.Presence.Offline(user.ID)
+		}
 		return SuccessResponse(msg.ID, ServiceSession, "logout", map[string]string{"status": "ok"})
+	default:
+		return ErrorResponse(msg.ID, ErrNotFound, "service or action not found")
+	}
+}
+
+func (h DefaultHandler) handlePresence(msg Message) Message {
+	user, err := h.authenticate(msg)
+	if err != nil {
+		return ErrorResponse(msg.ID, ErrUnauthorized, "valid session token required")
+	}
+	if h.Presence == nil {
+		return ErrorResponse(msg.ID, ErrServer, "presence service unavailable")
+	}
+
+	switch msg.Action {
+	case "list":
+		return SuccessResponse(msg.ID, ServicePresence, "list", map[string]interface{}{"users": h.Presence.List()})
+	case "get":
+		entry, ok := h.Presence.Get(user.ID)
+		if !ok {
+			return SuccessResponse(msg.ID, ServicePresence, "get", map[string]interface{}{"online": false})
+		}
+		return SuccessResponse(msg.ID, ServicePresence, "get", entry)
 	default:
 		return ErrorResponse(msg.ID, ErrNotFound, "service or action not found")
 	}
