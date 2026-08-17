@@ -84,3 +84,25 @@ func (s Service) IsBuddy(userID, buddyID int64) bool {
 	err := s.DB.QueryRow(`SELECT 1 FROM buddies WHERE user_id = ? AND buddy_id = ? LIMIT 1`, userID, buddyID).Scan(&exists)
 	return err == nil && exists == 1
 }
+
+// Watchers returns the user IDs whose buddy lists contain buddyID.
+func (s Service) Watchers(buddyID int64) ([]int64, error) {
+	rows, err := s.DB.Query(`SELECT user_id FROM buddies WHERE buddy_id = ?`, buddyID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	watchers := make([]int64, 0)
+	for rows.Next() {
+		var userID int64
+		if err := rows.Scan(&userID); err != nil {
+			return nil, err
+		}
+		watchers = append(watchers, userID)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return watchers, nil
+}
