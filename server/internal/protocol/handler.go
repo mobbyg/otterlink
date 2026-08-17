@@ -58,7 +58,7 @@ func (h *DefaultHandler) handleChat(msg Message) Message {
 		var input chatWhisperPayload; if err:=decodePayload(msg.Payload,&input);err!=nil||strings.TrimSpace(input.To)==""||strings.TrimSpace(input.Message)==""{return ErrorResponse(msg.ID,ErrBadRequest,"recipient and message are required")}
 		message:=strings.TrimSpace(input.Message); if len([]rune(message))>2000{return ErrorResponse(msg.ID,ErrBadRequest,"message exceeds 2000 characters")}
 		target:=strings.TrimSpace(input.To); var targetIDs []uint64
-		h.mu.Lock(); for id,uid:=range h.connections{ if u,err:=h.Accounts.GetByID(uid);err==nil&&strings.EqualFold(u.Username,target){targetIDs=append(targetIDs,id)} }; h.mu.Unlock()
+		h.mu.Lock(); for id,uid:=range h.connections{ if u,err:=h.Accounts.Get(uid);err==nil&&strings.EqualFold(u.Username,target){targetIDs=append(targetIDs,id)} }; h.mu.Unlock()
 		if len(targetIDs)==0{return ErrorResponse(msg.ID,ErrNotFound,"recipient is not online")}
 		event:=Message{Type:TypeEvent,Service:ServiceChat,Action:"whisper",Payload:chatMessage{From:chatUser{ID:user.ID,Username:user.Username,DisplayName:user.DisplayName},Message:message,Timestamp:time.Now().UTC().Format(time.RFC3339)}}
 		if h.SendToConnection!=nil{for _,id:=range targetIDs{h.SendToConnection(id,event)}}
