@@ -66,7 +66,6 @@ func (s *Server) handle(conn net.Conn) {
 					loggedIn = true
 					s.registerConnection(user.ID, conn)
 					if s.Presence != nil { s.Presence.OnlineConnection(user, connectionID) }
-					s.sendInitialBuddyPresence(conn, frame.Sequence, user)
 				}
 			}
 		case ChannelData:
@@ -89,6 +88,7 @@ func (s *Server) handle(conn net.Conn) {
 				if err := s.handleLocationRequestInfo2(conn, frame.Sequence, snac.RequestID, snac.Payload); err != nil { s.Logger.Printf("OSCAR user-info query2 %s: %v", conn.RemoteAddr(), err); return }
 			case snac.Family == SNACUserInfoFamily && snac.Subtype == SNACUserInfoClientReady:
 				if err := s.writeUserInfoReady(conn, frame.Sequence, snac.RequestID); err != nil { s.Logger.Printf("OSCAR buddy rights %s: %v", conn.RemoteAddr(), err); return }
+				if loggedIn && s.Presence != nil { s.sendInitialBuddyPresence(conn, frame.Sequence, user) }
 			case snac.Family == SNACUserInfoFamily && snac.Subtype == SNACBuddyAdd:
 				if !loggedIn { return }
 				if err := s.handleBuddyAdd(conn, frame.Sequence, snac.RequestID, user.ID, snac.Payload); err != nil { s.Logger.Printf("OSCAR buddy add %s: %v", conn.RemoteAddr(), err); return }
