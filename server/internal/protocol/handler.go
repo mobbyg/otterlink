@@ -36,7 +36,7 @@ func (h *DefaultHandler) Handle(ctx context.Context, msg Message) Message {
 	case ServiceSession: return h.handleSession(ctx, msg)
 	case ServicePresence: return h.handlePresence(msg)
 	case ServiceChat: return h.handleChat(msg)
-	case ServiceBuddies: return h.handleBuddies(msg)
+	case ServiceBuddies: return h.handleBuddies(ctx, msg)
 	default: return ErrorResponse(msg.ID, ErrNotFound, "service or action not found")
 	}
 }
@@ -74,7 +74,7 @@ func (h *DefaultHandler) handlePresence(msg Message) Message {
 	}
 }
 
-func (h *DefaultHandler) handleBuddies(msg Message) Message {
+func (h *DefaultHandler) handleBuddies(ctx context.Context, msg Message) Message {
 	user, err := h.authenticate(msg); if err != nil { return ErrorResponse(msg.ID, ErrUnauthorized, "valid session token required") }
 	switch msg.Action {
 	case "list":
@@ -85,7 +85,7 @@ func (h *DefaultHandler) handleBuddies(msg Message) Message {
 		buddy, err := h.Buddies.Add(user.ID, input.Username); if err != nil { return buddyError(msg.ID, err) }
 		if h.Presence != nil && h.SendToConnection != nil {
 			if online, ok := h.Presence.Get(buddy.ID); ok {
-				h.SendToConnection(connectionIDFromMessage(msg), Message{Type: TypeEvent, Service: ServicePresence, Action: "online", Payload: online})
+				h.SendToConnection(connectionID(ctx), Message{Type: TypeEvent, Service: ServicePresence, Action: "online", Payload: online})
 			}
 		}
 		return SuccessResponse(msg.ID, ServiceBuddies, "add", buddy)
@@ -141,7 +141,6 @@ func (h *DefaultHandler) markOffline(ctx context.Context, userID int64) {
 
 func (h *DefaultHandler) notifyPresence(entry presence.User, action string, ownConnectionID uint64) {
 	if h.SendToConnection == nil { return }
-		type recipient struct { id uint64; own bool }
 	h.mu.Lock()
 	connections := make(map[uint64]int64, len(h.connections))
 	for id, userID := range h.connections { connections[id] = userID }
@@ -157,8 +156,3 @@ func (h *DefaultHandler) OnDisconnect(ctx context.Context) { id := connectionID(
 func (h *DefaultHandler) authenticate(msg Message) (accounts.User, error) { token, err := tokenFromPayload(msg.Payload); if err != nil { return accounts.User{}, err }; return h.Accounts.FromToken(token) }
 func decodePayload(payload interface{}, target interface{}) error { data, err := json.Marshal(payload); if err != nil { return err }; return json.Unmarshal(data, target) }
 func tokenFromPayload(payload interface{}) (string, error) { var input tokenPayload; if err := decodePayload(payload, &input); err != nil { return "", err }; input.Token = strings.TrimSpace(input.Token); if input.Token == "" { return "", errors.New("missing session token") }; return input.Token, nil }
-
-// connectionIDFromMessage is a placeholder for message-scoped connection IDs.
-// Buddy add presence snapshots are only sent when the handler is invoked with
-// a request context; the regular protocol path does not use this helper yet.
-func connectionIDFromMessage(_ Message) uint64 { return 0 }
