@@ -1,22 +1,27 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
 	"path/filepath"
+	"syscall"
 
 	"github.com/mobbyg/otterlink/server/internal/accounts"
 	"github.com/mobbyg/otterlink/server/internal/api"
 	"github.com/mobbyg/otterlink/server/internal/db"
+	"github.com/mobbyg/otterlink/server/internal/protocol"
 	_ "modernc.org/sqlite"
 )
 
 const (
-	defaultAddr = ":8080"
-	defaultDB   = "data/otterlink.db"
+	defaultAddr         = ":8080"
+	defaultProtocolAddr = ":8023"
+	defaultDB           = "data/otterlink.db"
 )
 
 type healthResponse struct {
@@ -26,6 +31,7 @@ type healthResponse struct {
 
 func main() {
 	addr := getenv("OTTERLINK_ADDR", defaultAddr)
+	protocolAddr := getenv("OTTERLINK_PROTOCOL_ADDR", defaultProtocolAddr)
 	dbPath := getenv("OTTERLINK_DB", defaultDB)
 
 	if err := os.MkdirAll(filepath.Dir(dbPath), 0o755); err != nil {
@@ -53,9 +59,25 @@ func main() {
 	mux.HandleFunc("POST /api/auth/logout", authAPI.Logout)
 	mux.HandleFunc("GET /api/me", authAPI.Me)
 
-	log.Printf("Otter Link server listening on %s", addr)
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	protocolServer := &protocol.Server{
+		Addr:    protocolAddr,
+		Handler: protocol.DefaultHandler{},
+		Logger:  log.Default(),
+	}
+	protocolErr := make(chan error, 1)
+	go func() {
+		protocolErr <- protocolServer.ListenAndServe(ctx)
+	}()
+
+	log.Printf("Otter Link HTTP server listening on %s", addr)
+	log.Printf("Otter Link protocol listening on %s", protocolAddr)
+
 	if err := http.ListenAndServe(addr, mux); err != nil {
-		log.Fatalf("server stopped: %v", err)
+		stop()
+		log.Fatalf("HTTP server stopped: %v", err)
 	}
 }
 
