@@ -11,6 +11,7 @@ import (
 const (
 	SNACClientFamily uint16 = 0x0001
 	SNACClientReady  uint16 = 0x0002
+	SNACServerReady  uint16 = 0x0003
 )
 
 type Server struct { Addr string; Logger *log.Logger; Authenticator Authenticator }
