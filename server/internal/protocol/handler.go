@@ -83,6 +83,11 @@ func (h *DefaultHandler) handleBuddies(msg Message) Message {
 	case "add":
 		var input buddyUserPayload; if err := decodePayload(msg.Payload, &input); err != nil || strings.TrimSpace(input.Username) == "" { return ErrorResponse(msg.ID, ErrBadRequest, "username is required") }
 		buddy, err := h.Buddies.Add(user.ID, input.Username); if err != nil { return buddyError(msg.ID, err) }
+		if h.Presence != nil && h.SendToConnection != nil {
+			if online, ok := h.Presence.Get(buddy.ID); ok {
+				h.SendToConnection(connectionIDFromMessage(msg), Message{Type: TypeEvent, Service: ServicePresence, Action: "online", Payload: online})
+			}
+		}
 		return SuccessResponse(msg.ID, ServiceBuddies, "add", buddy)
 	case "remove":
 		var input buddyUserPayload; if err := decodePayload(msg.Payload, &input); err != nil || strings.TrimSpace(input.Username) == "" { return ErrorResponse(msg.ID, ErrBadRequest, "username is required") }
@@ -125,16 +130,35 @@ func (h *DefaultHandler) handleChat(msg Message) Message {
 func (h *DefaultHandler) markOnline(ctx context.Context, user accounts.User) {
 	id := connectionID(ctx); if id == 0 || h.Presence == nil { return }
 	h.mu.Lock(); if h.connections == nil { h.connections = make(map[uint64]int64) }; if old, ok := h.connections[id]; ok && old != user.ID { h.mu.Unlock(); h.markOffline(ctx, old); h.mu.Lock() }; h.connections[id] = user.ID; h.mu.Unlock()
-	entry, becameOnline := h.Presence.OnlineConnection(user, id); if becameOnline && h.Events != nil { h.Events(Message{Type:TypeEvent,Service:ServicePresence,Action:"online",Payload:entry}) }
+	entry, becameOnline := h.Presence.OnlineConnection(user, id); if becameOnline { h.notifyPresence(entry, "online", id) }
 }
 
 func (h *DefaultHandler) markOffline(ctx context.Context, userID int64) {
 	id := connectionID(ctx); if id == 0 || h.Presence == nil { return }
 	h.mu.Lock(); if h.connections != nil { delete(h.connections, id) }; h.mu.Unlock()
-	entry, becameOffline := h.Presence.OfflineConnection(userID, id); if becameOffline && h.Events != nil { h.Events(Message{Type:TypeEvent,Service:ServicePresence,Action:"offline",Payload:entry}) }
+	entry, becameOffline := h.Presence.OfflineConnection(userID, id); if becameOffline { h.notifyPresence(entry, "offline", id) }
+}
+
+func (h *DefaultHandler) notifyPresence(entry presence.User, action string, ownConnectionID uint64) {
+	if h.SendToConnection == nil { return }
+		type recipient struct { id uint64; own bool }
+	h.mu.Lock()
+	connections := make(map[uint64]int64, len(h.connections))
+	for id, userID := range h.connections { connections[id] = userID }
+	h.mu.Unlock()
+	for id, userID := range connections {
+		if id == ownConnectionID || h.Buddies.IsBuddy(userID, entry.ID) {
+			h.SendToConnection(id, Message{Type: TypeEvent, Service: ServicePresence, Action: action, Payload: entry})
+		}
+	}
 }
 
 func (h *DefaultHandler) OnDisconnect(ctx context.Context) { id := connectionID(ctx); if id == 0 { return }; h.mu.Lock(); userID, ok := h.connections[id]; h.mu.Unlock(); if ok { h.markOffline(ctx, userID) } }
 func (h *DefaultHandler) authenticate(msg Message) (accounts.User, error) { token, err := tokenFromPayload(msg.Payload); if err != nil { return accounts.User{}, err }; return h.Accounts.FromToken(token) }
 func decodePayload(payload interface{}, target interface{}) error { data, err := json.Marshal(payload); if err != nil { return err }; return json.Unmarshal(data, target) }
 func tokenFromPayload(payload interface{}) (string, error) { var input tokenPayload; if err := decodePayload(payload, &input); err != nil { return "", err }; input.Token = strings.TrimSpace(input.Token); if input.Token == "" { return "", errors.New("missing session token") }; return input.Token, nil }
+
+// connectionIDFromMessage is a placeholder for message-scoped connection IDs.
+// Buddy add presence snapshots are only sent when the handler is invoked with
+// a request context; the regular protocol path does not use this helper yet.
+func connectionIDFromMessage(_ Message) uint64 { return 0 }
