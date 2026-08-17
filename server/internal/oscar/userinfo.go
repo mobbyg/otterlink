@@ -7,9 +7,9 @@ import (
 )
 
 const (
-	SNACUserInfoFamily       uint16 = 0x0003
-	SNACUserInfoClientReady  uint16 = 0x0002
-	SNACUserInfoServerReady  uint16 = 0x0003
+	SNACUserInfoFamily      uint16 = 0x0003
+	SNACUserInfoClientReady uint16 = 0x0002
+	SNACUserInfoServerReady uint16 = 0x0003
 )
 
 func (s *Server) writeUserInfoReady(conn net.Conn, sequence uint16, requestID uint32) error {
@@ -20,8 +20,8 @@ func (s *Server) writeUserInfoReady(conn net.Conn, sequence uint16, requestID ui
 	binary.BigEndian.PutUint16(payload[2:4], 1)
 	binary.BigEndian.PutUint16(payload[4:6], 0x0110)
 	binary.BigEndian.PutUint16(payload[6:8], 0)
-	binary.BigEndian.PutUint8(payload[8:9], 0)
-	binary.BigEndian.PutUint8(payload[9:10], 0)
+	payload[8] = 0
+	payload[9] = 0
 
 	response := SNAC{
 		Family:    SNACUserInfoFamily,
