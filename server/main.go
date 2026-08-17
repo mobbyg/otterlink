@@ -37,7 +37,7 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM); defer stop()
 
 	protocolServer := &protocol.Server{Addr: protocolAddr, Logger: log.Default()}
-	protocolHandler := &protocol.DefaultHandler{Accounts: accountService, Presence: presenceService, Events: protocolServer.Broadcast}
+	protocolHandler := &protocol.DefaultHandler{Accounts: accountService, Presence: presenceService, Events: protocolServer.Broadcast, SendToConnection: protocolServer.SendToConnection}
 	protocolServer.Handler = protocolHandler
 	protocolErr := make(chan error, 1); go func() { protocolErr <- protocolServer.ListenAndServe(ctx) }()
 
