@@ -99,8 +99,7 @@ void OtterLinkClient::loadDashboard()
     load(QStringLiteral("/api/buddies"), [pending](const QJsonObject &obj) {
         for (const auto value : obj.value(QStringLiteral("buddies")).toArray()) {
             const QJsonObject buddy = value.toObject();
-            pending->buddies << buddy.value(QStringLiteral("display_name")).toString(
-                buddy.value(QStringLiteral("username")).toString());
+            pending->buddies << buddy.value(QStringLiteral("username")).toString();
         }
     });
     load(QStringLiteral("/api/presence"), [pending](const QJsonObject &obj) {
