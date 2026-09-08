@@ -2,6 +2,13 @@ package chat
 
 import "testing"
 
+func TestHubListReturnsEmptySlice(t *testing.T) {
+	h := NewHub(2)
+	messages := h.List()
+	if messages == nil { t.Fatal("List returned nil slice; want empty slice") }
+	if len(messages) != 0 { t.Fatalf("got %d messages, want 0", len(messages)) }
+}
+
 func TestHubKeepsMostRecentMessages(t *testing.T) {
 	h := NewHub(2)
 	u := User{ID: 1, Username: "alice", DisplayName: "Alice"}
