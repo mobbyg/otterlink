@@ -27,6 +27,25 @@ cmake --build build
 
 Run `otterlink` from the resulting build directory. The default server is `http://127.0.0.1:9090`; the server field can be changed to point at another Otter Link instance.
 
+## Current development UI
+
+The current client provides:
+
+- Login to an Otter Link server
+- Dashboard with online users and buddies
+- Community chat history
+- Sending community chat messages
+- Manual dashboard refresh
+- Disconnect/logout
+
+The main window layout is maintained in `mainwindow.ui` and is intended to be edited with Qt Designer/Qt Creator. Keep substantial presentation work in `.ui` files and keep service behavior in C++.
+
+## Presentation direction
+
+The long-term desktop experience is **retro feel, modern engine**. The Qt client will eventually have an Otter Link Classic presentation inspired by the visual language of Q-Link/AOL-era online services while using original Otter Link branding and artwork.
+
+A future connection experience will optionally present Calling, Connecting/Carrier, and Connected stages, with independently controllable connection and disconnect sounds. See `../../docs/presentation.md` for the design direction.
+
 ## Direction
 
 This is a native client foundation, not a finished UI. Service operations should remain behind the client/service boundary so the same Otter Link account and community can later be presented by native Amiga/AROS, C64/C128, and Commander X16 clients.
