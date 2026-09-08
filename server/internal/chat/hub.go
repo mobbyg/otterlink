@@ -40,5 +40,8 @@ func (h *Hub) Publish(user User, text string) Message {
 func (h *Hub) List() []Message {
 	h.mu.RLock()
 	defer h.mu.RUnlock()
+	if len(h.messages) == 0 {
+		return []Message{}
+	}
 	return append([]Message(nil), h.messages...)
 }
