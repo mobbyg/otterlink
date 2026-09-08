@@ -13,6 +13,7 @@ qt_add_executable(otterlink
     main.cpp
     mainwindow.cpp
     mainwindow.h
+    mainwindow.ui
     otterlinkclient.cpp
     otterlinkclient.h
 )
