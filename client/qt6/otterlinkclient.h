@@ -4,6 +4,7 @@
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
 #include <QString>
+#include <QStringList>
 
 class OtterLinkClient final : public QObject
 {
@@ -17,6 +18,7 @@ public:
 
     void login(const QString &username, const QString &password);
     void loadDashboard();
+    void sendChatMessage(const QString &message);
     void logout();
 
 signals:
@@ -28,7 +30,6 @@ signals:
 
 private:
     QNetworkRequest request(const QString &path) const;
-    void handleReply(QNetworkReply *reply);
 
     QNetworkAccessManager m_network;
     QString m_baseUrl = QStringLiteral("http://127.0.0.1:9090");
