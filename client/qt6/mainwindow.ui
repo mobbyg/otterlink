@@ -39,6 +39,7 @@
          <layout class="QHBoxLayout" name="topLayout">
           <item><widget class="QLabel" name="identityLabel"/></item>
           <item><spacer name="topSpacer"><property name="orientation"><enum>Qt::Horizontal</enum></property><property name="sizeHint" stdset="0"><size><width>40</width><height>20</height></size></property></spacer></item>
+          <item><widget class="QPushButton" name="refreshButton"><property name="text"><string>Refresh</string></property></widget></item>
           <item><widget class="QPushButton" name="logoutButton"><property name="text"><string>Disconnect</string></property></widget></item>
          </layout>
         </item>
@@ -47,7 +48,18 @@
           <property name="orientation"><enum>Qt::Horizontal</enum></property>
           <widget class="QGroupBox" name="onlineGroup"><property name="title"><string>Online</string></property><layout class="QVBoxLayout" name="onlineLayout"><item><widget class="QListWidget" name="onlineList"/></item></layout></widget>
           <widget class="QGroupBox" name="buddiesGroup"><property name="title"><string>Buddies</string></property><layout class="QVBoxLayout" name="buddiesLayout"><item><widget class="QListWidget" name="buddiesList"/></item></layout></widget>
-          <widget class="QGroupBox" name="chatGroup"><property name="title"><string>Community Chat</string></property><layout class="QVBoxLayout" name="chatLayout"><item><widget class="QListWidget" name="chatList"/></item></layout></widget>
+          <widget class="QGroupBox" name="chatGroup">
+           <property name="title"><string>Community Chat</string></property>
+           <layout class="QVBoxLayout" name="chatLayout">
+            <item><widget class="QListWidget" name="chatList"/></item>
+            <item>
+             <layout class="QHBoxLayout" name="chatInputLayout">
+              <item><widget class="QLineEdit" name="chatEdit"><property name="placeholderText"><string>Type a message...</string></property></widget></item>
+              <item><widget class="QPushButton" name="sendChatButton"><property name="text"><string>Send</string></property></widget></item>
+             </layout>
+            </item>
+           </layout>
+          </widget>
          </widget>
         </item>
        </layout>
