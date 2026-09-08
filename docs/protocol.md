@@ -2,7 +2,9 @@
 
 ## Status
 
-Draft — initial protocol contract for modern and retro clients.
+**Draft — service contract and development transport.**
+
+The logical client protocol is still under development. The current server has a working framed TCP implementation for development and interoperability testing, but the service/action set is not yet frozen and this transport should not be considered the final wire format for constrained retro clients.
 
 ## Goals
 
@@ -15,7 +17,19 @@ The protocol therefore separates:
 3. **Commands/events** — service operations and server notifications.
 4. **Service payloads** — chat, presence, mail, boards, and future services.
 
-The first implementation will use a line-oriented, framed JSON protocol over TCP for development and modern clients. The wire format is intentionally kept simple so a later compact/binary transport can expose the same logical commands to constrained retro clients.
+The current implementation uses a line-oriented, framed JSON protocol over TCP for development and modern-client work. The wire format is intentionally kept simple so a later compact/binary transport can expose the same logical commands to constrained retro clients.
+
+## Current server transports
+
+The server currently exposes three interfaces:
+
+| Transport | Default | Purpose |
+|---|---:|---|
+| HTTP | `:8080` | Account and web/API operations |
+| Otter Link protocol | `:8023` | Native client/service protocol under development |
+| OSCAR compatibility | `:5190` | AIM/OSCAR interoperability |
+
+The native protocol and OSCAR compatibility service share the same account/presence backend but are separate wire protocols.
 
 ## Transport
 
@@ -74,7 +88,7 @@ Asynchronous server events have no request ID:
 | Field | Required | Meaning |
 |---|---|---|
 | `type` | yes | `event` |
-| `service` | yes | Logical service name |
+| `service` | yes | Event name |
 | `action` | yes | Event name |
 | `payload` | no | Event-specific data |
 
@@ -104,7 +118,7 @@ Initial error codes include:
 
 HTTP API authentication and the client protocol share the same account/session backend but are separate transports.
 
-A client protocol session will progress through:
+A client protocol session is intended to progress through:
 
 ```text
 CONNECT
