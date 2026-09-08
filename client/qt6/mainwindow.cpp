@@ -13,6 +13,7 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
     resize(900, 600);
     m_refreshTimer.setInterval(5000);
+    m_connectionTimer.setInterval(700);
     setLoggedIn(false);
 
     connect(ui->loginButton, &QPushButton::clicked, this, &MainWindow::login);
@@ -24,11 +25,15 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->addBuddyButton, &QPushButton::clicked, this, &MainWindow::addBuddy);
     connect(ui->removeBuddyButton, &QPushButton::clicked, this, &MainWindow::removeBuddy);
     connect(&m_refreshTimer, &QTimer::timeout, this, &MainWindow::refreshDashboard);
+    connect(&m_connectionTimer, &QTimer::timeout, this, &MainWindow::advanceConnectionStage);
+    connect(&m_connectionFinishTimer, &QTimer::timeout, this, &MainWindow::finishConnectionPresentation);
 
     connect(m_client, &OtterLinkClient::loggedIn, this, &MainWindow::showDashboard);
     connect(m_client, &OtterLinkClient::dashboardLoaded, this, &MainWindow::dashboardLoaded);
     connect(m_client, &OtterLinkClient::loggedOut, this, [this]() {
         m_refreshTimer.stop();
+        m_connectionTimer.stop();
+        m_connectionFinishTimer.stop();
         setLoggedIn(false);
     });
     connect(m_client, &OtterLinkClient::errorOccurred, this, &MainWindow::showError);
@@ -42,6 +47,7 @@ MainWindow::~MainWindow()
 void MainWindow::login()
 {
     m_client->setBaseUrl(ui->serverEdit->text());
+    beginConnectionPresentation();
     m_client->login(ui->usernameEdit->text(), ui->passwordEdit->text());
 }
 
@@ -97,8 +103,64 @@ void MainWindow::removeBuddy()
     }
 }
 
+void MainWindow::beginConnectionPresentation()
+{
+    m_connectionReady = false;
+    m_connectionDisplayName.clear();
+    m_connectionStage = 0;
+    ui->connectionStageLabel->setText(QStringLiteral("CALLING"));
+    ui->connectionDetailLabel->setText(QStringLiteral("Dialing Otter Link..."));
+    ui->connectionProgress->setValue(10);
+    ui->connectionOtterLabel->setText(QStringLiteral("( o.o )\n /|\\\n  / \\\n\n~ ~ ~"));
+    ui->stackedWidget->setCurrentWidget(ui->connectionPage);
+    m_connectionTimer.start();
+}
+
+void MainWindow::advanceConnectionStage()
+{
+    ++m_connectionStage;
+
+    switch (m_connectionStage) {
+    case 1:
+        ui->connectionStageLabel->setText(QStringLiteral("CONNECTING"));
+        ui->connectionDetailLabel->setText(QStringLiteral("Establishing carrier..."));
+        ui->connectionProgress->setValue(55);
+        ui->connectionOtterLabel->setText(QStringLiteral("( o.o )\n /|\\\n  / \\\n\n~ ~ ~"));
+        break;
+    case 2:
+        ui->connectionStageLabel->setText(QStringLiteral("CONNECTED"));
+        ui->connectionDetailLabel->setText(QStringLiteral("Welcome to Otter Link."));
+        ui->connectionProgress->setValue(100);
+        ui->connectionOtterLabel->setText(QStringLiteral("  /\\_/\\\n ( o.o )\n  > ^ <"));
+        m_connectionTimer.stop();
+        if (m_connectionReady)
+            m_connectionFinishTimer.start(450);
+        break;
+    default:
+        m_connectionTimer.stop();
+        break;
+    }
+}
+
+void MainWindow::finishConnectionPresentation()
+{
+    m_connectionFinishTimer.stop();
+    if (m_connectionReady)
+        showDashboard(m_connectionDisplayName);
+}
+
 void MainWindow::showDashboard(const QString &displayName)
 {
+    if (ui->stackedWidget->currentWidget() == ui->connectionPage && m_connectionStage < 2) {
+        m_connectionReady = true;
+        m_connectionDisplayName = displayName;
+        return;
+    }
+
+    m_connectionReady = false;
+    m_connectionDisplayName.clear();
+    m_connectionTimer.stop();
+    m_connectionFinishTimer.stop();
     ui->identityLabel->setText(
         QStringLiteral("Connected as <b>%1</b>").arg(displayName.toHtmlEscaped()));
     setLoggedIn(true);
@@ -123,6 +185,11 @@ void MainWindow::dashboardLoaded(const QStringList &buddies, const QStringList &
 
 void MainWindow::showError(const QString &message)
 {
+    m_connectionReady = false;
+    m_connectionDisplayName.clear();
+    m_connectionTimer.stop();
+    m_connectionFinishTimer.stop();
+    setLoggedIn(false);
     QMessageBox::warning(this, QStringLiteral("Otter Link"), message);
 }
 
