@@ -37,11 +37,11 @@ This is **not yet a finished AIM replacement or public service**. The OSCAR impl
 
 | Service | Default | Purpose |
 |---|---:|---|
-| HTTP / web client | `:8080` | Web UI, health, registration, login, logout, and service APIs |
+| HTTP / web client | `:9090` | Web UI, health, registration, login, logout, and service APIs |
 | Otter Link protocol | `:8023` | Development client/service protocol |
 | OSCAR compatibility | `:5190` | AIM/OSCAR-compatible client connectivity |
 
-Open `http://localhost:8080/` after starting the server to use the development UI.
+Open `http://localhost:9090/` after starting the server to use the development UI.
 
 The HTTP API also exposes:
 
@@ -73,12 +73,12 @@ go run .
 
 By default this starts all three server interfaces and creates `data/otterlink.db`.
 
-Then open `http://localhost:8080/` in a browser.
+Then open `http://localhost:9090/` in a browser.
 
 Check the HTTP service directly with:
 
 ```sh
-curl http://localhost:8080/api/health
+curl http://localhost:9090/api/health
 ```
 
 Expected response:
@@ -91,7 +91,7 @@ Expected response:
 
 Environment variables:
 
-- `OTTERLINK_ADDR` — HTTP listen address; default `:8080`
+- `OTTERLINK_ADDR` — HTTP listen address; default `:9090`
 - `OTTERLINK_PROTOCOL_ADDR` — Otter Link protocol listen address; default `:8023`
 - `OTTERLINK_OSCAR_ADDR` — OSCAR compatibility listen address; default `:5190`
 - `OTTERLINK_DB` — SQLite database path; default `data/otterlink.db`
