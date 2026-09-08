@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Otter Link</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <div><strong>Otter Link</strong><span>Your connection to the online world of yesterday.</span></div>
+      <button id="logout" class="secondary hidden">Sign out</button>
+    </header>
+
+    <section id="auth" class="auth-grid">
+      <form id="login" class="card">
+        <h1>Sign in</h1>
+        <label>Username<input name="username" autocomplete="username" required></label>
+        <label>Password<input name="password" type="password" autocomplete="current-password" required></label>
+        <button>Connect</button>
+        <p id="login-error" class="error"></p>
+      </form>
+      <form id="register" class="card">
+        <h1>Create account</h1>
+        <label>Username<input name="username" required></label>
+        <label>Display name<input name="display_name" required></label>
+        <label>Email<input name="email" type="email"></label>
+        <label>Password<input name="password" type="password" autocomplete="new-password" required></label>
+        <button>Create account</button>
+        <p id="register-error" class="error"></p>
+      </form>
+    </section>
+
+    <section id="app" class="hidden">
+      <div class="welcome card"><div><small>CONNECTED AS</small><h1 id="identity"></h1></div><div class="status"><span></span> Online</div></div>
+      <div class="dashboard">
+        <aside class="card">
+          <h2>Buddies</h2>
+          <form id="add-buddy"><input name="username" placeholder="Username" required><button>Add</button></form>
+          <ul id="buddies" class="people"></ul>
+          <h2>Online now</h2>
+          <ul id="online" class="people"></ul>
+        </aside>
+        <section class="card chat-card">
+          <div class="section-title"><h2>Community Chat</h2><small>Shared service test area</small></div>
+          <div id="chat" class="chat"></div>
+          <form id="send-chat" class="composer"><input name="message" maxlength="2000" placeholder="Say something…" autocomplete="off" required><button>Send</button></form>
+        </section>
+      </div>
+    </section>
+    <footer>Otter Link web client • development UI</footer>
+  </main>
+  <script src="/static/app.js"></script>
+</body>
+</html>
