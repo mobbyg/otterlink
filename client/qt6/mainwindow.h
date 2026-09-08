@@ -2,10 +2,10 @@
 
 #include <QMainWindow>
 
-class QLabel;
-class QLineEdit;
-class QListWidget;
-class QPushButton;
+namespace Ui {
+class MainWindow;
+}
+
 class OtterLinkClient;
 
 class MainWindow final : public QMainWindow
@@ -14,6 +14,7 @@ class MainWindow final : public QMainWindow
 
 public:
     explicit MainWindow(QWidget *parent = nullptr);
+    ~MainWindow() override;
 
 private slots:
     void login();
@@ -24,17 +25,8 @@ private slots:
     void showError(const QString &message);
 
 private:
-    void buildUi();
     void setLoggedIn(bool loggedIn);
 
+    Ui::MainWindow *ui = nullptr;
     OtterLinkClient *m_client = nullptr;
-    QWidget *m_authPage = nullptr;
-    QWidget *m_dashboardPage = nullptr;
-    QLineEdit *m_serverEdit = nullptr;
-    QLineEdit *m_usernameEdit = nullptr;
-    QLineEdit *m_passwordEdit = nullptr;
-    QLabel *m_identityLabel = nullptr;
-    QListWidget *m_buddies = nullptr;
-    QListWidget *m_online = nullptr;
-    QListWidget *m_chat = nullptr;
 };
