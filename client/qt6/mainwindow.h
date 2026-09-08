@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QMainWindow>
+#include <QTimer>
 
 namespace Ui {
 class MainWindow;
@@ -21,6 +22,8 @@ private slots:
     void logout();
     void sendChat();
     void refreshDashboard();
+    void addBuddy();
+    void removeBuddy();
     void showDashboard(const QString &displayName);
     void dashboardLoaded(const QStringList &buddies, const QStringList &onlineUsers,
                          const QStringList &chatMessages);
@@ -31,4 +34,5 @@ private:
 
     Ui::MainWindow *ui = nullptr;
     OtterLinkClient *m_client = nullptr;
+    QTimer m_refreshTimer;
 };
