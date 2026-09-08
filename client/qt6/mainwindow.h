@@ -19,6 +19,8 @@ public:
 private slots:
     void login();
     void logout();
+    void sendChat();
+    void refreshDashboard();
     void showDashboard(const QString &displayName);
     void dashboardLoaded(const QStringList &buddies, const QStringList &onlineUsers,
                          const QStringList &chatMessages);
