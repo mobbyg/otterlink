@@ -1,2 +1,2 @@
 # otterlink
-Your connection to the online world.
+Your connection to the online world of yesterday.
