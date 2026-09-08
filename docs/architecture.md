@@ -20,7 +20,7 @@ It is intentionally different from a traditional BBS project. The server provide
 +--------------------------------------------------+
 |                 Otter Link Server                |
 +--------------------------------------------------+
-| API / Client Protocol                            |
+| HTTP API | Client Protocol | OSCAR Compatibility |
 +--------------------------------------------------+
 | Authentication | Accounts | Sessions | Presence  |
 +--------------------------------------------------+
@@ -30,18 +30,36 @@ It is intentionally different from a traditional BBS project. The server provide
 +--------------------------------------------------+
 ```
 
-The initial implementation is expected to use Go for the server and SQLite for the early development database. These choices can be revisited if the project outgrows them.
+The current server implementation uses Go and SQLite for the early development system. These choices can be revisited if the project outgrows them.
+
+## Current implementation status
+
+The original server bootstrap milestone is complete. The implementation now includes:
+
+- HTTP health and authentication endpoints
+- SQLite account persistence
+- Native framed TCP protocol on `:8023`
+- OSCAR compatibility listener on `:5190`
+- OSCAR authentication and BOS/session handling
+- Rate information and location/user-info support
+- Buddy list add/delete
+- Buddy watcher lookup
+- Online/offline presence tracking
+- Initial buddy presence delivery
+- Presence fan-out to connected watchers
+
+The next implementation focus is end-to-end messaging and broader client interoperability, rather than further expanding the initial server bootstrap.
 
 ## Chat / IM
 
-Open OSCAR will be treated as a separate service rather than copied into the Otter Link codebase.
+OSCAR compatibility is treated as a separate compatibility layer rather than the definition of the Otter Link service model.
 
 ```text
-Otter Link Server  <---- API / service integration ---->  Open OSCAR
-      GPL                                              MIT
+Otter Link Server  <---- service integration ---->  OSCAR compatibility
+      GPL                                      compatibility layer
 ```
 
-Otter Link will provide the account and service model, while Open OSCAR can provide AIM/ICQ-compatible instant messaging, presence, and chat capabilities where appropriate.
+The compatibility layer allows existing OSCAR/AIM-style clients to exercise Otter Link accounts, buddy lists, and presence while the native Otter Link protocol continues to evolve.
 
 ## Clients
 
@@ -76,21 +94,30 @@ The public client protocol should expose service operations rather than internal
 - List/download files
 - Retrieve news
 
-The final wire format should be selected after the service model is established. Modern clients may use HTTPS and WebSockets; retro clients may use a compact protocol through a gateway.
+The current development protocol is a simple framed, line-oriented JSON transport over TCP. The logical service model is intended to remain independent of this transport so a later compact/binary transport can support constrained retro clients.
 
 ## Threaded messages
 
 The message model should support parent/child relationships so conversations form trees. The presentation is intentionally C-Net-inspired: conference listings show the top-level messages, while replies are discovered by entering the original message/thread rather than appearing as a flat list of every reply.
 
-## Initial milestone
+## Milestones
 
-The first implementation milestone is deliberately small:
+### Complete
 
 1. Start the server.
 2. Open/create the SQLite database.
 3. Expose a health endpoint.
-4. Create a user.
-5. Authenticate the user.
-6. Establish a session.
+4. Create and authenticate users.
+5. Establish account-backed sessions.
+6. Bring up the native client protocol.
+7. Bring up the OSCAR compatibility listener.
+8. Implement initial buddy list and presence behavior.
 
-No client, chat integration, or retro protocol is required for this milestone.
+### Next
+
+1. Exercise the OSCAR implementation against real clients and capture interoperability gaps.
+2. Complete reliable OSCAR messaging/session behavior needed for an end-to-end IM milestone.
+3. Expand the native service protocol around the same account, presence, and messaging model.
+4. Begin implementing the first actual Otter Link client.
+
+The project should continue to favor small, testable protocol increments over attempting to implement the entire historical service at once.
