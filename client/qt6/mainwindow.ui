@@ -47,7 +47,18 @@
          <widget class="QSplitter" name="contentSplitter">
           <property name="orientation"><enum>Qt::Horizontal</enum></property>
           <widget class="QGroupBox" name="onlineGroup"><property name="title"><string>Online</string></property><layout class="QVBoxLayout" name="onlineLayout"><item><widget class="QListWidget" name="onlineList"/></item></layout></widget>
-          <widget class="QGroupBox" name="buddiesGroup"><property name="title"><string>Buddies</string></property><layout class="QVBoxLayout" name="buddiesLayout"><item><widget class="QListWidget" name="buddiesList"/></item></layout></widget>
+          <widget class="QGroupBox" name="buddiesGroup">
+           <property name="title"><string>Buddies</string></property>
+           <layout class="QVBoxLayout" name="buddiesLayout">
+            <item><widget class="QListWidget" name="buddiesList"/></item>
+            <item>
+             <layout class="QHBoxLayout" name="buddyControlsLayout">
+              <item><widget class="QPushButton" name="addBuddyButton"><property name="text"><string>Add Buddy</string></property></widget></item>
+              <item><widget class="QPushButton" name="removeBuddyButton"><property name="text"><string>Remove</string></property></widget></item>
+             </layout>
+            </item>
+           </layout>
+          </widget>
           <widget class="QGroupBox" name="chatGroup">
            <property name="title"><string>Community Chat</string></property>
            <layout class="QVBoxLayout" name="chatLayout">
