@@ -13,6 +13,7 @@ It is intentionally different from a traditional BBS project. The server provide
 3. **Protocol independence.** Client implementations must not depend on the server's internal database schema.
 4. **Clean third-party boundaries.** Open OSCAR remains an independently licensed MIT component/service.
 5. **Offline and low-bandwidth awareness.** Retro clients should be able to cache useful state and synchronize efficiently.
+6. **Retro presentation, modern engine.** The service infrastructure remains modern while clients may deliberately evoke the connected-computer experience of the 1980s and 1990s.
 
 ## Server layers
 
@@ -67,6 +68,14 @@ The compatibility layer allows existing OSCAR/AIM-style clients to exercise Otte
 
 Linux, Windows, and macOS will initially target a common Qt 6 / C++ client. The UI may share concepts and code while still allowing platform-specific presentation where useful.
 
+The Qt client should use Qt Designer `.ui` files for substantial layouts rather than growing a monolithic hand-built window. Service behavior and client state remain in C++ behind that presentation layer.
+
+The intended desktop experience is **retro feel, modern engine**. The default classic presentation can draw from the visual language of Q-Link/AOL-era online services while using original Otter Link branding and artwork. The client should retain sensible modern behavior rather than reproducing historical limitations.
+
+The client should eventually provide an optional dial-up-style connection presentation with three conceptual stages — Calling, Connecting/Carrier, and Connected — synchronized with the actual connection state. Connection audio should be independently optional from the visual sequence, with separate controls for connection and disconnect effects.
+
+See [`docs/presentation.md`](presentation.md) for the presentation and connection-experience direction.
+
 ### Amiga / AROS
 
 A native Amiga-style client is the long-term goal. A browser-based client may be useful as an early AROS implementation while the native GUI approach is evaluated against the available AROS APIs and toolchain.
@@ -112,12 +121,17 @@ The message model should support parent/child relationships so conversations for
 6. Bring up the native client protocol.
 7. Bring up the OSCAR compatibility listener.
 8. Implement initial buddy list and presence behavior.
+9. Establish the first usable web development client.
+10. Establish the first usable Qt 6 native desktop client foundation.
 
 ### Next
 
 1. Exercise the OSCAR implementation against real clients and capture interoperability gaps.
 2. Complete reliable OSCAR messaging/session behavior needed for an end-to-end IM milestone.
 3. Expand the native service protocol around the same account, presence, and messaging model.
-4. Begin implementing the first actual Otter Link client.
+4. Build the Qt client into a practical development/test client with messaging, buddy management, and live refresh.
+5. Begin the client-side presentation/theme layer, keeping the retro experience independent of the service implementation.
+6. Add the optional dial-up-style connection presentation and independently controlled connection audio.
+7. Begin implementing the first actual retro-platform client.
 
 The project should continue to favor small, testable protocol increments over attempting to implement the entire historical service at once.
