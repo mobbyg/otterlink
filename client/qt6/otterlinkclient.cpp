@@ -1,6 +1,5 @@
 #include "otterlinkclient.h"
 
-#include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QNetworkRequest>
@@ -117,6 +116,20 @@ void OtterLinkClient::loadDashboard()
                                           from.value(QStringLiteral("username")).toString()),
                                       message.value(QStringLiteral("message")).toString());
         }
+    });
+}
+
+void OtterLinkClient::sendChatMessage(const QString &message)
+{
+    QJsonObject body{{QStringLiteral("message"), message}};
+    auto *reply = m_network.post(request(QStringLiteral("/api/chat")),
+                                 QJsonDocument(body).toJson(QJsonDocument::Compact));
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+        if (reply->error() != QNetworkReply::NoError)
+            emit errorOccurred(reply->errorString());
+        else
+            loadDashboard();
+        reply->deleteLater();
     });
 }
 
