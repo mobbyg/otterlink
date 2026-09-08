@@ -3,8 +3,11 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QNetworkRequest>
 #include <QUrl>
-#include <QUrlQuery>
+
+#include <functional>
+#include <memory>
 
 OtterLinkClient::OtterLinkClient(QObject *parent)
     : QObject(parent)
@@ -129,9 +132,4 @@ void OtterLinkClient::logout()
         emit loggedOut();
         reply->deleteLater();
     });
-}
-
-void OtterLinkClient::handleReply(QNetworkReply *reply)
-{
-    Q_UNUSED(reply);
 }
