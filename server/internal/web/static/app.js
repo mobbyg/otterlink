@@ -72,7 +72,7 @@ async function refreshPresence() {
 }
 async function refreshChat() {
   const result = await request('/api/chat'); const box=$('chat'); box.innerHTML='';
-  for (const message of result.messages) {
+  for (const message of result.messages || []) {
     const row=document.createElement('article'); row.className='msg';
     const who=document.createElement('strong'); who.textContent=message.from.display_name || message.from.username;
     const time=document.createElement('time'); time.textContent=new Date(message.timestamp).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'});
