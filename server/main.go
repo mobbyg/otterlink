@@ -25,7 +25,7 @@ import (
 	_ "modernc.org/sqlite"
 )
 
-const ( defaultAddr=":8080"; defaultProtocolAddr=":8023"; defaultOscarAddr=":5190"; defaultDB="data/otterlink.db" )
+const ( defaultAddr=":9090"; defaultProtocolAddr=":8023"; defaultOscarAddr=":5190"; defaultDB="data/otterlink.db" )
 type healthResponse struct { Status string `json:"status"`; Service string `json:"service"` }
 func main(){
 	addr:=getenv("OTTERLINK_ADDR",defaultAddr);protocolAddr:=getenv("OTTERLINK_PROTOCOL_ADDR",defaultProtocolAddr);oscarAddr:=getenv("OTTERLINK_OSCAR_ADDR",defaultOscarAddr);dbPath:=getenv("OTTERLINK_DB",defaultDB)
