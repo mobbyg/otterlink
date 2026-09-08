@@ -16,6 +16,9 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->loginButton, &QPushButton::clicked, this, &MainWindow::login);
     connect(ui->passwordEdit, &QLineEdit::returnPressed, this, &MainWindow::login);
     connect(ui->logoutButton, &QPushButton::clicked, this, &MainWindow::logout);
+    connect(ui->sendChatButton, &QPushButton::clicked, this, &MainWindow::sendChat);
+    connect(ui->chatEdit, &QLineEdit::returnPressed, this, &MainWindow::sendChat);
+    connect(ui->refreshButton, &QPushButton::clicked, this, &MainWindow::refreshDashboard);
 
     connect(m_client, &OtterLinkClient::loggedIn, this, &MainWindow::showDashboard);
     connect(m_client, &OtterLinkClient::dashboardLoaded, this, &MainWindow::dashboardLoaded);
@@ -37,6 +40,23 @@ void MainWindow::login()
 void MainWindow::logout()
 {
     m_client->logout();
+}
+
+void MainWindow::sendChat()
+{
+    const QString message = ui->chatEdit->text().trimmed();
+    if (message.isEmpty())
+        return;
+
+    ui->chatEdit->clear();
+    ui->sendChatButton->setEnabled(false);
+    m_client->sendChatMessage(message);
+    ui->sendChatButton->setEnabled(true);
+}
+
+void MainWindow::refreshDashboard()
+{
+    m_client->loadDashboard();
 }
 
 void MainWindow::showDashboard(const QString &displayName)
