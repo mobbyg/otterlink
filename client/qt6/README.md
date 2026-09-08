@@ -32,11 +32,18 @@ Run `otterlink` from the resulting build directory. The default server is `http:
 The current client provides:
 
 - Login to an Otter Link server
+- A three-stage classic connection presentation: Calling, Connecting, and Connected
 - Dashboard with online users and buddies
 - Community chat history
 - Sending community chat messages
 - Manual dashboard refresh
+- Automatic dashboard refresh while connected
+- Buddy add/remove controls
 - Disconnect/logout
+
+The connection presentation is cosmetic: the HTTP login request proceeds normally while the client presents the connection sequence. If the server responds quickly, the client still completes the presentation before entering the dashboard; if authentication fails, the presentation is cancelled and the error is shown.
+
+The current connection artwork is intentionally a temporary text/ASCII otter. It is a placeholder for original Otter Link artwork and keeps this change free of external asset dependencies.
 
 The main window layout is maintained in `mainwindow.ui` and is intended to be edited with Qt Designer/Qt Creator. Keep substantial presentation work in `.ui` files and keep service behavior in C++.
 
@@ -44,7 +51,9 @@ The main window layout is maintained in `mainwindow.ui` and is intended to be ed
 
 The long-term desktop experience is **retro feel, modern engine**. The Qt client will eventually have an Otter Link Classic presentation inspired by the visual language of Q-Link/AOL-era online services while using original Otter Link branding and artwork.
 
-A future connection experience will optionally present Calling, Connecting/Carrier, and Connected stages, with independently controllable connection and disconnect sounds. See `../../docs/presentation.md` for the design direction.
+The connection experience is the first implementation of that direction. Future work will replace the placeholder otter with artwork, add optional connection/disconnect audio, and move the presentation into a reusable theme/presentation component.
+
+See `../../docs/presentation.md` for the broader design direction.
 
 ## Direction
 

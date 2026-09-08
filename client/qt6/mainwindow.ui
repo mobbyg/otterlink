@@ -33,6 +33,53 @@
         <item><spacer name="authSpacer"><property name="orientation"><enum>Qt::Vertical</enum></property><property name="sizeHint" stdset="0"><size><width>20</width><height>40</height></size></property></spacer></item>
        </layout>
       </widget>
+      <widget class="QWidget" name="connectionPage">
+       <layout class="QVBoxLayout" name="connectionLayout">
+        <item>
+         <spacer name="connectionTopSpacer"><property name="orientation"><enum>Qt::Vertical</enum></property><property name="sizeHint" stdset="0"><size><width>20</width><height>45</height></size></property></spacer>
+        </item>
+        <item>
+         <widget class="QLabel" name="connectionTitleLabel">
+          <property name="text"><string>&lt;h1&gt;Otter Link&lt;/h1&gt;&lt;p&gt;Connecting to the service...&lt;/p&gt;</string></property>
+          <property name="textFormat"><enum>Qt::RichText</enum></property>
+          <property name="alignment"><set>Qt::AlignCenter</set></property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="connectionOtterLabel">
+          <property name="font"><font><family>Monospace</family><pointsize>16</pointsize><bold>true</bold></font></property>
+          <property name="text"><string>( o.o )
+ /|\\
+  / \\
+
+~ ~ ~</string></property>
+          <property name="alignment"><set>Qt::AlignCenter</set></property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="connectionStageLabel">
+          <property name="font"><font><pointsize>14</pointsize><bold>true</bold></font></property>
+          <property name="text"><string>CALLING</string></property>
+          <property name="alignment"><set>Qt::AlignCenter</set></property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="connectionDetailLabel">
+          <property name="text"><string>Dialing Otter Link...</string></property>
+          <property name="alignment"><set>Qt::AlignCenter</set></property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QProgressBar" name="connectionProgress">
+          <property name="value"><number>10</number></property>
+          <property name="textVisible"><bool>false</bool></property>
+         </widget>
+        </item>
+        <item>
+         <spacer name="connectionBottomSpacer"><property name="orientation"><enum>Qt::Vertical</enum></property><property name="sizeHint" stdset="0"><size><width>20</width><height>45</height></size></property></spacer>
+        </item>
+       </layout>
+      </widget>
       <widget class="QWidget" name="dashboardPage">
        <layout class="QVBoxLayout" name="dashboardLayout">
         <item>

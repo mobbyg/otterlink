@@ -24,6 +24,8 @@ private slots:
     void refreshDashboard();
     void addBuddy();
     void removeBuddy();
+    void advanceConnectionStage();
+    void finishConnectionPresentation();
     void showDashboard(const QString &displayName);
     void dashboardLoaded(const QStringList &buddies, const QStringList &onlineUsers,
                          const QStringList &chatMessages);
@@ -31,8 +33,14 @@ private slots:
 
 private:
     void setLoggedIn(bool loggedIn);
+    void beginConnectionPresentation();
 
     Ui::MainWindow *ui = nullptr;
     OtterLinkClient *m_client = nullptr;
     QTimer m_refreshTimer;
+    QTimer m_connectionTimer;
+    QTimer m_connectionFinishTimer;
+    int m_connectionStage = 0;
+    bool m_connectionReady = false;
+    QString m_connectionDisplayName;
 };
