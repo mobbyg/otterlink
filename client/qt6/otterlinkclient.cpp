@@ -1,5 +1,6 @@
 #include "otterlinkclient.h"
 
+#include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QNetworkRequest>
