@@ -63,6 +63,9 @@ void OtterLinkClient::login(const QString &username, const QString &password)
 
 void OtterLinkClient::loadDashboard()
 {
+    if (m_token.isEmpty())
+        return;
+
     struct Pending {
         QStringList buddies;
         QStringList online;
@@ -96,8 +99,7 @@ void OtterLinkClient::loadDashboard()
     load(QStringLiteral("/api/buddies"), [pending](const QJsonObject &obj) {
         for (const auto value : obj.value(QStringLiteral("buddies")).toArray()) {
             const QJsonObject buddy = value.toObject();
-            pending->buddies << buddy.value(QStringLiteral("display_name")).toString(
-                buddy.value(QStringLiteral("username")).toString());
+            pending->buddies << buddy.value(QStringLiteral("username")).toString();
         }
     });
     load(QStringLiteral("/api/presence"), [pending](const QJsonObject &obj) {
@@ -127,8 +129,53 @@ void OtterLinkClient::sendChatMessage(const QString &message)
     connect(reply, &QNetworkReply::finished, this, [this, reply]() {
         if (reply->error() != QNetworkReply::NoError)
             emit errorOccurred(reply->errorString());
-        else
+        else {
+            emit chatMessageSent();
             loadDashboard();
+        }
+        reply->deleteLater();
+    });
+}
+
+void OtterLinkClient::addBuddy(const QString &username)
+{
+    const QString trimmed = username.trimmed();
+    if (trimmed.isEmpty()) {
+        emit errorOccurred(QStringLiteral("Enter a username to add."));
+        return;
+    }
+
+    QJsonObject body{{QStringLiteral("username"), trimmed}};
+    auto *reply = m_network.post(request(QStringLiteral("/api/buddies")),
+                                 QJsonDocument(body).toJson(QJsonDocument::Compact));
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+        if (reply->error() != QNetworkReply::NoError) {
+            emit errorOccurred(reply->errorString());
+        } else {
+            emit buddyChanged();
+            loadDashboard();
+        }
+        reply->deleteLater();
+    });
+}
+
+void OtterLinkClient::removeBuddy(const QString &username)
+{
+    const QString trimmed = username.trimmed();
+    if (trimmed.isEmpty()) {
+        emit errorOccurred(QStringLiteral("Select a buddy to remove."));
+        return;
+    }
+
+    QNetworkRequest req = request(QStringLiteral("/api/buddies?username=") + QUrl::toPercentEncoding(trimmed));
+    auto *reply = m_network.deleteResource(req);
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+        if (reply->error() != QNetworkReply::NoError) {
+            emit errorOccurred(reply->errorString());
+        } else {
+            emit buddyChanged();
+            loadDashboard();
+        }
         reply->deleteLater();
     });
 }
