@@ -57,7 +57,7 @@ func (a AuthAPI) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if a.Presence != nil {
-		a.Presence.OnlineConnection(user, tokenConnectionID(token))
+		a.Presence.OnlineHTTP(user, tokenConnectionID(token))
 	}
 	writeJSON(w, http.StatusOK, authResponse{User: user, Token: token})
 }
@@ -78,7 +78,7 @@ func (a AuthAPI) Logout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if a.Presence != nil {
-		a.Presence.OfflineConnection(user.ID, tokenConnectionID(token))
+		a.Presence.OfflineHTTP(user.ID, tokenConnectionID(token))
 	}
 	w.WriteHeader(http.StatusNoContent)
 }
@@ -91,7 +91,7 @@ func (a AuthAPI) Me(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if a.Presence != nil {
-		a.Presence.OnlineConnection(user, tokenConnectionID(token))
+		a.Presence.OnlineHTTP(user, tokenConnectionID(token))
 	}
 	writeJSON(w, http.StatusOK, user)
 }
