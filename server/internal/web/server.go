@@ -56,10 +56,9 @@ func (s *Server) user(r *http.Request) (accounts.User, bool) {
 	if err != nil { return accounts.User{}, false }
 
 	// HTTP clients are request/response based rather than persistent protocol
-	// connections. Treat each authenticated API request as a presence heartbeat
-	// for this login session so web and native HTTP clients participate equally.
+	// connections. Refresh the expiring HTTP presence session on each request.
 	if s.Presence != nil {
-		s.Presence.OnlineConnection(user, tokenConnectionID(value))
+		s.Presence.OnlineHTTP(user, tokenConnectionID(value))
 	}
 	return user, true
 }
