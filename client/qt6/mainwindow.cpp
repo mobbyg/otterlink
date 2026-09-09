@@ -170,9 +170,19 @@ void MainWindow::addBuddy()
 
 void MainWindow::buddyAdded(const QString &username)
 {
-    const QString group = m_pendingBuddyGroups.take(username);
-    if (!group.isEmpty())
-        m_buddyGroups.insert(username, group);
+    if (username.isEmpty())
+        return;
+
+    QString pendingKey;
+    for (auto it = m_pendingBuddyGroups.cbegin(); it != m_pendingBuddyGroups.cend(); ++it) {
+        if (it.key().compare(username, Qt::CaseInsensitive) == 0) {
+            pendingKey = it.key();
+            break;
+        }
+    }
+
+    if (!pendingKey.isEmpty())
+        m_buddyGroups.insert(username, m_pendingBuddyGroups.take(pendingKey));
 }
 
 void MainWindow::removeBuddy()
@@ -387,11 +397,14 @@ void MainWindow::buddySelectionChanged()
 
 void MainWindow::showError(const QString &message)
 {
-    m_connectionReady = false;
-    m_connectionDisplayName.clear();
-    m_connectionTimer.stop();
-    m_connectionFinishTimer.stop();
-    setLoggedIn(false);
+    const bool wasConnecting = ui->stackedWidget->currentWidget() == ui->connectionPage;
+    if (wasConnecting) {
+        m_connectionReady = false;
+        m_connectionDisplayName.clear();
+        m_connectionTimer.stop();
+        m_connectionFinishTimer.stop();
+        setLoggedIn(false);
+    }
     QMessageBox::warning(this, QStringLiteral("Otter Link"), message);
 }
 
