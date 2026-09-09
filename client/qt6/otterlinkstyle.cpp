@@ -47,10 +47,19 @@ void install(QApplication &app)
             background: #c8dce8;
         }
 
-        QFrame#serviceNav {
+        QFrame#navigationBar {
+            background: #b8d0df;
+            border-bottom: 1px solid #6f8fa4;
+        }
+
+        QFrame#serviceRail {
             background: #b8d0df;
             border-right: 1px solid #6f8fa4;
-            border-bottom: 1px solid #7898ac;
+        }
+
+        QLabel#railTitle, QLabel#railServices {
+            color: #174563;
+            background: transparent;
         }
 
         QPushButton#homeButton, QPushButton#peopleButton, QPushButton#mailButton,
@@ -94,13 +103,20 @@ void install(QApplication &app)
             padding: 5px 8px;
         }
 
-        QFrame#onlineFrame, QFrame#serviceContentFrame {
+        QGroupBox {
             background: #edf5f9;
             border: 1px solid #9db6c5;
+            border-radius: 3px;
+            margin-top: 10px;
+            padding-top: 6px;
         }
 
-        QLabel#onlineTitleLabel, QLabel#homeWelcomeLabel {
+        QGroupBox::title {
+            subcontrol-origin: margin;
+            left: 8px;
+            padding: 0 4px;
             color: #0c5279;
+            background: #edf5f9;
         }
 
         QListWidget, QTextEdit, QLineEdit {
@@ -157,6 +173,15 @@ void install(QApplication &app)
 
         QPushButton#loginButton:pressed {
             background: #075b86;
+        }
+
+        QLabel#homeWelcomeLabel {
+            color: #0c5279;
+        }
+
+        QLabel#homeNewsLabel, QLabel#homeBuddiesLabel, QLabel#homeOnlineLabel,
+        QLabel#peopleInfoLabel, QLabel#placeholderInfoLabel {
+            color: #31556b;
         }
 
         QLabel#statusLabel {
