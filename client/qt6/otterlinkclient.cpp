@@ -65,7 +65,7 @@ void OtterLinkClient::login(const QString &username, const QString &password)
                      {QStringLiteral("password"), password}};
     QNetworkRequest req = request(QStringLiteral("/api/auth/login"));
     auto *reply = m_network.post(req, QJsonDocument(body).toJson(QJsonDocument::Compact));
-    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+    connect(reply, &QNetworkReply::finished, this, [this, reply, username]() {
         if (reply->error() != QNetworkReply::NoError) {
             emit errorOccurred(serverErrorMessage(reply, reply->errorString()));
             reply->deleteLater();
@@ -79,8 +79,10 @@ void OtterLinkClient::login(const QString &username, const QString &password)
             emit errorOccurred(QStringLiteral("Login response did not contain a token."));
         } else {
             m_token = token;
-            emit loggedIn(user.value(QStringLiteral("display_name")).toString(
-                user.value(QStringLiteral("username")).toString()));
+            m_username = user.value(QStringLiteral("username")).toString().trimmed();
+            if (m_username.isEmpty())
+                m_username = username.trimmed();
+            emit loggedIn(m_username);
         }
         reply->deleteLater();
     });
@@ -127,12 +129,18 @@ void OtterLinkClient::loadDashboard()
             pending->buddies << buddy.value(QStringLiteral("username")).toString();
         }
     });
-    load(QStringLiteral("/api/presence"), [pending](const QJsonObject &obj) {
+    load(QStringLiteral("/api/presence"), [pending, this](const QJsonObject &obj) {
         for (const auto value : obj.value(QStringLiteral("users")).toArray()) {
             const QJsonObject user = value.toObject();
-            // The People tree matches presence against buddy usernames, not display names.
-            pending->online << user.value(QStringLiteral("username")).toString();
+            const QString username = user.value(QStringLiteral("username")).toString().trimmed();
+            if (!username.isEmpty()
+                && username.compare(m_username, Qt::CaseInsensitive) != 0) {
+                pending->online << username;
+            }
         }
+
+        pending->online.removeDuplicates();
+        pending->online.sort(Qt::CaseInsensitive);
     });
     load(QStringLiteral("/api/chat"), [pending](const QJsonObject &obj) {
         for (const auto value : obj.value(QStringLiteral("messages")).toArray()) {
@@ -218,6 +226,7 @@ void OtterLinkClient::logout()
     auto *reply = m_network.post(request(QStringLiteral("/api/auth/logout")), QByteArray());
     connect(reply, &QNetworkReply::finished, this, [this, reply]() {
         m_token.clear();
+        m_username.clear();
         emit loggedOut();
         reply->deleteLater();
     });
