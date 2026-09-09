@@ -53,7 +53,15 @@ func (s *Server) user(r *http.Request) (accounts.User, bool) {
 	value := strings.TrimSpace(strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer "))
 	if value == "" { return accounts.User{}, false }
 	user, err := s.Accounts.FromToken(value)
-	return user, err == nil
+	if err != nil { return accounts.User{}, false }
+
+	// HTTP clients are request/response based rather than persistent protocol
+	// connections. Treat each authenticated API request as a presence heartbeat
+	// for this login session so web and native HTTP clients participate equally.
+	if s.Presence != nil {
+		s.Presence.OnlineConnection(user, tokenConnectionID(value))
+	}
+	return user, true
 }
 
 func (s *Server) presenceList(w http.ResponseWriter, r *http.Request) {
