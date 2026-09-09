@@ -4,7 +4,6 @@
 #include <QMainWindow>
 #include <QTimer>
 
-class QComboBox;
 class QTreeWidget;
 
 namespace Ui {
@@ -45,7 +44,6 @@ private:
     Ui::MainWindow *ui = nullptr;
     OtterLinkClient *m_client = nullptr;
     QTreeWidget *m_buddyTree = nullptr;
-    QComboBox *m_buddyGroupCombo = nullptr;
     QHash<QString, QString> m_buddyGroups;
     QTimer m_refreshTimer;
     QTimer m_connectionTimer;
