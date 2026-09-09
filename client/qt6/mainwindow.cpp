@@ -117,14 +117,13 @@ void MainWindow::navigateService()
     if (!button)
         return;
 
-    const QString service = button->property("service").toString();
-    if (service == QStringLiteral("home")) {
+    if (button == ui->homeButton) {
         ui->serviceStack->setCurrentWidget(ui->homePage);
         ui->serviceTitleLabel->setText(QStringLiteral("Welcome to Otter Link"));
-    } else if (service == QStringLiteral("people")) {
+    } else if (button == ui->peopleButton) {
         ui->serviceStack->setCurrentWidget(ui->peoplePage);
         ui->serviceTitleLabel->setText(QStringLiteral("People"));
-    } else if (service == QStringLiteral("chat")) {
+    } else if (button == ui->chatButton) {
         ui->serviceStack->setCurrentWidget(ui->chatPage);
         ui->serviceTitleLabel->setText(QStringLiteral("Community Chat"));
     } else {
@@ -214,12 +213,14 @@ void MainWindow::dashboardLoaded(const QStringList &buddies, const QStringList &
     ui->chatList->clear();
     ui->chatList->addItems(chatMessages);
 
-    ui->homeBuddiesLabel->setText(QStringLiteral("%1 buddy%2 online in your list")
-                                      .arg(buddies.size())
-                                      .arg(buddies.size() == 1 ? QString() : QStringLiteral("ies")));
-    ui->homeOnlineLabel->setText(QStringLiteral("%1 user%2 currently online")
-                                     .arg(onlineUsers.size())
-                                     .arg(onlineUsers.size() == 1 ? QString() : QStringLiteral("s")));
+    ui->homeBuddiesLabel->setText(
+        QStringLiteral("%1 %2 online in your buddy list")
+            .arg(buddies.size())
+            .arg(buddies.size() == 1 ? QStringLiteral("buddy") : QStringLiteral("buddies")));
+    ui->homeOnlineLabel->setText(
+        QStringLiteral("%1 %2 currently online")
+            .arg(onlineUsers.size())
+            .arg(onlineUsers.size() == 1 ? QStringLiteral("user") : QStringLiteral("users")));
 }
 
 void MainWindow::showError(const QString &message)
