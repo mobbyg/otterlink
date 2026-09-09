@@ -130,8 +130,8 @@ void OtterLinkClient::loadDashboard()
     load(QStringLiteral("/api/presence"), [pending](const QJsonObject &obj) {
         for (const auto value : obj.value(QStringLiteral("users")).toArray()) {
             const QJsonObject user = value.toObject();
-            pending->online << user.value(QStringLiteral("display_name")).toString(
-                user.value(QStringLiteral("username")).toString());
+            // The People tree matches presence against buddy usernames, not display names.
+            pending->online << user.value(QStringLiteral("username")).toString();
         }
     });
     load(QStringLiteral("/api/chat"), [pending](const QJsonObject &obj) {
