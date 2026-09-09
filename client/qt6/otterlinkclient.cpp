@@ -3,11 +3,35 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QNetworkReply>
 #include <QNetworkRequest>
 #include <QUrl>
 
 #include <functional>
 #include <memory>
+
+namespace {
+
+QString serverErrorMessage(QNetworkReply *reply, const QString &fallback)
+{
+    const QByteArray body = reply->readAll().trimmed();
+    if (!body.isEmpty()) {
+        const QJsonDocument doc = QJsonDocument::fromJson(body);
+        if (doc.isObject()) {
+            const QString message = doc.object().value(QStringLiteral("error")).toString().trimmed();
+            if (!message.isEmpty())
+                return message;
+        }
+
+        const QString text = QString::fromUtf8(body).trimmed();
+        if (!text.isEmpty() && text.size() <= 500)
+            return text;
+    }
+
+    return fallback;
+}
+
+} // namespace
 
 OtterLinkClient::OtterLinkClient(QObject *parent)
     : QObject(parent)
@@ -43,7 +67,7 @@ void OtterLinkClient::login(const QString &username, const QString &password)
     auto *reply = m_network.post(req, QJsonDocument(body).toJson(QJsonDocument::Compact));
     connect(reply, &QNetworkReply::finished, this, [this, reply]() {
         if (reply->error() != QNetworkReply::NoError) {
-            emit errorOccurred(reply->errorString());
+            emit errorOccurred(serverErrorMessage(reply, reply->errorString()));
             reply->deleteLater();
             return;
         }
@@ -85,7 +109,7 @@ void OtterLinkClient::loadDashboard()
         auto *reply = m_network.get(request(path));
         connect(reply, &QNetworkReply::finished, this, [this, reply, handler, finish]() {
             if (reply->error() != QNetworkReply::NoError) {
-                emit errorOccurred(reply->errorString());
+                emit errorOccurred(serverErrorMessage(reply, reply->errorString()));
                 reply->deleteLater();
                 finish();
                 return;
@@ -129,7 +153,7 @@ void OtterLinkClient::sendChatMessage(const QString &message)
                                  QJsonDocument(body).toJson(QJsonDocument::Compact));
     connect(reply, &QNetworkReply::finished, this, [this, reply]() {
         if (reply->error() != QNetworkReply::NoError)
-            emit errorOccurred(reply->errorString());
+            emit errorOccurred(serverErrorMessage(reply, reply->errorString()));
         else {
             emit chatMessageSent();
             loadDashboard();
@@ -151,7 +175,7 @@ void OtterLinkClient::addBuddy(const QString &username)
                                  QJsonDocument(body).toJson(QJsonDocument::Compact));
     connect(reply, &QNetworkReply::finished, this, [this, reply]() {
         if (reply->error() != QNetworkReply::NoError) {
-            emit errorOccurred(reply->errorString());
+            emit errorOccurred(serverErrorMessage(reply, reply->errorString()));
         } else {
             emit buddyChanged();
             loadDashboard();
@@ -172,7 +196,7 @@ void OtterLinkClient::removeBuddy(const QString &username)
     auto *reply = m_network.deleteResource(req);
     connect(reply, &QNetworkReply::finished, this, [this, reply]() {
         if (reply->error() != QNetworkReply::NoError) {
-            emit errorOccurred(reply->errorString());
+            emit errorOccurred(serverErrorMessage(reply, reply->errorString()));
         } else {
             emit buddyChanged();
             loadDashboard();
