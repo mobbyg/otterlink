@@ -1,13 +1,16 @@
 #include "mainwindow.h"
 #include "otterlinkclient.h"
-#include "otterlinkstyle.h"
 #include "ui_mainwindow.h"
 
-#include <QApplication>
+#include <QComboBox>
+#include <QFont>
 #include <QInputDialog>
+#include <QListWidgetItem>
 #include <QMessageBox>
 #include <QPushButton>
 #include <QStyle>
+#include <QTreeWidget>
+#include <QTreeWidgetItem>
 
 #include <initializer_list>
 
@@ -26,6 +29,12 @@ void setActiveServiceButton(QPushButton *active,
     }
 }
 
+const QStringList kBuddyGroups = {
+    QStringLiteral("Buddies"),
+    QStringLiteral("Family"),
+    QStringLiteral("Co-worker")
+};
+
 } // namespace
 
 MainWindow::MainWindow(QWidget *parent)
@@ -34,10 +43,28 @@ MainWindow::MainWindow(QWidget *parent)
       m_client(new OtterLinkClient(this))
 {
     ui->setupUi(this);
-    OtterLinkStyle::install(*qobject_cast<QApplication *>(qApp));
     resize(1000, 680);
     m_refreshTimer.setInterval(5000);
     m_connectionTimer.setInterval(700);
+
+    // Replace the simple Designer placeholder with the hierarchical People view.
+    m_buddyTree = new QTreeWidget(ui->buddiesGroup);
+    m_buddyTree->setObjectName(QStringLiteral("buddyTree"));
+    m_buddyTree->setHeaderHidden(true);
+    m_buddyTree->setRootIsDecorated(true);
+    m_buddyTree->setItemsExpandable(true);
+    m_buddyTree->setUniformRowHeights(true);
+    m_buddyTree->setSelectionMode(QAbstractItemView::SingleSelection);
+    m_buddyTree->setMinimumHeight(180);
+    ui->buddiesLayout->replaceWidget(ui->buddiesList, m_buddyTree);
+    ui->buddiesList->hide();
+    ui->buddiesList->deleteLater();
+
+    m_buddyGroupCombo = new QComboBox(this);
+    m_buddyGroupCombo->addItems(kBuddyGroups);
+    m_buddyGroupCombo->setToolTip(QStringLiteral("Group for the buddy being added"));
+    ui->buddyControlsLayout->insertWidget(0, m_buddyGroupCombo);
+
     setLoggedIn(false);
 
     connect(ui->loginButton, &QPushButton::clicked, this, &MainWindow::login);
@@ -59,6 +86,8 @@ MainWindow::MainWindow(QWidget *parent)
     connect(&m_refreshTimer, &QTimer::timeout, this, &MainWindow::refreshDashboard);
     connect(&m_connectionTimer, &QTimer::timeout, this, &MainWindow::advanceConnectionStage);
     connect(&m_connectionFinishTimer, &QTimer::timeout, this, &MainWindow::finishConnectionPresentation);
+    connect(m_buddyTree, &QTreeWidget::itemSelectionChanged,
+            this, &MainWindow::buddySelectionChanged);
 
     connect(m_client, &OtterLinkClient::loggedIn, this, &MainWindow::showDashboard);
     connect(m_client, &OtterLinkClient::dashboardLoaded, this, &MainWindow::dashboardLoaded);
@@ -110,27 +139,33 @@ void MainWindow::addBuddy()
     const QString username = QInputDialog::getText(this, QStringLiteral("Add Buddy"),
                                                     QStringLiteral("Username:"),
                                                     QLineEdit::Normal, QString(), &accepted);
-    if (accepted && !username.trimmed().isEmpty())
-        m_client->addBuddy(username);
+    if (!accepted || username.trimmed().isEmpty())
+        return;
+
+    const QString trimmed = username.trimmed();
+    m_buddyGroups.insert(trimmed, m_buddyGroupCombo->currentText());
+    m_client->addBuddy(trimmed);
 }
 
 void MainWindow::removeBuddy()
 {
-    const QListWidgetItem *item = ui->buddiesList->currentItem();
-    if (!item) {
+    const auto selected = m_buddyTree->selectedItems();
+    if (selected.isEmpty() || selected.first()->parent() == nullptr) {
         showError(QStringLiteral("Select a buddy to remove."));
         return;
     }
 
-    const QString username = item->data(Qt::UserRole).toString();
+    const QTreeWidgetItem *item = selected.first();
+    const QString username = item->data(0, Qt::UserRole).toString();
     if (username.isEmpty()) {
         showError(QStringLiteral("The selected buddy does not have a username."));
         return;
     }
 
     if (QMessageBox::question(this, QStringLiteral("Remove Buddy"),
-                              QStringLiteral("Remove %1 from your buddy list?").arg(item->text()))
+                              QStringLiteral("Remove %1 from your buddy list?").arg(username))
         == QMessageBox::Yes) {
+        m_buddyGroups.remove(username);
         m_client->removeBuddy(username);
     }
 }
@@ -235,14 +270,7 @@ void MainWindow::showDashboard(const QString &displayName)
 void MainWindow::dashboardLoaded(const QStringList &buddies, const QStringList &onlineUsers,
                                  const QStringList &chatMessages)
 {
-    ui->buddiesList->clear();
-    for (const QString &buddy : buddies) {
-        const bool online = onlineUsers.contains(buddy, Qt::CaseInsensitive);
-        auto *item = new QListWidgetItem(
-            QStringLiteral("%1 %2").arg(online ? QStringLiteral("●") : QStringLiteral("○"), buddy),
-            ui->buddiesList);
-        item->setData(Qt::UserRole, buddy);
-    }
+    rebuildBuddyTree(buddies, onlineUsers);
 
     ui->onlineList->clear();
     for (const QString &user : onlineUsers)
@@ -259,6 +287,74 @@ void MainWindow::dashboardLoaded(const QStringList &buddies, const QStringList &
         QStringLiteral("%1 %2 currently online")
             .arg(onlineUsers.size())
             .arg(onlineUsers.size() == 1 ? QStringLiteral("user") : QStringLiteral("users")));
+}
+
+void MainWindow::rebuildBuddyTree(const QStringList &buddies, const QStringList &onlineUsers)
+{
+    m_buddyTree->clear();
+
+    QHash<QString, QTreeWidgetItem *> groupItems;
+    for (const QString &group : kBuddyGroups) {
+        auto *item = new QTreeWidgetItem(m_buddyTree);
+        item->setText(0, group);
+        item->setExpanded(true);
+        item->setFont(0, QFont(QStringLiteral("Sans Serif"), -1, QFont::Bold));
+        groupItems.insert(group, item);
+    }
+
+    auto *offlineGroup = new QTreeWidgetItem(m_buddyTree);
+    offlineGroup->setText(0, QStringLiteral("Offline"));
+    offlineGroup->setExpanded(true);
+    offlineGroup->setFont(0, QFont(QStringLiteral("Sans Serif"), -1, QFont::Bold));
+
+    const QPalette palette = m_buddyTree->palette();
+    const QBrush offlineBrush(palette.color(QPalette::Disabled, QPalette::Text));
+
+    for (const QString &buddy : buddies) {
+        const bool online = onlineUsers.contains(buddy, Qt::CaseInsensitive);
+        QString group = m_buddyGroups.value(buddy, QStringLiteral("Buddies"));
+        if (!groupItems.contains(group))
+            group = QStringLiteral("Buddies");
+
+        QTreeWidgetItem *parent = online ? groupItems.value(group) : offlineGroup;
+        auto *item = new QTreeWidgetItem(parent);
+        item->setText(0, QStringLiteral("%1 %2")
+                             .arg(online ? QStringLiteral("●") : QStringLiteral("○"), buddy));
+        item->setData(0, Qt::UserRole, buddy);
+
+        if (!online) {
+            item->setForeground(0, offlineBrush);
+            QFont font = item->font(0);
+            font.setItalic(true);
+            item->setFont(0, font);
+        }
+    }
+
+    offlineGroup->setHidden(offlineGroup->childCount() == 0);
+    for (QTreeWidgetItem *group : groupItems)
+        group->setHidden(group->childCount() == 0);
+
+    m_buddyTree->resizeColumnToContents(0);
+    m_buddyTree->expandAll();
+    buddySelectionChanged();
+}
+
+void MainWindow::buddySelectionChanged()
+{
+    const auto selected = m_buddyTree->selectedItems();
+    if (selected.isEmpty() || selected.first()->parent() == nullptr) {
+        ui->peopleInfoLabel->setText(
+            QStringLiteral("<h3>People</h3><p>Select a buddy to see their current status.</p>"));
+        return;
+    }
+
+    const QTreeWidgetItem *item = selected.first();
+    const QString username = item->data(0, Qt::UserRole).toString();
+    const bool online = item->parent()->text(0) != QStringLiteral("Offline");
+    ui->peopleInfoLabel->setText(
+        QStringLiteral("<h3>%1</h3><p>%2</p>")
+            .arg(username.toHtmlEscaped())
+            .arg(online ? QStringLiteral("Online") : QStringLiteral("Offline")));
 }
 
 void MainWindow::showError(const QString &message)
