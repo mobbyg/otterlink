@@ -6,6 +6,10 @@
 #include <QApplication>
 #include <QInputDialog>
 #include <QMessageBox>
+#include <QPushButton>
+#include <QStyle>
+
+#include <initializer_list>
 
 namespace {
 
