@@ -19,8 +19,6 @@ void setActiveServiceButton(QPushButton *active,
     for (QPushButton *button : buttons)
         button->setProperty("active", button == active);
 
-    // Dynamic properties participate in Qt Style Sheets. Re-polish the buttons
-    // so the active service state is reflected immediately.
     for (QPushButton *button : buttons) {
         button->style()->unpolish(button);
         button->style()->polish(button);
@@ -239,17 +237,22 @@ void MainWindow::dashboardLoaded(const QStringList &buddies, const QStringList &
 {
     ui->buddiesList->clear();
     for (const QString &buddy : buddies) {
-        auto *item = new QListWidgetItem(buddy, ui->buddiesList);
+        const bool online = onlineUsers.contains(buddy, Qt::CaseInsensitive);
+        auto *item = new QListWidgetItem(
+            QStringLiteral("%1 %2").arg(online ? QStringLiteral("●") : QStringLiteral("○"), buddy),
+            ui->buddiesList);
         item->setData(Qt::UserRole, buddy);
     }
 
     ui->onlineList->clear();
-    ui->onlineList->addItems(onlineUsers);
+    for (const QString &user : onlineUsers)
+        ui->onlineList->addItem(QStringLiteral("● %1").arg(user));
+
     ui->chatList->clear();
     ui->chatList->addItems(chatMessages);
 
     ui->homeBuddiesLabel->setText(
-        QStringLiteral("%1 %2 online in your buddy list")
+        QStringLiteral("%1 %2 in your buddy list")
             .arg(buddies.size())
             .arg(buddies.size() == 1 ? QStringLiteral("buddy") : QStringLiteral("buddies")));
     ui->homeOnlineLabel->setText(
