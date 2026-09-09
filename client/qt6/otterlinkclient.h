@@ -24,7 +24,7 @@ public:
     void logout();
 
 signals:
-    void loggedIn(const QString &displayName);
+    void loggedIn(const QString &accountName);
     void dashboardLoaded(const QStringList &buddies, const QStringList &onlineUsers,
                          const QStringList &chatMessages);
     void buddyAdded(const QString &username);
@@ -39,4 +39,5 @@ private:
     QNetworkAccessManager m_network;
     QString m_baseUrl = QStringLiteral("http://127.0.0.1:9090");
     QString m_token;
+    QString m_username;
 };
