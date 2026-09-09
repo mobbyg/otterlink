@@ -1,9 +1,30 @@
 #include "mainwindow.h"
 #include "otterlinkclient.h"
+#include "otterlinkstyle.h"
 #include "ui_mainwindow.h"
 
+#include <QApplication>
 #include <QInputDialog>
 #include <QMessageBox>
+
+namespace {
+
+void setActiveServiceButton(QPushButton *active,
+                            std::initializer_list<QPushButton *> buttons)
+{
+    for (QPushButton *button : buttons)
+        button->setProperty("active", button == active);
+
+    // Dynamic properties participate in Qt Style Sheets. Re-polish the buttons
+    // so the active service state is reflected immediately.
+    for (QPushButton *button : buttons) {
+        button->style()->unpolish(button);
+        button->style()->polish(button);
+        button->update();
+    }
+}
+
+} // namespace
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent),
@@ -11,6 +32,7 @@ MainWindow::MainWindow(QWidget *parent)
       m_client(new OtterLinkClient(this))
 {
     ui->setupUi(this);
+    OtterLinkStyle::install(*qobject_cast<QApplication *>(qApp));
     resize(1000, 680);
     m_refreshTimer.setInterval(5000);
     m_connectionTimer.setInterval(700);
@@ -113,9 +135,14 @@ void MainWindow::removeBuddy()
 
 void MainWindow::navigateService()
 {
-    const auto *button = qobject_cast<const QPushButton *>(sender());
+    auto *button = qobject_cast<QPushButton *>(sender());
     if (!button)
         return;
+
+    setActiveServiceButton(button, {
+        ui->homeButton, ui->peopleButton, ui->mailButton, ui->chatButton,
+        ui->boardsButton, ui->newsButton, ui->filesButton, ui->gamesButton
+    });
 
     if (button == ui->homeButton) {
         ui->serviceStack->setCurrentWidget(ui->homePage);
@@ -194,6 +221,10 @@ void MainWindow::showDashboard(const QString &displayName)
         QStringLiteral("Connected as <b>%1</b>").arg(displayName.toHtmlEscaped()));
     ui->serviceStack->setCurrentWidget(ui->homePage);
     ui->serviceTitleLabel->setText(QStringLiteral("Welcome to Otter Link"));
+    setActiveServiceButton(ui->homeButton, {
+        ui->homeButton, ui->peopleButton, ui->mailButton, ui->chatButton,
+        ui->boardsButton, ui->newsButton, ui->filesButton, ui->gamesButton
+    });
     setLoggedIn(true);
     m_client->loadDashboard();
     m_refreshTimer.start();
