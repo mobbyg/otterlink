@@ -50,6 +50,11 @@ QString OtterLinkClient::baseUrl() const
     return m_baseUrl;
 }
 
+QString OtterLinkClient::accountName() const
+{
+    return m_username;
+}
+
 QNetworkRequest OtterLinkClient::request(const QString &path) const
 {
     QNetworkRequest result(QUrl(m_baseUrl + path));
