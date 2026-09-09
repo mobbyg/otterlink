@@ -7,9 +7,11 @@
 #include <QDialogButtonBox>
 #include <QFont>
 #include <QFormLayout>
+#include <QHeaderView>
 #include <QLineEdit>
 #include <QMessageBox>
 #include <QPushButton>
+#include <QSignalBlocker>
 #include <QStyle>
 #include <QTreeWidget>
 #include <QTreeWidgetItem>
@@ -58,6 +60,7 @@ MainWindow::MainWindow(QWidget *parent)
     m_buddyTree->setUniformRowHeights(true);
     m_buddyTree->setSelectionMode(QAbstractItemView::SingleSelection);
     m_buddyTree->setMinimumHeight(180);
+    m_buddyTree->header()->setSectionResizeMode(0, QHeaderView::Stretch);
     ui->buddiesLayout->replaceWidget(ui->buddiesList, m_buddyTree);
     ui->buddiesList->hide();
     ui->buddiesList->deleteLater();
@@ -329,6 +332,11 @@ void MainWindow::dashboardLoaded(const QStringList &buddies, const QStringList &
 
 void MainWindow::rebuildBuddyTree(const QStringList &buddies, const QStringList &onlineUsers)
 {
+    QString selectedUsername;
+    if (const QTreeWidgetItem *selected = m_buddyTree->currentItem())
+        selectedUsername = selected->data(0, Qt::UserRole).toString();
+
+    QSignalBlocker blocker(m_buddyTree);
     m_buddyTree->clear();
 
     QHash<QString, QTreeWidgetItem *> groupItems;
@@ -372,8 +380,20 @@ void MainWindow::rebuildBuddyTree(const QStringList &buddies, const QStringList 
     for (QTreeWidgetItem *group : groupItems)
         group->setHidden(group->childCount() == 0);
 
-    m_buddyTree->resizeColumnToContents(0);
     m_buddyTree->expandAll();
+
+    if (!selectedUsername.isEmpty()) {
+        const auto matches = m_buddyTree->findItems(
+            QStringLiteral("*%1").arg(selectedUsername), Qt::MatchWildcard | Qt::MatchRecursive);
+        for (QTreeWidgetItem *item : matches) {
+            if (item->data(0, Qt::UserRole).toString().compare(selectedUsername, Qt::CaseInsensitive) == 0) {
+                m_buddyTree->setCurrentItem(item);
+                break;
+            }
+        }
+    }
+
+    blocker.unblock();
     buddySelectionChanged();
 }
 
