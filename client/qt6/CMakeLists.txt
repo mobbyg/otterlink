@@ -16,6 +16,8 @@ qt_add_executable(otterlink
     mainwindow.ui
     otterlinkclient.cpp
     otterlinkclient.h
+    otterlinkstyle.cpp
+    otterlinkstyle.h
 )
 
 target_link_libraries(otterlink PRIVATE Qt6::Core Qt6::Network Qt6::Widgets)
