@@ -96,6 +96,58 @@ void install(QApplication &app)
             border-color: #245e7d;
         }
 
+        QFrame#otterDesktop {
+            background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                                        stop:0 #78aeca, stop:1 #4e8ba9);
+            border: 1px solid #315f76;
+            border-top: 2px solid #9fc9dd;
+        }
+
+        QFrame#serviceWindow {
+            background: #edf5f9;
+            color: #17324d;
+            border: 1px solid #315f76;
+            border-radius: 2px;
+        }
+
+        QFrame#serviceWindowTitleBar {
+            background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                                        stop:0 #176f9d, stop:0.45 #075b86, stop:1 #06486b);
+            border-bottom: 1px solid #043c59;
+        }
+
+        QLabel#serviceWindowTitle {
+            color: white;
+            background: transparent;
+            font-weight: bold;
+        }
+
+        QPushButton#serviceWindowMinimize, QPushButton#serviceWindowClose {
+            background: #dbeaf2;
+            color: #174563;
+            border: 1px solid #78a0b4;
+            border-radius: 2px;
+            padding: 0;
+            margin: 0;
+            font-weight: bold;
+        }
+
+        QPushButton#serviceWindowMinimize:hover, QPushButton#serviceWindowClose:hover {
+            background: #ffffff;
+            border-color: #b7d9e8;
+        }
+
+        QPushButton#serviceWindowMinimize:pressed, QPushButton#serviceWindowClose:pressed {
+            background: #b9d2df;
+        }
+
+        QLabel#placeholderTitle {
+            color: #075b86;
+            background: transparent;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
         QLabel#serviceTitleLabel {
             color: #12476a;
             background: #eaf3f8;
