@@ -111,6 +111,9 @@ func (s *Service) OfflineConnection(userID int64, connectionID uint64) (User, bo
 			}
 		}
 	}
+	if s.hasHTTPConnection(userID) {
+		return entry, false
+	}
 	delete(s.online, userID)
 	delete(s.connections, userID)
 	return entry, true
