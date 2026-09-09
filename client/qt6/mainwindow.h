@@ -24,6 +24,7 @@ private slots:
     void refreshDashboard();
     void addBuddy();
     void removeBuddy();
+    void navigateService();
     void advanceConnectionStage();
     void finishConnectionPresentation();
     void showDashboard(const QString &displayName);
