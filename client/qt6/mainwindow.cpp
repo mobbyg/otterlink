@@ -10,6 +10,7 @@
 #include <QHeaderView>
 #include <QLineEdit>
 #include <QMessageBox>
+#include <QPalette>
 #include <QPushButton>
 #include <QScrollBar>
 #include <QSignalBlocker>
@@ -52,6 +53,10 @@ MainWindow::MainWindow(QWidget *parent)
     resize(1000, 680);
     m_refreshTimer.setInterval(5000);
     m_connectionTimer.setInterval(700);
+
+    // Keep the account identity visible in the service header alongside refresh/disconnect.
+    ui->identityLabel->setMinimumWidth(180);
+    ui->identityLabel->setTextFormat(Qt::RichText);
 
     // Replace the simple Designer placeholder with the hierarchical People view.
     m_buddyTree = new QTreeWidget(ui->buddiesGroup);
@@ -115,6 +120,7 @@ MainWindow::MainWindow(QWidget *parent)
         m_connectionTimer.stop();
         m_connectionFinishTimer.stop();
         m_pendingBuddyGroups.clear();
+        ui->identityLabel->setText(QStringLiteral("Connected"));
         setLoggedIn(false);
     });
     connect(m_client, &OtterLinkClient::errorOccurred, this, &MainWindow::showError);
@@ -313,8 +319,15 @@ void MainWindow::showDashboard(const QString &displayName)
     m_connectionDisplayName.clear();
     m_connectionTimer.stop();
     m_connectionFinishTimer.stop();
+
+    // Use the authenticated account name directly. The signal argument is retained
+    // for the connection presentation, but the header should always reflect the
+    // actual logged-in account maintained by OtterLinkClient.
+    const QString accountName = m_client->accountName().trimmed();
+    const QString shownName = accountName.isEmpty() ? displayName.trimmed() : accountName;
+    const QString safeName = shownName.isEmpty() ? QStringLiteral("Unknown") : shownName;
     ui->identityLabel->setText(
-        QStringLiteral("Connected as <b>%1</b>").arg(displayName.toHtmlEscaped()));
+        QStringLiteral("Connected as <b>%1</b>").arg(safeName.toHtmlEscaped()));
     ui->serviceStack->setCurrentWidget(ui->homePage);
     ui->serviceTitleLabel->setText(QStringLiteral("Welcome to Otter Link"));
     setActiveServiceButton(ui->homeButton, {
