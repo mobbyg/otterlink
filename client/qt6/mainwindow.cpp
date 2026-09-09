@@ -11,10 +11,12 @@
 #include <QLineEdit>
 #include <QMessageBox>
 #include <QPushButton>
+#include <QScrollBar>
 #include <QSignalBlocker>
 #include <QStyle>
 #include <QTreeWidget>
 #include <QTreeWidgetItem>
+#include <QLabel>
 
 #include <initializer_list>
 
@@ -64,6 +66,22 @@ MainWindow::MainWindow(QWidget *parent)
     ui->buddiesLayout->replaceWidget(ui->buddiesList, m_buddyTree);
     ui->buddiesList->hide();
     ui->buddiesList->deleteLater();
+
+    // Give Chat a little more character without adding another backend concept yet.
+    auto *chatIntro = new QLabel(
+        QStringLiteral("<h3>💬 The Lounge</h3>"
+                       "<p>Talk with everyone currently connected to Otter Link.</p>"),
+        ui->chatPage);
+    chatIntro->setTextFormat(Qt::RichText);
+    ui->chatLayout->insertWidget(0, chatIntro);
+    ui->chatList->setSelectionMode(QAbstractItemView::NoSelection);
+    ui->chatList->setAlternatingRowColors(true);
+    ui->chatList->setWordWrap(true);
+    ui->chatList->setSpacing(2);
+    ui->chatList->setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
+    ui->chatEdit->setPlaceholderText(QStringLiteral("Type a message for the community..."));
+    ui->chatEdit->setMaxLength(500);
+    ui->sendChatButton->setText(QStringLiteral("Send ↵"));
 
     setLoggedIn(false);
 
@@ -317,8 +335,19 @@ void MainWindow::dashboardLoaded(const QStringList &buddies, const QStringList &
     for (const QString &user : onlineUsers)
         ui->onlineList->addItem(QStringLiteral("● %1").arg(user));
 
+    const int previousScrollValue = ui->chatList->verticalScrollBar()->value();
+    const int previousScrollMaximum = ui->chatList->verticalScrollBar()->maximum();
+    const bool wasAtBottom = previousScrollMaximum == 0
+        || previousScrollValue >= previousScrollMaximum - 8;
+
     ui->chatList->clear();
-    ui->chatList->addItems(chatMessages);
+    for (const QString &message : chatMessages)
+        ui->chatList->addItem(QStringLiteral("💬  %1").arg(message));
+
+    // Keep the user's reading position during the five-second dashboard refresh.
+    // If they were already at the bottom, follow new messages like a live chat view.
+    if (wasAtBottom)
+        ui->chatList->scrollToBottom();
 
     ui->homeBuddiesLabel->setText(
         QStringLiteral("%1 %2 in your buddy list")
