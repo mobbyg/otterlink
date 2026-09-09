@@ -3,6 +3,8 @@
 #include <QMainWindow>
 #include <QTimer>
 
+class QPushButton;
+
 namespace Ui {
 class MainWindow;
 }
@@ -35,6 +37,7 @@ private slots:
 private:
     void setLoggedIn(bool loggedIn);
     void beginConnectionPresentation();
+    void setActiveNavigation(QPushButton *button);
 
     Ui::MainWindow *ui = nullptr;
     OtterLinkClient *m_client = nullptr;
