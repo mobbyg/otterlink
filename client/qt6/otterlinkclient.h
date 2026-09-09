@@ -15,6 +15,7 @@ public:
 
     void setBaseUrl(const QString &url);
     QString baseUrl() const;
+    QString accountName() const;
 
     void login(const QString &username, const QString &password);
     void loadDashboard();
