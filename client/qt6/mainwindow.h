@@ -35,6 +35,7 @@ private slots:
                          const QStringList &chatMessages);
     void showError(const QString &message);
     void buddySelectionChanged();
+    void buddyAdded(const QString &username);
 
 private:
     void setLoggedIn(bool loggedIn);
@@ -45,6 +46,7 @@ private:
     OtterLinkClient *m_client = nullptr;
     QTreeWidget *m_buddyTree = nullptr;
     QHash<QString, QString> m_buddyGroups;
+    QHash<QString, QString> m_pendingBuddyGroups;
     QTimer m_refreshTimer;
     QTimer m_connectionTimer;
     QTimer m_connectionFinishTimer;
