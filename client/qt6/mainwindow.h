@@ -1,7 +1,11 @@
 #pragma once
 
+#include <QHash>
 #include <QMainWindow>
 #include <QTimer>
+
+class QComboBox;
+class QTreeWidget;
 
 namespace Ui {
 class MainWindow;
@@ -31,13 +35,18 @@ private slots:
     void dashboardLoaded(const QStringList &buddies, const QStringList &onlineUsers,
                          const QStringList &chatMessages);
     void showError(const QString &message);
+    void buddySelectionChanged();
 
 private:
     void setLoggedIn(bool loggedIn);
     void beginConnectionPresentation();
+    void rebuildBuddyTree(const QStringList &buddies, const QStringList &onlineUsers);
 
     Ui::MainWindow *ui = nullptr;
     OtterLinkClient *m_client = nullptr;
+    QTreeWidget *m_buddyTree = nullptr;
+    QComboBox *m_buddyGroupCombo = nullptr;
+    QHash<QString, QString> m_buddyGroups;
     QTimer m_refreshTimer;
     QTimer m_connectionTimer;
     QTimer m_connectionFinishTimer;
