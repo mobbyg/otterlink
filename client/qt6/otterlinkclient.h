@@ -27,6 +27,7 @@ signals:
     void loggedIn(const QString &displayName);
     void dashboardLoaded(const QStringList &buddies, const QStringList &onlineUsers,
                          const QStringList &chatMessages);
+    void buddyAdded(const QString &username);
     void buddyChanged();
     void chatMessageSent();
     void loggedOut();
