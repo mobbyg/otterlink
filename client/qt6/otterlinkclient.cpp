@@ -173,11 +173,14 @@ void OtterLinkClient::addBuddy(const QString &username)
     QJsonObject body{{QStringLiteral("username"), trimmed}};
     auto *reply = m_network.post(request(QStringLiteral("/api/buddies")),
                                  QJsonDocument(body).toJson(QJsonDocument::Compact));
-    connect(reply, &QNetworkReply::finished, this, [this, reply, trimmed]() {
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
         if (reply->error() != QNetworkReply::NoError) {
             emit errorOccurred(serverErrorMessage(reply, reply->errorString()));
         } else {
-            emit buddyAdded(trimmed);
+            const QJsonDocument doc = QJsonDocument::fromJson(reply->readAll());
+            const QJsonObject buddy = doc.object();
+            const QString username = buddy.value(QStringLiteral("username")).toString().trimmed();
+            emit buddyAdded(username.isEmpty() ? QString() : username);
             emit buddyChanged();
             loadDashboard();
         }
