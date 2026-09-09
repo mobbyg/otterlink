@@ -3,9 +3,11 @@
 #include "ui_mainwindow.h"
 
 #include <QComboBox>
+#include <QDialog>
+#include <QDialogButtonBox>
 #include <QFont>
-#include <QInputDialog>
-#include <QListWidgetItem>
+#include <QFormLayout>
+#include <QLineEdit>
 #include <QMessageBox>
 #include <QPushButton>
 #include <QStyle>
@@ -59,11 +61,6 @@ MainWindow::MainWindow(QWidget *parent)
     ui->buddiesLayout->replaceWidget(ui->buddiesList, m_buddyTree);
     ui->buddiesList->hide();
     ui->buddiesList->deleteLater();
-
-    m_buddyGroupCombo = new QComboBox(this);
-    m_buddyGroupCombo->addItems(kBuddyGroups);
-    m_buddyGroupCombo->setToolTip(QStringLiteral("Group for the buddy being added"));
-    ui->buddyControlsLayout->insertWidget(0, m_buddyGroupCombo);
 
     setLoggedIn(false);
 
@@ -135,15 +132,37 @@ void MainWindow::refreshDashboard()
 
 void MainWindow::addBuddy()
 {
-    bool accepted = false;
-    const QString username = QInputDialog::getText(this, QStringLiteral("Add Buddy"),
-                                                    QStringLiteral("Username:"),
-                                                    QLineEdit::Normal, QString(), &accepted);
-    if (!accepted || username.trimmed().isEmpty())
+    QDialog dialog(this);
+    dialog.setWindowTitle(QStringLiteral("Add Buddy"));
+
+    auto *layout = new QFormLayout(&dialog);
+    auto *usernameEdit = new QLineEdit(&dialog);
+    auto *groupCombo = new QComboBox(&dialog);
+    auto *buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel,
+                                         Qt::Horizontal, &dialog);
+
+    groupCombo->addItems(kBuddyGroups);
+    groupCombo->setCurrentText(QStringLiteral("Buddies"));
+    usernameEdit->setPlaceholderText(QStringLiteral("Enter a username"));
+    layout->addRow(QStringLiteral("Username:"), usernameEdit);
+    layout->addRow(QStringLiteral("Group:"), groupCombo);
+    layout->addRow(buttons);
+
+    connect(buttons, &QDialogButtonBox::accepted, &dialog, &QDialog::accept);
+    connect(buttons, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
+    connect(usernameEdit, &QLineEdit::returnPressed, &dialog, &QDialog::accept);
+
+    usernameEdit->setFocus();
+    if (dialog.exec() != QDialog::Accepted)
         return;
 
-    const QString trimmed = username.trimmed();
-    m_buddyGroups.insert(trimmed, m_buddyGroupCombo->currentText());
+    const QString trimmed = usernameEdit->text().trimmed();
+    if (trimmed.isEmpty()) {
+        showError(QStringLiteral("Enter a username to add."));
+        return;
+    }
+
+    m_buddyGroups.insert(trimmed, groupCombo->currentText());
     m_client->addBuddy(trimmed);
 }
 
