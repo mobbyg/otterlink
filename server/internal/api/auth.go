@@ -1,15 +1,19 @@
 package api
 
 import (
+	"crypto/sha256"
+	"encoding/binary"
 	"encoding/json"
 	"net/http"
 	"strings"
 
 	"github.com/mobbyg/otterlink/server/internal/accounts"
+	"github.com/mobbyg/otterlink/server/internal/presence"
 )
 
 type AuthAPI struct {
 	Accounts accounts.Service
+	Presence *presence.Service
 }
 
 type registerRequest struct {
@@ -52,6 +56,9 @@ func (a AuthAPI) Login(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
 	}
+	if a.Presence != nil {
+		a.Presence.OnlineConnection(user, tokenConnectionID(token))
+	}
 	writeJSON(w, http.StatusOK, authResponse{User: user, Token: token})
 }
 
@@ -61,18 +68,30 @@ func (a AuthAPI) Logout(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "missing bearer token", http.StatusUnauthorized)
 		return
 	}
+	user, err := a.Accounts.FromToken(token)
+	if err != nil {
+		http.Error(w, "invalid session", http.StatusUnauthorized)
+		return
+	}
 	if err := a.Accounts.Logout(token); err != nil {
 		http.Error(w, "logout failed", http.StatusInternalServerError)
 		return
+	}
+	if a.Presence != nil {
+		a.Presence.OfflineConnection(user.ID, tokenConnectionID(token))
 	}
 	w.WriteHeader(http.StatusNoContent)
 }
 
 func (a AuthAPI) Me(w http.ResponseWriter, r *http.Request) {
-	user, err := a.Accounts.FromToken(bearerToken(r))
+	token := bearerToken(r)
+	user, err := a.Accounts.FromToken(token)
 	if err != nil {
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
 		return
+	}
+	if a.Presence != nil {
+		a.Presence.OnlineConnection(user, tokenConnectionID(token))
 	}
 	writeJSON(w, http.StatusOK, user)
 }
@@ -83,6 +102,15 @@ func bearerToken(r *http.Request) string {
 		return ""
 	}
 	return strings.TrimSpace(strings.TrimPrefix(value, "Bearer "))
+}
+
+func tokenConnectionID(token string) uint64 {
+	sum := sha256.Sum256([]byte(token))
+	id := binary.BigEndian.Uint64(sum[:8])
+	if id == 0 {
+		return 1
+	}
+	return id
 }
 
 func decodeJSON(w http.ResponseWriter, r *http.Request, dst any) bool {
