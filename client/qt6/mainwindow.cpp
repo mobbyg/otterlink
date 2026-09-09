@@ -11,7 +11,7 @@ MainWindow::MainWindow(QWidget *parent)
       m_client(new OtterLinkClient(this))
 {
     ui->setupUi(this);
-    resize(900, 600);
+    resize(1000, 680);
     m_refreshTimer.setInterval(5000);
     m_connectionTimer.setInterval(700);
     setLoggedIn(false);
@@ -24,6 +24,14 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->refreshButton, &QPushButton::clicked, this, &MainWindow::refreshDashboard);
     connect(ui->addBuddyButton, &QPushButton::clicked, this, &MainWindow::addBuddy);
     connect(ui->removeBuddyButton, &QPushButton::clicked, this, &MainWindow::removeBuddy);
+    connect(ui->homeButton, &QPushButton::clicked, this, &MainWindow::navigateService);
+    connect(ui->peopleButton, &QPushButton::clicked, this, &MainWindow::navigateService);
+    connect(ui->mailButton, &QPushButton::clicked, this, &MainWindow::navigateService);
+    connect(ui->chatButton, &QPushButton::clicked, this, &MainWindow::navigateService);
+    connect(ui->boardsButton, &QPushButton::clicked, this, &MainWindow::navigateService);
+    connect(ui->newsButton, &QPushButton::clicked, this, &MainWindow::navigateService);
+    connect(ui->filesButton, &QPushButton::clicked, this, &MainWindow::navigateService);
+    connect(ui->gamesButton, &QPushButton::clicked, this, &MainWindow::navigateService);
     connect(&m_refreshTimer, &QTimer::timeout, this, &MainWindow::refreshDashboard);
     connect(&m_connectionTimer, &QTimer::timeout, this, &MainWindow::advanceConnectionStage);
     connect(&m_connectionFinishTimer, &QTimer::timeout, this, &MainWindow::finishConnectionPresentation);
@@ -103,6 +111,29 @@ void MainWindow::removeBuddy()
     }
 }
 
+void MainWindow::navigateService()
+{
+    const auto *button = qobject_cast<const QPushButton *>(sender());
+    if (!button)
+        return;
+
+    const QString service = button->property("service").toString();
+    if (service == QStringLiteral("home")) {
+        ui->serviceStack->setCurrentWidget(ui->homePage);
+        ui->serviceTitleLabel->setText(QStringLiteral("Welcome to Otter Link"));
+    } else if (service == QStringLiteral("people")) {
+        ui->serviceStack->setCurrentWidget(ui->peoplePage);
+        ui->serviceTitleLabel->setText(QStringLiteral("People"));
+    } else if (service == QStringLiteral("chat")) {
+        ui->serviceStack->setCurrentWidget(ui->chatPage);
+        ui->serviceTitleLabel->setText(QStringLiteral("Community Chat"));
+    } else {
+        ui->serviceStack->setCurrentWidget(ui->placeholderPage);
+        ui->placeholderTitleLabel->setText(button->text());
+        ui->serviceTitleLabel->setText(button->text());
+    }
+}
+
 void MainWindow::beginConnectionPresentation()
 {
     m_connectionReady = false;
@@ -125,7 +156,6 @@ void MainWindow::advanceConnectionStage()
         ui->connectionStageLabel->setText(QStringLiteral("CONNECTING"));
         ui->connectionDetailLabel->setText(QStringLiteral("Establishing carrier..."));
         ui->connectionProgress->setValue(55);
-        ui->connectionOtterLabel->setText(QStringLiteral("( o.o )\n /|\\\n  / \\\n\n~ ~ ~"));
         break;
     case 2:
         ui->connectionStageLabel->setText(QStringLiteral("CONNECTED"));
@@ -163,6 +193,8 @@ void MainWindow::showDashboard(const QString &displayName)
     m_connectionFinishTimer.stop();
     ui->identityLabel->setText(
         QStringLiteral("Connected as <b>%1</b>").arg(displayName.toHtmlEscaped()));
+    ui->serviceStack->setCurrentWidget(ui->homePage);
+    ui->serviceTitleLabel->setText(QStringLiteral("Welcome to Otter Link"));
     setLoggedIn(true);
     m_client->loadDashboard();
     m_refreshTimer.start();
@@ -181,6 +213,13 @@ void MainWindow::dashboardLoaded(const QStringList &buddies, const QStringList &
     ui->onlineList->addItems(onlineUsers);
     ui->chatList->clear();
     ui->chatList->addItems(chatMessages);
+
+    ui->homeBuddiesLabel->setText(QStringLiteral("%1 buddy%2 online in your list")
+                                      .arg(buddies.size())
+                                      .arg(buddies.size() == 1 ? QString() : QStringLiteral("ies")));
+    ui->homeOnlineLabel->setText(QStringLiteral("%1 user%2 currently online")
+                                     .arg(onlineUsers.size())
+                                     .arg(onlineUsers.size() == 1 ? QString() : QStringLiteral("s")));
 }
 
 void MainWindow::showError(const QString &message)
