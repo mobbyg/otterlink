@@ -11,8 +11,8 @@ h1,h2,p { margin-top:0; } h1 { margin-bottom:20px; } h2 { font-size:1rem; margin
 label { display:block; color:#aeb8c3; font-size:.85rem; margin:12px 0; }
 input { width:100%; margin-top:6px; padding:11px 12px; border:1px solid #3b4652; border-radius:9px; background:#10151a; color:#fff; outline:none; }
 input:focus { border-color:#7fa9d6; }
-button { border:0; border-radius:9px; padding:10px 15px; background:#6e9fd1; color:#0c1116; font-weight:700; cursor:pointer; }
-button.secondary { background:#2b343e; color:#dbe3eb; } button:hover { filter:brightness(1.08); }
+button, .button { border:0; border-radius:9px; padding:10px 15px; background:#6e9fd1; color:#0c1116; font-weight:700; cursor:pointer; text-decoration:none; display:inline-block; }
+button.secondary, .button.secondary { background:#2b343e; color:#dbe3eb; } button:hover, .button:hover { filter:brightness(1.08); }
 .hidden { display:none !important; }
 .error { min-height:1.2em; color:#e78b8b; font-size:.85rem; margin:10px 0 0; }
 .welcome { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; }
@@ -26,5 +26,13 @@ button.secondary { background:#2b343e; color:#dbe3eb; } button:hover { filter:br
 .chat { flex:1; overflow:auto; min-height:380px; max-height:55vh; padding:8px 0; }
 .msg { padding:9px 0; border-bottom:1px solid #28303a; } .msg strong { margin-right:8px; } .msg time { color:#74808c; font-size:.75rem; } .msg p { margin:3px 0 0; color:#d7dde4; white-space:pre-wrap; overflow-wrap:anywhere; }
 .composer { display:flex; gap:8px; margin-top:12px; } .composer input { margin:0; } .composer button { flex:none; }
+.admin-table-wrap { overflow-x:auto; margin-top:18px; }
+.admin-table { width:100%; border-collapse:collapse; min-width:760px; }
+.admin-table th, .admin-table td { text-align:left; padding:12px 10px; border-bottom:1px solid #2a323b; }
+.admin-table th { color:#8e9aa7; font-size:.78rem; text-transform:uppercase; letter-spacing:.06em; }
+.admin-table td { color:#d9e0e7; }
+.admin-badge { display:inline-block; padding:3px 8px; border-radius:999px; background:#2d4053; color:#b9d7f2; font-size:.78rem; }
+.presence-dot { display:inline-block; width:8px; height:8px; border-radius:50%; background:#69737d; margin-right:7px; }
+.presence-dot.online { background:#69bd7b; }
 footer { text-align:center; color:#68737f; font-size:.75rem; padding:24px; }
 @media (max-width:700px) { .auth-grid,.dashboard { grid-template-columns:1fr; } .auth-grid { margin:30px auto; } .chat-card { min-height:450px; } }
