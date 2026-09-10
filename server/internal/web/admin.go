@@ -2,6 +2,8 @@ package web
 
 import (
 	"net/http"
+
+	"github.com/mobbyg/otterlink/server/internal/accounts"
 )
 
 type adminUser struct {
@@ -9,26 +11,23 @@ type adminUser struct {
 	Online bool `json:"online"`
 }
 
-func (s *Server) adminUser(r *http.Request) (accounts.User, bool) {
-	user, ok := s.user(r)
-	if !ok {
-		return accounts.User{}, false
+func (s *Server) adminUser(r *http.Request) (accounts.User, bool, bool) {
+	user, authenticated := s.user(r)
+	if !authenticated {
+		return accounts.User{}, false, false
 	}
-	if user.Role != "admin" {
-		return accounts.User{}, false
-	}
-	return user, true
+	return user, user.Role == "admin", true
 }
 
 func (s *Server) adminIndex(w http.ResponseWriter, r *http.Request) {
-	if _, ok := s.adminUser(r); !ok {
-		if _, authenticated := s.user(r); !authenticated {
-			http.Error(w, "unauthorized", http.StatusUnauthorized)
-			return
-		}
+	if _, admin, authenticated := s.adminUser(r); !authenticated {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	} else if !admin {
 		http.Error(w, "forbidden", http.StatusForbidden)
 		return
 	}
+
 	data, err := staticFiles.ReadFile("static/admin.html")
 	if err != nil {
 		http.Error(w, "admin client unavailable", http.StatusInternalServerError)
@@ -39,11 +38,10 @@ func (s *Server) adminIndex(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) adminUsers(w http.ResponseWriter, r *http.Request) {
-	if _, ok := s.adminUser(r); !ok {
-		if _, authenticated := s.user(r); !authenticated {
-			http.Error(w, "unauthorized", http.StatusUnauthorized)
-			return
-		}
+	if _, admin, authenticated := s.adminUser(r); !authenticated {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	} else if !admin {
 		http.Error(w, "forbidden", http.StatusForbidden)
 		return
 	}
