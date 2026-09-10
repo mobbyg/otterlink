@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Otter Link Administration</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <div><strong>Otter Link Administration</strong><span>Server administration</span></div>
+      <a class="button secondary" href="/">Back to Otter Link</a>
+    </header>
+
+    <section class="card">
+      <div class="section-title">
+        <div>
+          <small>ADMINISTRATION</small>
+          <h1>User Accounts</h1>
+        </div>
+        <button id="refresh">Refresh</button>
+      </div>
+      <p id="error" class="error"></p>
+      <div class="admin-table-wrap">
+        <table class="admin-table">
+          <thead>
+            <tr><th>Username</th><th>Display name</th><th>Role</th><th>Status</th><th>Presence</th><th>Created</th></tr>
+          </thead>
+          <tbody id="users"></tbody>
+        </table>
+      </div>
+    </section>
+    <footer>Otter Link administration • development UI</footer>
+  </main>
+  <script src="/static/admin.js"></script>
+</body>
+</html>
