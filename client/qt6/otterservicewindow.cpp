@@ -50,6 +50,7 @@ OtterServiceWindow::OtterServiceWindow(const QString &title, QWidget *content, Q
 
     if (m_content) {
         m_content->setParent(this);
+        m_content->show();
         outer->addWidget(m_content, 1);
     }
 
@@ -61,6 +62,8 @@ void OtterServiceWindow::activateWindow()
 {
     show();
     raise();
+    if (m_content)
+        m_content->show();
     setFocus(Qt::OtherFocusReason);
 }
 
