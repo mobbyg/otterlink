@@ -19,15 +19,10 @@ func (s *Server) adminUser(r *http.Request) (accounts.User, bool, bool) {
 	return user, user.Role == "admin", true
 }
 
-func (s *Server) adminIndex(w http.ResponseWriter, r *http.Request) {
-	if _, admin, authenticated := s.adminUser(r); !authenticated {
-		http.Error(w, "unauthorized", http.StatusUnauthorized)
-		return
-	} else if !admin {
-		http.Error(w, "forbidden", http.StatusForbidden)
-		return
-	}
-
+// The admin page shell itself is public; all administration data and actions
+// remain protected by adminUser. This lets a browser navigate to /admin before
+// its JavaScript attaches the bearer token from local storage.
+func (s *Server) adminIndex(w http.ResponseWriter, _ *http.Request) {
 	data, err := staticFiles.ReadFile("static/admin.html")
 	if err != nil {
 		http.Error(w, "admin client unavailable", http.StatusInternalServerError)
