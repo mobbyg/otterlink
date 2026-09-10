@@ -22,6 +22,7 @@ type User struct {
 	DisplayName string `json:"display_name"`
 	Email       string `json:"email,omitempty"`
 	Status      string `json:"status"`
+	Role        string `json:"role"`
 	CreatedAt   string `json:"created_at"`
 }
 
@@ -63,8 +64,8 @@ func (s Service) Authenticate(username, password string) (User, string, error) {
 	var id int64
 	var hash string
 	var user User
-	err := s.DB.QueryRow(`SELECT id, username, display_name, COALESCE(email, ''), status, created_at, password_hash FROM users WHERE username = ? COLLATE NOCASE`, username).
-		Scan(&id, &user.Username, &user.DisplayName, &user.Email, &user.Status, &user.CreatedAt, &hash)
+	err := s.DB.QueryRow(`SELECT id, username, display_name, COALESCE(email, ''), status, role, created_at, password_hash FROM users WHERE username = ? COLLATE NOCASE`, username).
+		Scan(&id, &user.Username, &user.DisplayName, &user.Email, &user.Status, &user.Role, &user.CreatedAt, &hash)
 	if errors.Is(err, sql.ErrNoRows) || !auth.VerifyPassword(password, hash) {
 		return User{}, "", errors.New("invalid username or password")
 	}
@@ -89,12 +90,49 @@ func (s Service) Authenticate(username, password string) (User, string, error) {
 
 func (s Service) Get(id int64) (User, error) {
 	var u User
-	err := s.DB.QueryRow(`SELECT id, username, display_name, COALESCE(email, ''), status, created_at FROM users WHERE id = ?`, id).
-		Scan(&u.ID, &u.Username, &u.DisplayName, &u.Email, &u.Status, &u.CreatedAt)
+	err := s.DB.QueryRow(`SELECT id, username, display_name, COALESCE(email, ''), status, role, created_at FROM users WHERE id = ?`, id).
+		Scan(&u.ID, &u.Username, &u.DisplayName, &u.Email, &u.Status, &u.Role, &u.CreatedAt)
 	if err != nil {
 		return User{}, err
 	}
 	return u, nil
+}
+
+func (s Service) List() ([]User, error) {
+	rows, err := s.DB.Query(`SELECT id, username, display_name, COALESCE(email, ''), status, role, created_at FROM users ORDER BY username COLLATE NOCASE`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	users := make([]User, 0)
+	for rows.Next() {
+		var u User
+		if err := rows.Scan(&u.ID, &u.Username, &u.DisplayName, &u.Email, &u.Status, &u.Role, &u.CreatedAt); err != nil {
+			return nil, err
+		}
+		users = append(users, u)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return users, nil
+}
+
+func (s Service) EnsureAdmin(username string) (bool, error) {
+	username = strings.TrimSpace(username)
+	if username == "" {
+		return false, nil
+	}
+	result, err := s.DB.Exec(`UPDATE users SET role = 'admin', updated_at = CURRENT_TIMESTAMP WHERE username = ? COLLATE NOCASE`, username)
+	if err != nil {
+		return false, err
+	}
+	count, err := result.RowsAffected()
+	if err != nil {
+		return false, err
+	}
+	return count > 0, nil
 }
 
 func (s Service) FromToken(token string) (User, error) {
@@ -104,8 +142,8 @@ func (s Service) FromToken(token string) (User, error) {
 	h := sha256.Sum256([]byte(token))
 	var u User
 	var expires string
-	err := s.DB.QueryRow(`SELECT u.id, u.username, u.display_name, COALESCE(u.email, ''), u.status, u.created_at, s.expires_at FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token_hash = ?`, hex.EncodeToString(h[:])).
-		Scan(&u.ID, &u.Username, &u.DisplayName, &u.Email, &u.Status, &u.CreatedAt, &expires)
+	err := s.DB.QueryRow(`SELECT u.id, u.username, u.display_name, COALESCE(u.email, ''), u.status, u.role, u.created_at, s.expires_at FROM sessions s JOIN users u ON u.id = s.user_id WHERE s.token_hash = ?`, hex.EncodeToString(h[:])).
+		Scan(&u.ID, &u.Username, &u.DisplayName, &u.Email, &u.Status, &u.Role, &u.CreatedAt, &expires)
 	if err != nil {
 		return User{}, errors.New("invalid session")
 	}
