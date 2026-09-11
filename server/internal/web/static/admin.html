@@ -69,6 +69,27 @@
         </aside>
       </div>
     </section>
+
+    <section class="card" style="margin-top:20px">
+      <div class="section-title">
+        <div>
+          <small>SECURITY</small>
+          <h1>Admin Activity</h1>
+        </div>
+        <button id="refresh-audit" class="secondary">Refresh</button>
+      </div>
+      <p class="status">Recent administrative actions. Passwords and session tokens are never recorded here.</p>
+      <p id="audit-error" class="error"></p>
+      <div class="admin-table-wrap">
+        <table class="admin-table">
+          <thead>
+            <tr><th>Time</th><th>Administrator</th><th>Action</th><th>Target</th><th>Result</th><th>Details</th></tr>
+          </thead>
+          <tbody id="audit-events"></tbody>
+        </table>
+      </div>
+    </section>
+
     <footer>Otter Link administration • development UI</footer>
   </main>
   <script src="/static/admin.js"></script>
