@@ -98,6 +98,16 @@ func (s Service) Get(id int64) (User, error) {
 	return u, nil
 }
 
+func (s Service) GetByUsername(username string) (User, error) {
+	var u User
+	err := s.DB.QueryRow(`SELECT id, username, display_name, COALESCE(email, ''), status, role, created_at FROM users WHERE username = ? COLLATE NOCASE`, strings.TrimSpace(username)).
+		Scan(&u.ID, &u.Username, &u.DisplayName, &u.Email, &u.Status, &u.Role, &u.CreatedAt)
+	if err != nil {
+		return User{}, err
+	}
+	return u, nil
+}
+
 func (s Service) List() ([]User, error) {
 	rows, err := s.DB.Query(`SELECT id, username, display_name, COALESCE(email, ''), status, role, created_at FROM users ORDER BY username COLLATE NOCASE`)
 	if err != nil {
@@ -135,8 +145,6 @@ func (s Service) EnsureAdmin(username string) (bool, error) {
 	return count > 0, nil
 }
 
-// VerifyPassword checks the password for an existing account without creating a session.
-// It is used for high-impact administrative confirmations such as account deletion.
 func (s Service) VerifyPassword(userID int64, password string) bool {
 	var hash string
 	if err := s.DB.QueryRow(`SELECT password_hash FROM users WHERE id = ?`, userID).Scan(&hash); err != nil {
