@@ -34,6 +34,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/chat", s.chatList)
 	mux.HandleFunc("POST /api/chat", s.chatSend)
 	mux.HandleFunc("GET /api/admin/users", s.adminUsers)
+	mux.HandleFunc("GET /api/admin/audit", s.adminAudit)
 	mux.HandleFunc("GET /api/admin/users/{username}", s.adminUserDetail)
 	mux.HandleFunc("PATCH /api/admin/users/{username}", s.adminUserUpdate)
 	mux.HandleFunc("POST /api/admin/users/{username}/password", s.adminUserPasswordReset)
