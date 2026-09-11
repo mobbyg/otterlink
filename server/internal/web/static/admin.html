@@ -22,13 +22,50 @@
         <button id="refresh">Refresh</button>
       </div>
       <p id="error" class="error"></p>
-      <div class="admin-table-wrap">
-        <table class="admin-table">
-          <thead>
-            <tr><th>Username</th><th>Display name</th><th>Role</th><th>Status</th><th>Presence</th><th>Created</th></tr>
-          </thead>
-          <tbody id="users"></tbody>
-        </table>
+      <div class="admin-layout">
+        <div class="admin-table-wrap">
+          <table class="admin-table">
+            <thead>
+              <tr><th>Username</th><th>Display name</th><th>Role</th><th>Status</th><th>Presence</th><th>Created</th></tr>
+            </thead>
+            <tbody id="users"></tbody>
+          </table>
+        </div>
+
+        <aside id="user-panel" class="admin-detail hidden">
+          <div class="section-title">
+            <div>
+              <small>ACCOUNT</small>
+              <h2 id="detail-title">User</h2>
+            </div>
+            <button id="close-detail" class="secondary">Close</button>
+          </div>
+          <p id="detail-error" class="error"></p>
+
+          <label>Username<input id="detail-username" disabled></label>
+          <label>Display name<input id="detail-display-name"></label>
+          <label>Email<input id="detail-email" type="email"></label>
+          <label>Role
+            <select id="detail-role">
+              <option value="user">User</option>
+              <option value="admin">Admin</option>
+            </select>
+          </label>
+          <label>Status
+            <select id="detail-status">
+              <option value="active">Active</option>
+              <option value="disabled">Disabled</option>
+            </select>
+          </label>
+          <p id="detail-meta" class="status"></p>
+
+          <div class="admin-actions">
+            <button id="save-user">Save Changes</button>
+            <button id="reset-password" class="secondary">Reset Password</button>
+            <button id="delete-user" class="danger">Delete Account</button>
+          </div>
+          <p class="warning">Deleting an account is permanent. You will be required to enter your admin password to confirm the deletion.</p>
+        </aside>
       </div>
     </section>
     <footer>Otter Link administration • development UI</footer>
