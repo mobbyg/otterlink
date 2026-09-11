@@ -17,7 +17,7 @@ Currently implemented or wired into the server:
 - HTTP session/authentication API
 - Development web client served by the Go server
 - Web client dashboard with account, buddy, presence, and community chat views
-- Initial protected web administration foundation with account roles and user listing
+- Initial protected web administration foundation with account roles, user management, session management, and an admin activity log
 - Native framed TCP client protocol on port `8023`
 - OSCAR compatibility service on port `5190`
 - OSCAR authentication/login flow
@@ -46,6 +46,8 @@ Open `http://localhost:9090/` after starting the server to use the development U
 
 The initial web administration surface is available at `http://localhost:9090/admin`. Administrative data is protected server-side by the account's `admin` role; the Qt client does not expose administration functions.
 
+The administration surface currently supports account editing, password resets, session revocation, account deletion safeguards, and a recent activity/audit view. Audit entries record administrative actions and outcomes without recording passwords or session tokens.
+
 The HTTP API also exposes:
 
 - `GET /api/health`
@@ -60,6 +62,7 @@ The HTTP API also exposes:
 - `GET /api/chat`
 - `POST /api/chat`
 - `GET /api/admin/users` — admin role required
+- `GET /api/admin/audit` — admin role required
 
 ## Quick start
 
