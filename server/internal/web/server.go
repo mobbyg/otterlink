@@ -34,6 +34,10 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/chat", s.chatList)
 	mux.HandleFunc("POST /api/chat", s.chatSend)
 	mux.HandleFunc("GET /api/admin/users", s.adminUsers)
+	mux.HandleFunc("GET /api/admin/users/{username}", s.adminUserDetail)
+	mux.HandleFunc("PATCH /api/admin/users/{username}", s.adminUserUpdate)
+	mux.HandleFunc("POST /api/admin/users/{username}/password", s.adminUserPasswordReset)
+	mux.HandleFunc("DELETE /api/admin/users/{username}", s.adminUserDelete)
 	return mux
 }
 
@@ -70,8 +74,6 @@ func (s *Server) user(r *http.Request) (accounts.User, bool) {
 		return accounts.User{}, false
 	}
 
-	// HTTP clients are request/response based rather than persistent protocol
-	// connections. Refresh the expiring HTTP presence session on each request.
 	if s.Presence != nil {
 		s.Presence.OnlineHTTP(user, tokenConnectionID(value))
 	}
