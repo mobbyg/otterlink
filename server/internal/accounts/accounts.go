@@ -135,6 +135,74 @@ func (s Service) EnsureAdmin(username string) (bool, error) {
 	return count > 0, nil
 }
 
+// VerifyPassword checks the password for an existing account without creating a session.
+// It is used for high-impact administrative confirmations such as account deletion.
+func (s Service) VerifyPassword(userID int64, password string) bool {
+	var hash string
+	if err := s.DB.QueryRow(`SELECT password_hash FROM users WHERE id = ?`, userID).Scan(&hash); err != nil {
+		return false
+	}
+	return auth.VerifyPassword(password, hash)
+}
+
+func (s Service) UpdateAdminUser(id int64, displayName, email, status, role string) (User, error) {
+	displayName = strings.TrimSpace(displayName)
+	email = strings.TrimSpace(email)
+	status = strings.TrimSpace(status)
+	role = strings.TrimSpace(role)
+	if displayName == "" {
+		return User{}, errors.New("display name is required")
+	}
+	if status != "active" && status != "disabled" {
+		return User{}, errors.New("status must be active or disabled")
+	}
+	if role != "user" && role != "admin" {
+		return User{}, errors.New("role must be user or admin")
+	}
+	if _, err := s.DB.Exec(`UPDATE users SET display_name = ?, email = NULLIF(?, ''), status = ?, role = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`, displayName, email, status, role, id); err != nil {
+		return User{}, fmt.Errorf("update user: %w", err)
+	}
+	return s.Get(id)
+}
+
+func (s Service) ResetPassword(id int64, password string) error {
+	if len(password) < 12 {
+		return errors.New("password must be at least 12 characters")
+	}
+	hash, err := auth.HashPassword(password)
+	if err != nil {
+		return err
+	}
+	result, err := s.DB.Exec(`UPDATE users SET password_hash = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`, hash, id)
+	if err != nil {
+		return fmt.Errorf("reset password: %w", err)
+	}
+	count, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if count == 0 {
+		return sql.ErrNoRows
+	}
+	_, err = s.DB.Exec(`DELETE FROM sessions WHERE user_id = ?`, id)
+	return err
+}
+
+func (s Service) Delete(id int64) error {
+	result, err := s.DB.Exec(`DELETE FROM users WHERE id = ?`, id)
+	if err != nil {
+		return fmt.Errorf("delete user: %w", err)
+	}
+	count, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if count == 0 {
+		return sql.ErrNoRows
+	}
+	return nil
+}
+
 func (s Service) FromToken(token string) (User, error) {
 	if token == "" {
 		return User{}, errors.New("missing session token")
