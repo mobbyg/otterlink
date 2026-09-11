@@ -37,6 +37,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/admin/users/{username}", s.adminUserDetail)
 	mux.HandleFunc("PATCH /api/admin/users/{username}", s.adminUserUpdate)
 	mux.HandleFunc("POST /api/admin/users/{username}/password", s.adminUserPasswordReset)
+	mux.HandleFunc("POST /api/admin/users/{username}/sessions/revoke", s.adminUserSessionsRevoke)
 	mux.HandleFunc("DELETE /api/admin/users/{username}", s.adminUserDelete)
 	return mux
 }
