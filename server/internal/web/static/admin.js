@@ -16,6 +16,10 @@ async function request(path, options = {}) {
 function showError(message) { $('error').textContent = message || ''; }
 function showDetailError(message) { $('detail-error').textContent = message || ''; }
 
+function formatDate(value) {
+  return value ? new Date(value).toLocaleString() : 'Never';
+}
+
 function renderUserRow(user) {
   const row = document.createElement('tr');
   row.className = 'admin-user-row';
@@ -26,7 +30,8 @@ function renderUserRow(user) {
     <td><span class="admin-badge">${escapeHTML(user.role)}</span></td>
     <td>${escapeHTML(user.status)}</td>
     <td><span class="presence-dot ${user.online ? 'online' : ''}"></span>${user.online ? 'Online' : 'Offline'}</td>
-    <td>${escapeHTML(new Date(user.created_at).toLocaleString())}</td>`;
+    <td>${user.session_count}</td>
+    <td>${escapeHTML(formatDate(user.last_activity))}</td>`;
   row.addEventListener('click', () => openUser(user.username));
   return row;
 }
@@ -54,7 +59,7 @@ async function openUser(username) {
     $('detail-email').value = user.email || '';
     $('detail-role').value = user.role;
     $('detail-status').value = user.status;
-    $('detail-meta').textContent = `${user.online ? 'Online' : 'Offline'} • Created ${new Date(user.created_at).toLocaleString()}`;
+    $('detail-meta').innerHTML = `${user.online ? 'Online' : 'Offline'} • ${user.session_count} active session${user.session_count === 1 ? '' : 's'} • Last activity: ${escapeHTML(formatDate(user.last_activity))} • Created ${escapeHTML(formatDate(user.created_at))}`;
     $('user-panel').classList.remove('hidden');
   } catch (error) {
     showError(error.message || String(error));
@@ -96,6 +101,22 @@ async function resetPassword() {
       body: JSON.stringify({ password })
     });
     window.alert('Password reset. Existing sessions for this account have been signed out.');
+    await refresh();
+    await openUser(selectedUsername);
+  } catch (error) {
+    showDetailError(error.message || String(error));
+  }
+}
+
+async function revokeSessions() {
+  if (!selectedUsername) return;
+  if (!window.confirm(`Sign out all active sessions for '${selectedUsername}'?`)) return;
+  showDetailError('');
+  try {
+    await request(`/api/admin/users/${encodeURIComponent(selectedUsername)}/sessions/revoke`, { method: 'POST' });
+    await refresh();
+    await openUser(selectedUsername);
+    window.alert('All active sessions have been signed out.');
   } catch (error) {
     showDetailError(error.message || String(error));
   }
@@ -140,5 +161,6 @@ $('refresh').addEventListener('click', refresh);
 $('close-detail').addEventListener('click', closeDetail);
 $('save-user').addEventListener('click', saveUser);
 $('reset-password').addEventListener('click', resetPassword);
+$('revoke-sessions').addEventListener('click', revokeSessions);
 $('delete-user').addEventListener('click', deleteUser);
 refresh();
