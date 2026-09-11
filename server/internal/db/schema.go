@@ -39,6 +39,22 @@ CREATE TABLE IF NOT EXISTS buddies (
 );
 
 CREATE INDEX IF NOT EXISTS idx_buddies_buddy_id ON buddies(buddy_id);
+
+CREATE TABLE IF NOT EXISTS audit_log (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    actor_user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    actor_username TEXT NOT NULL,
+    action TEXT NOT NULL,
+    target_user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    target_username TEXT,
+    result TEXT NOT NULL,
+    details TEXT,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_audit_log_created_at ON audit_log(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_audit_log_actor_user_id ON audit_log(actor_user_id);
+CREATE INDEX IF NOT EXISTS idx_audit_log_target_user_id ON audit_log(target_user_id);
 `
 
 func Initialize(db *sql.DB) error {
