@@ -31,6 +31,16 @@ type SessionSummary struct {
 	LastActivity string `json:"last_activity,omitempty"`
 }
 
+type AuditEvent struct {
+	ID            int64  `json:"id"`
+	ActorUsername string `json:"actor_username"`
+	Action        string `json:"action"`
+	TargetUsername string `json:"target_username,omitempty"`
+	Result        string `json:"result"`
+	Details       string `json:"details,omitempty"`
+	CreatedAt     string `json:"created_at"`
+}
+
 type Service struct {
 	DB *sql.DB
 }
@@ -152,6 +162,38 @@ func (s Service) RevokeSessions(userID int64) error {
 		return fmt.Errorf("revoke sessions: %w", err)
 	}
 	return nil
+}
+
+func (s Service) LogAudit(actor User, action, targetUsername, result, details string, targetID *int64) error {
+	_, err := s.DB.Exec(`INSERT INTO audit_log (actor_user_id, actor_username, action, target_user_id, target_username, result, details) VALUES (?, ?, ?, ?, ?, ?, ?)`, actor.ID, actor.Username, action, targetID, strings.TrimSpace(targetUsername), result, strings.TrimSpace(details))
+	if err != nil {
+		return fmt.Errorf("write audit log: %w", err)
+	}
+	return nil
+}
+
+func (s Service) ListAudit(limit int) ([]AuditEvent, error) {
+	if limit <= 0 || limit > 200 {
+		limit = 100
+	}
+	rows, err := s.DB.Query(`SELECT id, actor_username, action, COALESCE(target_username, ''), result, COALESCE(details, ''), created_at FROM audit_log ORDER BY id DESC LIMIT ?`, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	events := make([]AuditEvent, 0)
+	for rows.Next() {
+		var event AuditEvent
+		if err := rows.Scan(&event.ID, &event.ActorUsername, &event.Action, &event.TargetUsername, &event.Result, &event.Details, &event.CreatedAt); err != nil {
+			return nil, err
+		}
+		events = append(events, event)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return events, nil
 }
 
 func (s Service) EnsureAdmin(username string) (bool, error) {
