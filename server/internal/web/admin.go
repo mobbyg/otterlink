@@ -89,6 +89,18 @@ func (s *Server) adminUsers(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{"users": result})
 }
 
+func (s *Server) adminAudit(w http.ResponseWriter, r *http.Request) {
+	if _, ok := s.requireAdmin(w, r); !ok {
+		return
+	}
+	events, err := s.Accounts.ListAudit(100)
+	if err != nil {
+		http.Error(w, "unable to load audit log", http.StatusInternalServerError)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"events": events})
+}
+
 type adminUserUpdateRequest struct {
 	DisplayName string `json:"display_name"`
 	Email       string `json:"email"`
@@ -161,6 +173,10 @@ func (s *Server) adminUserUpdate(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+	if err := s.Accounts.LogAudit(admin, "admin.user_update", user.Username, "success", "Account settings updated", &user.ID); err != nil {
+		http.Error(w, "unable to record audit event", http.StatusInternalServerError)
+		return
+	}
 	writeJSON(w, http.StatusOK, updated)
 }
 
@@ -192,6 +208,10 @@ func (s *Server) adminUserPasswordReset(w http.ResponseWriter, r *http.Request) 
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+	if err := s.Accounts.LogAudit(admin, "admin.password_reset", user.Username, "success", "Password reset and existing sessions revoked", &user.ID); err != nil {
+		http.Error(w, "unable to record audit event", http.StatusInternalServerError)
+		return
+	}
 	writeJSON(w, http.StatusOK, map[string]any{"ok": true})
 }
 
@@ -216,6 +236,10 @@ func (s *Server) adminUserSessionsRevoke(w http.ResponseWriter, r *http.Request)
 	}
 	if err := s.Accounts.RevokeSessions(user.ID); err != nil {
 		http.Error(w, "unable to revoke sessions", http.StatusInternalServerError)
+		return
+	}
+	if err := s.Accounts.LogAudit(admin, "admin.sessions_revoke", user.Username, "success", "All active sessions revoked", &user.ID); err != nil {
+		http.Error(w, "unable to record audit event", http.StatusInternalServerError)
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
@@ -246,6 +270,7 @@ func (s *Server) adminUserDelete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !s.Accounts.VerifyPassword(admin.ID, req.Password) {
+		_ = s.Accounts.LogAudit(admin, "admin.user_delete", user.Username, "failure", "Incorrect admin password", &user.ID)
 		http.Error(w, "admin password is incorrect", http.StatusUnauthorized)
 		return
 	}
@@ -262,11 +287,16 @@ func (s *Server) adminUserDelete(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		if adminCount <= 1 {
+			_ = s.Accounts.LogAudit(admin, "admin.user_delete", user.Username, "failure", "Attempted to delete the last active administrator", &user.ID)
 			http.Error(w, "cannot delete the last active administrator", http.StatusBadRequest)
 			return
 		}
 	}
 
+	if err := s.Accounts.LogAudit(admin, "admin.user_delete", user.Username, "success", "Account deleted", &user.ID); err != nil {
+		http.Error(w, "unable to record audit event", http.StatusInternalServerError)
+		return
+	}
 	if err := s.Accounts.Delete(user.ID); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			http.Error(w, "user not found", http.StatusNotFound)
