@@ -26,6 +26,11 @@ type User struct {
 	CreatedAt   string `json:"created_at"`
 }
 
+type SessionSummary struct {
+	Count        int    `json:"count"`
+	LastActivity string `json:"last_activity,omitempty"`
+}
+
 type Service struct {
 	DB *sql.DB
 }
@@ -127,6 +132,26 @@ func (s Service) List() ([]User, error) {
 		return nil, err
 	}
 	return users, nil
+}
+
+func (s Service) SessionSummary(userID int64) (SessionSummary, error) {
+	var summary SessionSummary
+	var lastActivity sql.NullString
+	if err := s.DB.QueryRow(`SELECT COUNT(*), MAX(last_seen) FROM sessions WHERE user_id = ? AND expires_at > CURRENT_TIMESTAMP`, userID).Scan(&summary.Count, &lastActivity); err != nil {
+		return SessionSummary{}, err
+	}
+	if lastActivity.Valid {
+		summary.LastActivity = lastActivity.String
+	}
+	return summary, nil
+}
+
+func (s Service) RevokeSessions(userID int64) error {
+	_, err := s.DB.Exec(`DELETE FROM sessions WHERE user_id = ?`, userID)
+	if err != nil {
+		return fmt.Errorf("revoke sessions: %w", err)
+	}
+	return nil
 }
 
 func (s Service) EnsureAdmin(username string) (bool, error) {
