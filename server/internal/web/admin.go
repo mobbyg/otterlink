@@ -11,7 +11,9 @@ import (
 
 type adminUser struct {
 	accounts.User
-	Online bool `json:"online"`
+	Online       bool   `json:"online"`
+	SessionCount int    `json:"session_count"`
+	LastActivity string `json:"last_activity,omitempty"`
 }
 
 func (s *Server) adminUser(r *http.Request) (accounts.User, bool, bool) {
@@ -22,9 +24,6 @@ func (s *Server) adminUser(r *http.Request) (accounts.User, bool, bool) {
 	return user, user.Role == "admin", true
 }
 
-// The admin page shell itself is public; all administration data and actions
-// remain protected by adminUser. This lets a browser navigate to /admin before
-// its JavaScript attaches the bearer token from local storage.
 func (s *Server) adminIndex(w http.ResponseWriter, _ *http.Request) {
 	data, err := staticFiles.ReadFile("static/admin.html")
 	if err != nil {
@@ -48,6 +47,25 @@ func (s *Server) requireAdmin(w http.ResponseWriter, r *http.Request) (accounts.
 	return user, true
 }
 
+func (s *Server) adminUserInfo(user accounts.User) (adminUser, error) {
+	info := adminUser{User: user}
+	if s.Presence != nil {
+		for _, present := range s.Presence.List() {
+			if strings.EqualFold(present.Username, user.Username) {
+				info.Online = true
+				break
+			}
+		}
+	}
+	summary, err := s.Accounts.SessionSummary(user.ID)
+	if err != nil {
+		return adminUser{}, err
+	}
+	info.SessionCount = summary.Count
+	info.LastActivity = summary.LastActivity
+	return info, nil
+}
+
 func (s *Server) adminUsers(w http.ResponseWriter, r *http.Request) {
 	if _, ok := s.requireAdmin(w, r); !ok {
 		return
@@ -59,16 +77,14 @@ func (s *Server) adminUsers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	online := make(map[string]bool)
-	if s.Presence != nil {
-		for _, user := range s.Presence.List() {
-			online[user.Username] = true
-		}
-	}
-
 	result := make([]adminUser, 0, len(users))
 	for _, user := range users {
-		result = append(result, adminUser{User: user, Online: online[user.Username]})
+		info, err := s.adminUserInfo(user)
+		if err != nil {
+			http.Error(w, "unable to load user sessions", http.StatusInternalServerError)
+			return
+		}
+		result = append(result, info)
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"users": result})
 }
@@ -107,17 +123,12 @@ func (s *Server) adminUserDetail(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "unable to load user", http.StatusInternalServerError)
 		return
 	}
-
-	online := false
-	if s.Presence != nil {
-		for _, present := range s.Presence.List() {
-			if strings.EqualFold(present.Username, user.Username) {
-				online = true
-				break
-			}
-		}
+	info, err := s.adminUserInfo(user)
+	if err != nil {
+		http.Error(w, "unable to load user sessions", http.StatusInternalServerError)
+		return
 	}
-	writeJSON(w, http.StatusOK, adminUser{User: user, Online: online})
+	writeJSON(w, http.StatusOK, info)
 }
 
 func (s *Server) adminUserUpdate(w http.ResponseWriter, r *http.Request) {
@@ -140,8 +151,6 @@ func (s *Server) adminUserUpdate(w http.ResponseWriter, r *http.Request) {
 	if !decodeJSON(w, r, &req) {
 		return
 	}
-
-	// Do not allow an administrator to accidentally remove their own access.
 	if user.ID == admin.ID && (req.Role != "admin" || req.Status != "active") {
 		http.Error(w, "you cannot disable or demote your own admin account", http.StatusBadRequest)
 		return
@@ -184,6 +193,32 @@ func (s *Server) adminUserPasswordReset(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"ok": true})
+}
+
+func (s *Server) adminUserSessionsRevoke(w http.ResponseWriter, r *http.Request) {
+	admin, ok := s.requireAdmin(w, r)
+	if !ok {
+		return
+	}
+	username := strings.TrimSpace(r.PathValue("username"))
+	user, err := s.Accounts.GetByUsername(username)
+	if errors.Is(err, sql.ErrNoRows) {
+		http.Error(w, "user not found", http.StatusNotFound)
+		return
+	}
+	if err != nil {
+		http.Error(w, "unable to load user", http.StatusInternalServerError)
+		return
+	}
+	if user.ID == admin.ID {
+		http.Error(w, "you cannot revoke your own admin session", http.StatusBadRequest)
+		return
+	}
+	if err := s.Accounts.RevokeSessions(user.ID); err != nil {
+		http.Error(w, "unable to revoke sessions", http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (s *Server) adminUserDelete(w http.ResponseWriter, r *http.Request) {
