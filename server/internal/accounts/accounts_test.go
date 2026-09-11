@@ -27,7 +27,7 @@ func TestRegisterAuthenticateAndSession(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Register() error = %v", err)
 	}
-	if user.Username != "freedomotter" || user.DisplayName != "Freedom Otter" {
+	if user.Username != "freedomotter" || user.DisplayName != "Freedom Otter" || user.Role != "user" {
 		t.Fatalf("unexpected user: %+v", user)
 	}
 
@@ -35,7 +35,7 @@ func TestRegisterAuthenticateAndSession(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Authenticate() error = %v", err)
 	}
-	if got.ID != user.ID || token == "" {
+	if got.ID != user.ID || got.Role != "user" || token == "" {
 		t.Fatalf("unexpected authentication result: user=%+v token=%q", got, token)
 	}
 
@@ -43,8 +43,8 @@ func TestRegisterAuthenticateAndSession(t *testing.T) {
 	if err != nil {
 		t.Fatalf("FromToken() error = %v", err)
 	}
-	if fromToken.ID != user.ID {
-		t.Fatalf("FromToken() returned user %d, want %d", fromToken.ID, user.ID)
+	if fromToken.ID != user.ID || fromToken.Role != "user" {
+		t.Fatalf("FromToken() returned user %+v, want user %d with role user", fromToken, user.ID)
 	}
 
 	if err := svc.Logout(token); err != nil {
@@ -52,6 +52,37 @@ func TestRegisterAuthenticateAndSession(t *testing.T) {
 	}
 	if _, err := svc.FromToken(token); err == nil {
 		t.Fatal("session remained valid after logout")
+	}
+}
+
+func TestEnsureAdmin(t *testing.T) {
+	svc := testService(t)
+	if _, err := svc.Register("adminuser", "Admin User", "", "a very long test password"); err != nil {
+		t.Fatalf("Register() error = %v", err)
+	}
+
+	found, err := svc.EnsureAdmin("ADMINUSER")
+	if err != nil {
+		t.Fatalf("EnsureAdmin() error = %v", err)
+	}
+	if !found {
+		t.Fatal("EnsureAdmin() did not find the existing account")
+	}
+
+	user, err := svc.Get(1)
+	if err != nil {
+		t.Fatalf("Get() error = %v", err)
+	}
+	if user.Role != "admin" {
+		t.Fatalf("Get() role = %q, want admin", user.Role)
+	}
+
+	found, err = svc.EnsureAdmin("missing")
+	if err != nil {
+		t.Fatalf("EnsureAdmin() missing user error = %v", err)
+	}
+	if found {
+		t.Fatal("EnsureAdmin() reported a missing account as found")
 	}
 }
 

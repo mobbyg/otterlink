@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS users (
     email TEXT UNIQUE COLLATE NOCASE,
     password_hash TEXT NOT NULL,
     status TEXT NOT NULL DEFAULT 'active',
+    role TEXT NOT NULL DEFAULT 'user',
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -38,6 +39,22 @@ CREATE TABLE IF NOT EXISTS buddies (
 );
 
 CREATE INDEX IF NOT EXISTS idx_buddies_buddy_id ON buddies(buddy_id);
+
+CREATE TABLE IF NOT EXISTS audit_log (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    actor_user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    actor_username TEXT NOT NULL,
+    action TEXT NOT NULL,
+    target_user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    target_username TEXT,
+    result TEXT NOT NULL,
+    details TEXT,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_audit_log_created_at ON audit_log(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_audit_log_actor_user_id ON audit_log(actor_user_id);
+CREATE INDEX IF NOT EXISTS idx_audit_log_target_user_id ON audit_log(target_user_id);
 `
 
 func Initialize(db *sql.DB) error {
@@ -46,6 +63,36 @@ func Initialize(db *sql.DB) error {
 	}
 	if _, err := db.Exec(schema); err != nil {
 		return fmt.Errorf("initialize schema: %w", err)
+	}
+
+	// Existing databases predate roles. SQLite does not provide
+	// ALTER TABLE ... ADD COLUMN IF NOT EXISTS, so inspect the table first.
+	rows, err := db.Query(`PRAGMA table_info(users)`)
+	if err != nil {
+		return fmt.Errorf("inspect users schema: %w", err)
+	}
+	defer rows.Close()
+
+	hasRole := false
+	for rows.Next() {
+		var cid int
+		var name, columnType string
+		var notNull, pk int
+		var defaultValue sql.NullString
+		if err := rows.Scan(&cid, &name, &columnType, &notNull, &defaultValue, &pk); err != nil {
+			return fmt.Errorf("read users schema: %w", err)
+		}
+		if name == "role" {
+			hasRole = true
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return fmt.Errorf("read users schema rows: %w", err)
+	}
+	if !hasRole {
+		if _, err := db.Exec(`ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'user'`); err != nil {
+			return fmt.Errorf("add users role column: %w", err)
+		}
 	}
 	return nil
 }

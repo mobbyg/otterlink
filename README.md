@@ -6,7 +6,7 @@ Otter Link is an open-source online service inspired by the classic Quantum Link
 
 ## Current status
 
-Otter Link is in active development. The server foundation is working, and the project now has a first usable web client for exercising the account, buddy, presence, and chat portions of the service.
+Otter Link is in active development. The server foundation is working, and the project now has first usable web and Qt 6 client surfaces for exercising the account, buddy, presence, and chat portions of the service.
 
 Currently implemented or wired into the server:
 
@@ -17,6 +17,7 @@ Currently implemented or wired into the server:
 - HTTP session/authentication API
 - Development web client served by the Go server
 - Web client dashboard with account, buddy, presence, and community chat views
+- Initial protected web administration foundation with account roles and user listing
 - Native framed TCP client protocol on port `8023`
 - OSCAR compatibility service on port `5190`
 - OSCAR authentication/login flow
@@ -37,11 +38,13 @@ This is **not yet a finished AIM replacement or public service**. The OSCAR impl
 
 | Service | Default | Purpose |
 |---|---:|---|
-| HTTP / web client | `:9090` | Web UI, health, registration, login, logout, and service APIs |
+| HTTP / web client | `:9090` | Web UI, health, registration, login, logout, service APIs, and administration |
 | Otter Link protocol | `:8023` | Development client/service protocol |
 | OSCAR compatibility | `:5190` | AIM/OSCAR-compatible client connectivity |
 
 Open `http://localhost:9090/` after starting the server to use the development UI.
+
+The initial web administration surface is available at `http://localhost:9090/admin`. Administrative data is protected server-side by the account's `admin` role; the Qt client does not expose administration functions.
 
 The HTTP API also exposes:
 
@@ -56,6 +59,7 @@ The HTTP API also exposes:
 - `DELETE /api/buddies?username=...`
 - `GET /api/chat`
 - `POST /api/chat`
+- `GET /api/admin/users` — admin role required
 
 ## Quick start
 
@@ -95,6 +99,15 @@ Environment variables:
 - `OTTERLINK_PROTOCOL_ADDR` — Otter Link protocol listen address; default `:8023`
 - `OTTERLINK_OSCAR_ADDR` — OSCAR compatibility listen address; default `:5190`
 - `OTTERLINK_DB` — SQLite database path; default `data/otterlink.db`
+- `OTTERLINK_ADMIN_USERNAME` — existing account to grant the `admin` role at server startup; unset by default
+
+For example, after creating your normal account:
+
+```sh
+OTTERLINK_ADMIN_USERNAME=yourusername go run .
+```
+
+The setting only promotes the named existing account; it does not create an account or set a password.
 
 ### Tests
 
@@ -145,6 +158,8 @@ It currently provides:
 - Online-user display
 - Shared community chat
 - Automatic refresh while connected
+
+The initial administration surface is intentionally separate from the normal client experience. It is being built as a web/server concern so administrative operations do not become part of the Qt 6 client or the retro client protocol surface.
 
 It is a **development client**, not the final Otter Link UI. As the service grows, this surface can evolve into a richer modern client while native clients continue to present the same underlying services in platform-appropriate ways.
 
