@@ -15,6 +15,7 @@ async function request(path, options = {}) {
 
 function showError(message) { $('error').textContent = message || ''; }
 function showDetailError(message) { $('detail-error').textContent = message || ''; }
+function showAuditError(message) { $('audit-error').textContent = message || ''; }
 
 function formatDate(value) {
   return value ? new Date(value).toLocaleString() : 'Never';
@@ -36,6 +37,18 @@ function renderUserRow(user) {
   return row;
 }
 
+function renderAuditRow(event) {
+  const row = document.createElement('tr');
+  row.innerHTML = `
+    <td>${escapeHTML(formatDate(event.created_at))}</td>
+    <td>${escapeHTML(event.actor_username)}</td>
+    <td><span class="admin-badge">${escapeHTML(event.action)}</span></td>
+    <td>${escapeHTML(event.target_username || '—')}</td>
+    <td>${escapeHTML(event.result)}</td>
+    <td>${escapeHTML(event.details || '')}</td>`;
+  return row;
+}
+
 async function refresh() {
   showError('');
   try {
@@ -45,6 +58,18 @@ async function refresh() {
     for (const user of result.users || []) body.appendChild(renderUserRow(user));
   } catch (error) {
     showError(error.message || String(error));
+  }
+}
+
+async function refreshAudit() {
+  showAuditError('');
+  try {
+    const result = await request('/api/admin/audit');
+    const body = $('audit-events');
+    body.innerHTML = '';
+    for (const event of result.events || []) body.appendChild(renderAuditRow(event));
+  } catch (error) {
+    showAuditError(error.message || String(error));
   }
 }
 
@@ -80,6 +105,7 @@ async function saveUser() {
       })
     });
     await refresh();
+    await refreshAudit();
     await openUser(selectedUsername);
   } catch (error) {
     showDetailError(error.message || String(error));
@@ -102,6 +128,7 @@ async function resetPassword() {
     });
     window.alert('Password reset. Existing sessions for this account have been signed out.');
     await refresh();
+    await refreshAudit();
     await openUser(selectedUsername);
   } catch (error) {
     showDetailError(error.message || String(error));
@@ -115,6 +142,7 @@ async function revokeSessions() {
   try {
     await request(`/api/admin/users/${encodeURIComponent(selectedUsername)}/sessions/revoke`, { method: 'POST' });
     await refresh();
+    await refreshAudit();
     await openUser(selectedUsername);
     window.alert('All active sessions have been signed out.');
   } catch (error) {
@@ -140,8 +168,10 @@ async function deleteUser() {
     });
     closeDetail();
     await refresh();
+    await refreshAudit();
   } catch (error) {
     showDetailError(error.message || String(error));
+    await refreshAudit();
   }
 }
 
@@ -158,9 +188,11 @@ function escapeHTML(value) {
 }
 
 $('refresh').addEventListener('click', refresh);
+$('refresh-audit').addEventListener('click', refreshAudit);
 $('close-detail').addEventListener('click', closeDetail);
 $('save-user').addEventListener('click', saveUser);
 $('reset-password').addEventListener('click', resetPassword);
 $('revoke-sessions').addEventListener('click', revokeSessions);
 $('delete-user').addEventListener('click', deleteUser);
 refresh();
+refreshAudit();
