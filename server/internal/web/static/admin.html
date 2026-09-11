@@ -26,7 +26,7 @@
         <div class="admin-table-wrap">
           <table class="admin-table">
             <thead>
-              <tr><th>Username</th><th>Display name</th><th>Role</th><th>Status</th><th>Presence</th><th>Created</th></tr>
+              <tr><th>Username</th><th>Display name</th><th>Role</th><th>Status</th><th>Presence</th><th>Sessions</th><th>Last activity</th></tr>
             </thead>
             <tbody id="users"></tbody>
           </table>
@@ -57,11 +57,12 @@
               <option value="disabled">Disabled</option>
             </select>
           </label>
-          <p id="detail-meta" class="status"></p>
+          <div id="detail-meta" class="status"></div>
 
           <div class="admin-actions">
             <button id="save-user">Save Changes</button>
             <button id="reset-password" class="secondary">Reset Password</button>
+            <button id="revoke-sessions" class="secondary">Sign Out All Sessions</button>
             <button id="delete-user" class="danger">Delete Account</button>
           </div>
           <p class="warning">Deleting an account is permanent. You will be required to enter your admin password to confirm the deletion.</p>
