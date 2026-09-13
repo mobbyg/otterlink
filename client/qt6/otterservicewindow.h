@@ -33,6 +33,7 @@ private:
     void minimize();
     void closeWindow();
     void keepInsideDesktop();
+    void setupChatEmojiButton();
 
     QWidget *m_content = nullptr;
     QLabel *m_titleLabel = nullptr;
