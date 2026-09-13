@@ -70,7 +70,7 @@ void OtterLinkClient::login(const QString &username, const QString &password)
                      {QStringLiteral("password"), password}};
     QNetworkRequest req = request(QStringLiteral("/api/auth/login"));
     auto *reply = m_network.post(req, QJsonDocument(body).toJson(QJsonDocument::Compact));
-    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+    connect(reply, &QNetworkReply::finished, this, [this, reply, username]() {
         if (reply->error() != QNetworkReply::NoError) {
             emit errorOccurred(serverErrorMessage(reply, reply->errorString()));
             reply->deleteLater();
@@ -87,6 +87,8 @@ void OtterLinkClient::login(const QString &username, const QString &password)
             m_username = user.value(QStringLiteral("username")).toString().trimmed();
             if (m_username.isEmpty())
                 m_username = user.value(QStringLiteral("display_name")).toString().trimmed();
+            if (m_username.isEmpty())
+                m_username = username.trimmed();
             emit loggedIn(m_username);
         }
         reply->deleteLater();
