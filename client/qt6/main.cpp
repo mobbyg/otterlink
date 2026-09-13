@@ -1,6 +1,7 @@
 #include <QApplication>
 
 #include "mainwindow.h"
+#include "otteridentitydisplay.h"
 #include "otterlinkstyle.h"
 
 int main(int argc, char *argv[])
@@ -11,6 +12,7 @@ int main(int argc, char *argv[])
     OtterLinkStyle::install(app);
 
     MainWindow window;
+    OtterIdentityDisplay::install(window);
     window.show();
     return app.exec();
 }
