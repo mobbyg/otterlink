@@ -8,6 +8,7 @@
 #include <QPushButton>
 #include <QSizePolicy>
 #include <QWidget>
+#include <QFrame>
 
 namespace {
 
@@ -53,6 +54,8 @@ void updateIdentityLabel(MainWindow &window, const QString &accountName)
                        : QStringLiteral("Connected as <b>%1</b>")
                              .arg(username.toHtmlEscaped()));
     label->setWordWrap(false);
+    label->setFrameShape(QFrame::NoFrame);
+    label->setStyleSheet(QStringLiteral("background: transparent; border: none; padding: 0px;"));
     label->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
     label->setVisible(true);
 }
