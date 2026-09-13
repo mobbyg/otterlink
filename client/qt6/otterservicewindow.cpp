@@ -118,7 +118,6 @@ OtterServiceWindow::OtterServiceWindow(const QString &title, QWidget *content, Q
 
     auto *resizeBar = new QHBoxLayout;
     resizeBar->setContentsMargins(0, 0, 0, 0);
-    resizeBar->setMinimumHeight(28);
     resizeBar->addStretch(1);
     auto *sizeGrip = new ServiceResizeGrip(this, this);
     sizeGrip->setObjectName(QStringLiteral("serviceWindowSizeGrip"));
