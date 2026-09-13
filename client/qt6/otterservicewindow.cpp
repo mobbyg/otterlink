@@ -21,7 +21,7 @@ public:
         : QWidget(parent), m_window(window)
     {
         setCursor(Qt::SizeFDiagCursor);
-        setFixedSize(32, 32);
+        setFixedSize(18, 18);
         setMouseTracking(true);
         setAttribute(Qt::WA_Hover, true);
     }
@@ -120,8 +120,8 @@ OtterServiceWindow::OtterServiceWindow(const QString &title, QWidget *content, Q
     }
 
     // Keep the resize grip above the content so it always receives mouse events.
-    // It is positioned in resizeEvent rather than placed in the content layout,
-    // which also keeps the chat input area from competing for the corner.
+    // The chat content reserves matching space in its layout so the grip never
+    // obscures the Send button or other controls.
     m_sizeGrip = new ServiceResizeGrip(this, this);
     m_sizeGrip->setObjectName(QStringLiteral("serviceWindowSizeGrip"));
     m_sizeGrip->raise();
@@ -140,8 +140,13 @@ void OtterServiceWindow::setupChatEmojiButton()
     auto *chatEdit = m_content->findChild<QLineEdit *>(QStringLiteral("chatEdit"));
     auto *sendButton = m_content->findChild<QPushButton *>(QStringLiteral("sendChatButton"));
     auto *inputLayout = m_content->findChild<QHBoxLayout *>(QStringLiteral("chatInputLayout"));
-    if (!chatEdit || !sendButton || !inputLayout)
+    auto *chatLayout = m_content->findChild<QVBoxLayout *>(QStringLiteral("chatLayout"));
+    if (!chatEdit || !sendButton || !inputLayout || !chatLayout)
         return;
+
+    // Reserve the bottom-right corner for the resize grip so it cannot sit on
+    // top of the Send button when the service window is resized.
+    chatLayout->setContentsMargins(0, 0, 18, 18);
 
     if (m_content->findChild<QPushButton *>(QStringLiteral("chatEmojiButton")))
         return;
