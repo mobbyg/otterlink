@@ -3,8 +3,11 @@
 #include <QEvent>
 #include <QHBoxLayout>
 #include <QLabel>
+#include <QLineEdit>
+#include <QMenu>
 #include <QMouseEvent>
 #include <QPushButton>
+#include <QSizeGrip>
 #include <QVBoxLayout>
 #include <QWidget>
 
@@ -54,8 +57,63 @@ OtterServiceWindow::OtterServiceWindow(const QString &title, QWidget *content, Q
         outer->addWidget(m_content, 1);
     }
 
+    auto *resizeBar = new QHBoxLayout;
+    resizeBar->setContentsMargins(0, 0, 0, 0);
+    resizeBar->addStretch(1);
+    auto *sizeGrip = new QSizeGrip(this);
+    sizeGrip->setObjectName(QStringLiteral("serviceWindowSizeGrip"));
+    sizeGrip->setFixedSize(14, 14);
+    resizeBar->addWidget(sizeGrip, 0, Qt::AlignRight | Qt::AlignBottom);
+    outer->addLayout(resizeBar);
+
     connect(m_minimizeButton, &QPushButton::clicked, this, &OtterServiceWindow::minimize);
     connect(m_closeButton, &QPushButton::clicked, this, &OtterServiceWindow::closeWindow);
+
+    setupChatEmojiButton();
+}
+
+void OtterServiceWindow::setupChatEmojiButton()
+{
+    if (!m_content || m_titleLabel->text() != QStringLiteral("Community Chat"))
+        return;
+
+    auto *chatEdit = m_content->findChild<QLineEdit *>(QStringLiteral("chatEdit"));
+    auto *sendButton = m_content->findChild<QPushButton *>(QStringLiteral("sendChatButton"));
+    if (!chatEdit || !sendButton)
+        return;
+
+    auto *inputLayout = qobject_cast<QHBoxLayout *>(chatEdit->parentWidget()->layout());
+    if (!inputLayout)
+        return;
+
+    auto *emojiButton = new QPushButton(QStringLiteral("😊"), m_content);
+    emojiButton->setObjectName(QStringLiteral("chatEmojiButton"));
+    emojiButton->setToolTip(QStringLiteral("Choose an emoji"));
+    emojiButton->setFixedWidth(38);
+    inputLayout->insertWidget(inputLayout->indexOf(sendButton), emojiButton);
+
+    connect(emojiButton, &QPushButton::clicked, this, [emojiButton, chatEdit]() {
+        auto *menu = new QMenu(emojiButton);
+        const QStringList emojis = {
+            QStringLiteral("😀"), QStringLiteral("😃"), QStringLiteral("😄"),
+            QStringLiteral("😁"), QStringLiteral("😂"), QStringLiteral("🤣"),
+            QStringLiteral("😊"), QStringLiteral("😎"), QStringLiteral("😍"),
+            QStringLiteral("🤔"), QStringLiteral("👍"), QStringLiteral("👎"),
+            QStringLiteral("❤️"), QStringLiteral("🎉"), QStringLiteral("🔥"),
+            QStringLiteral("🦦")
+        };
+
+        for (const QString &emoji : emojis) {
+            auto *action = menu->addAction(emoji);
+            connect(action, &QAction::triggered, chatEdit, [chatEdit, emoji]() {
+                chatEdit->insert(emoji);
+                chatEdit->setFocus();
+            });
+        }
+
+        menu->exec(emojiButton->mapToGlobal(QPoint(0, -menu->sizeHint().height())));
+        menu->deleteLater();
+    });
 }
 
 void OtterServiceWindow::activateWindow()
