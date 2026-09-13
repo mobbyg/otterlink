@@ -1,6 +1,7 @@
 #include "otterhomepage.h"
 
 #include <QFont>
+#include <QFrame>
 #include <QGridLayout>
 #include <QGroupBox>
 #include <QHBoxLayout>
