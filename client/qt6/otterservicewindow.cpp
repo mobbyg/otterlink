@@ -8,6 +8,7 @@
 #include <QMenu>
 #include <QMouseEvent>
 #include <QPushButton>
+#include <QResizeEvent>
 #include <QVBoxLayout>
 #include <QWidget>
 
@@ -20,8 +21,9 @@ public:
         : QWidget(parent), m_window(window)
     {
         setCursor(Qt::SizeFDiagCursor);
-        setFixedSize(28, 28);
+        setFixedSize(32, 32);
         setMouseTracking(true);
+        setAttribute(Qt::WA_Hover, true);
     }
 
 protected:
@@ -46,8 +48,9 @@ protected:
         }
 
         const QPoint delta = event->globalPosition().toPoint() - m_startGlobal;
-        m_window->resize(qMax(m_window->minimumWidth(), m_startSize.width() + delta.x()),
-                         qMax(m_window->minimumHeight(), m_startSize.height() + delta.y()));
+        const int width = qMax(m_window->minimumWidth(), m_startSize.width() + delta.x());
+        const int height = qMax(m_window->minimumHeight(), m_startSize.height() + delta.y());
+        m_window->resize(width, height);
         event->accept();
     }
 
@@ -116,13 +119,12 @@ OtterServiceWindow::OtterServiceWindow(const QString &title, QWidget *content, Q
         outer->addWidget(m_content, 1);
     }
 
-    auto *resizeBar = new QHBoxLayout;
-    resizeBar->setContentsMargins(0, 0, 0, 0);
-    resizeBar->addStretch(1);
-    auto *sizeGrip = new ServiceResizeGrip(this, this);
-    sizeGrip->setObjectName(QStringLiteral("serviceWindowSizeGrip"));
-    resizeBar->addWidget(sizeGrip, 0, Qt::AlignRight | Qt::AlignBottom);
-    outer->addLayout(resizeBar, 0);
+    // Keep the resize grip above the content so it always receives mouse events.
+    // It is positioned in resizeEvent rather than placed in the content layout,
+    // which also keeps the chat input area from competing for the corner.
+    m_sizeGrip = new ServiceResizeGrip(this, this);
+    m_sizeGrip->setObjectName(QStringLiteral("serviceWindowSizeGrip"));
+    m_sizeGrip->raise();
 
     connect(m_minimizeButton, &QPushButton::clicked, this, &OtterServiceWindow::minimize);
     connect(m_closeButton, &QPushButton::clicked, this, &OtterServiceWindow::closeWindow);
@@ -188,6 +190,8 @@ void OtterServiceWindow::activateWindow()
         m_initialSizeApplied = true;
     }
 
+    if (m_sizeGrip)
+        m_sizeGrip->raise();
     setFocus(Qt::OtherFocusReason);
 }
 
@@ -228,6 +232,17 @@ void OtterServiceWindow::mouseReleaseEvent(QMouseEvent *event)
 {
     m_dragging = false;
     QFrame::mouseReleaseEvent(event);
+}
+
+void OtterServiceWindow::resizeEvent(QResizeEvent *event)
+{
+    QFrame::resizeEvent(event);
+    if (m_sizeGrip) {
+        const int x = qMax(0, width() - m_sizeGrip->width());
+        const int y = qMax(0, height() - m_sizeGrip->height());
+        m_sizeGrip->move(x, y);
+        m_sizeGrip->raise();
+    }
 }
 
 void OtterServiceWindow::keepInsideDesktop()
