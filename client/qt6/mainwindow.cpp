@@ -1,4 +1,5 @@
 #include "mainwindow.h"
+#include "otterhomepage.h"
 #include "otterlinkclient.h"
 #include "otterservicewindow.h"
 #include "ui_mainwindow.h"
@@ -67,6 +68,25 @@ MainWindow::MainWindow(QWidget *parent)
     m_desktop->setMinimumSize(520, 320);
     ui->contentLayout->addWidget(m_desktop, 1);
 
+    // Home is a dedicated interactive publication-style page. Its content is
+    // currently local to the client; the eventual service will make it server-driven.
+    m_homePage = new OtterHomePage;
+    connect(m_homePage, &OtterHomePage::serviceRequested, this,
+            [this](const QString &service) {
+                if (service == QStringLiteral("people"))
+                    ui->peopleButton->click();
+                else if (service == QStringLiteral("chat"))
+                    ui->chatButton->click();
+                else if (service == QStringLiteral("mail"))
+                    ui->mailButton->click();
+                else if (service == QStringLiteral("boards"))
+                    ui->boardsButton->click();
+                else if (service == QStringLiteral("news"))
+                    ui->newsButton->click();
+                else if (service == QStringLiteral("games"))
+                    ui->gamesButton->click();
+            });
+
     // Replace the simple Designer placeholder with the hierarchical People view.
     m_buddyTree = new QTreeWidget(ui->buddiesGroup);
     m_buddyTree->setObjectName(QStringLiteral("buddyTree"));
@@ -122,6 +142,7 @@ MainWindow::MainWindow(QWidget *parent)
 MainWindow::~MainWindow()
 {
     closeAllServiceWindows();
+    delete m_homePage;
     delete ui;
 }
 
@@ -237,7 +258,7 @@ void MainWindow::navigateService()
 
     if (button == ui->homeButton) {
         openServiceWindow(QStringLiteral("home"), QStringLiteral("Welcome to Otter Link"),
-                          ui->homePage);
+                          m_homePage);
     } else if (button == ui->peopleButton) {
         openServiceWindow(QStringLiteral("people"), QStringLiteral("People"), ui->peoplePage);
     } else if (button == ui->chatButton) {
@@ -306,7 +327,7 @@ void MainWindow::closeServiceWindow(OtterServiceWindow *window)
     m_serviceWindows.remove(service);
 
     if (service == QStringLiteral("home"))
-        restoreServicePage(ui->homePage);
+        restoreServicePage(m_homePage);
     else if (service == QStringLiteral("people"))
         restoreServicePage(ui->peoplePage);
     else if (service == QStringLiteral("chat"))
