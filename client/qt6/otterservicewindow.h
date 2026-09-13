@@ -7,6 +7,7 @@ class QEvent;
 class QLabel;
 class QPushButton;
 class QMouseEvent;
+class QResizeEvent;
 class QWidget;
 
 class OtterServiceWindow final : public QFrame
