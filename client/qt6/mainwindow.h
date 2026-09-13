@@ -6,6 +6,7 @@
 
 class QFrame;
 class QTreeWidget;
+class OtterHomePage;
 class OtterServiceWindow;
 
 namespace Ui {
@@ -53,6 +54,7 @@ private:
     OtterLinkClient *m_client = nullptr;
     QTreeWidget *m_buddyTree = nullptr;
     QFrame *m_desktop = nullptr;
+    OtterHomePage *m_homePage = nullptr;
     QHash<QString, QString> m_buddyGroups;
     QHash<QString, QString> m_pendingBuddyGroups;
     QHash<QString, OtterServiceWindow *> m_serviceWindows;
