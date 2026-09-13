@@ -227,6 +227,72 @@ void install(QApplication &app)
             background: #075b86;
         }
 
+        QScrollArea#homeScrollArea {
+            background: transparent;
+            border: none;
+        }
+
+        QWidget#homeContent {
+            background: #edf5f9;
+        }
+
+        QFrame#homeHero {
+            background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+                                        stop:0 #d9edf7, stop:1 #b8d8e8);
+            border: 1px solid #7da7bc;
+            border-radius: 4px;
+        }
+
+        QLabel#homeHeroOtter {
+            color: #075b86;
+            background: transparent;
+        }
+
+        QGroupBox#homeAnnouncements, QGroupBox#homeServices {
+            background: #f7fbfd;
+        }
+
+        QFrame#homeAnnouncementCard {
+            background: white;
+            border: 1px solid #c0d2dc;
+            border-radius: 3px;
+        }
+
+        QFrame#homeAnnouncementCard:hover, QFrame#homeServiceTile:hover {
+            border-color: #5d91ab;
+            background: #fbfdff;
+        }
+
+        QFrame#homeServiceTile {
+            background: #e7f1f6;
+            border: 1px solid #a7bdc9;
+            border-radius: 4px;
+        }
+
+        QPushButton#homeActionButton, QPushButton#homeTileButton {
+            background: #d9e9f2;
+            color: #174563;
+            border: 1px solid #7d9daf;
+            border-radius: 3px;
+            padding: 5px 9px;
+            font-weight: bold;
+        }
+
+        QPushButton#homeActionButton:hover, QPushButton#homeTileButton:hover {
+            background: #ffffff;
+            border-color: #3f7898;
+        }
+
+        QPushButton#homeActionButton:pressed, QPushButton#homeTileButton:pressed {
+            background: #c3dce9;
+        }
+
+        QLabel#homeFooter {
+            color: #56758a;
+            background: transparent;
+            font-style: italic;
+        }
+
         QLabel#homeWelcomeLabel {
             color: #0c5279;
         }
