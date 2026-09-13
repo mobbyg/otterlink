@@ -40,5 +40,6 @@ private:
     QPushButton *m_minimizeButton = nullptr;
     QPushButton *m_closeButton = nullptr;
     bool m_dragging = false;
+    bool m_initialSizeApplied = false;
     QPoint m_dragOffset;
 };
