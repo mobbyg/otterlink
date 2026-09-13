@@ -1,4 +1,5 @@
-<img width="624" height="416" alt="Using_this_image_as_inspiration_please_create_a_modern_looki" src="https://github.com/user-attachments/assets/6b729c7c-5584-49f8-b824-95300e90ac67" />
+<img width="400" height="120" alt="otterlink_logo" src="https://github.com/user-attachments/assets/9da99a3d-298b-4740-9e55-6af0f387c59f" />
+
 
 **Your connection to the online world of yesterday.**
 
