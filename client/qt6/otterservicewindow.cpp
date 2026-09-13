@@ -7,9 +7,63 @@
 #include <QMenu>
 #include <QMouseEvent>
 #include <QPushButton>
-#include <QSizeGrip>
 #include <QVBoxLayout>
 #include <QWidget>
+
+namespace {
+
+class ServiceResizeGrip final : public QWidget
+{
+public:
+    explicit ServiceResizeGrip(QWidget *parent)
+        : QWidget(parent)
+    {
+        setCursor(Qt::SizeFDiagCursor);
+        setFixedSize(14, 14);
+    }
+
+protected:
+    void mousePressEvent(QMouseEvent *event) override
+    {
+        if (event->button() == Qt::LeftButton) {
+            m_resizing = true;
+            m_startGlobal = event->globalPosition().toPoint();
+            m_startSize = parentWidget()->size();
+            event->accept();
+            return;
+        }
+        QWidget::mousePressEvent(event);
+    }
+
+    void mouseMoveEvent(QMouseEvent *event) override
+    {
+        if (!m_resizing || !(event->buttons() & Qt::LeftButton)) {
+            QWidget::mouseMoveEvent(event);
+            return;
+        }
+
+        const QPoint delta = event->globalPosition().toPoint() - m_startGlobal;
+        auto *window = parentWidget();
+        if (window) {
+            window->resize(qMax(window->minimumWidth(), m_startSize.width() + delta.x()),
+                           qMax(window->minimumHeight(), m_startSize.height() + delta.y()));
+        }
+        event->accept();
+    }
+
+    void mouseReleaseEvent(QMouseEvent *event) override
+    {
+        m_resizing = false;
+        QWidget::mouseReleaseEvent(event);
+    }
+
+private:
+    bool m_resizing = false;
+    QPoint m_startGlobal;
+    QSize m_startSize;
+};
+
+} // namespace
 
 OtterServiceWindow::OtterServiceWindow(const QString &title, QWidget *content, QWidget *parent)
     : QFrame(parent),
@@ -60,9 +114,8 @@ OtterServiceWindow::OtterServiceWindow(const QString &title, QWidget *content, Q
     auto *resizeBar = new QHBoxLayout;
     resizeBar->setContentsMargins(0, 0, 0, 0);
     resizeBar->addStretch(1);
-    auto *sizeGrip = new QSizeGrip(this);
+    auto *sizeGrip = new ServiceResizeGrip(this);
     sizeGrip->setObjectName(QStringLiteral("serviceWindowSizeGrip"));
-    sizeGrip->setFixedSize(14, 14);
     resizeBar->addWidget(sizeGrip, 0, Qt::AlignRight | Qt::AlignBottom);
     outer->addLayout(resizeBar);
 
@@ -125,8 +178,8 @@ void OtterServiceWindow::activateWindow()
 
     if (!m_initialSizeApplied && m_titleLabel
         && m_titleLabel->text() == QStringLiteral("People")) {
-        const int height = qMax(250, height());
-        resize(310, height);
+        const int initialHeight = qMax(250, this->height());
+        resize(310, initialHeight);
         m_initialSizeApplied = true;
     }
 
