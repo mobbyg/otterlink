@@ -4,6 +4,7 @@
 #include "otterlinkclient.h"
 
 #include <QLabel>
+#include <QSizePolicy>
 
 namespace {
 
@@ -18,8 +19,9 @@ void updateIdentityLabel(MainWindow &window, const QString &accountName)
                        ? QStringLiteral("Connected")
                        : QStringLiteral("Connected as <b>%1</b>")
                              .arg(username.toHtmlEscaped()));
+    label->setWordWrap(false);
+    label->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
     label->setVisible(true);
-    label->adjustSize();
 }
 
 } // namespace
