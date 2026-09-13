@@ -122,6 +122,14 @@ void OtterServiceWindow::activateWindow()
     raise();
     if (m_content)
         m_content->show();
+
+    if (!m_initialSizeApplied && m_titleLabel
+        && m_titleLabel->text() == QStringLiteral("People")) {
+        const int height = qMax(250, height());
+        resize(310, height);
+        m_initialSizeApplied = true;
+    }
+
     setFocus(Qt::OtherFocusReason);
 }
 
