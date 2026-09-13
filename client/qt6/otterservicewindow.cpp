@@ -3,8 +3,6 @@
 #include <QEvent>
 #include <QHBoxLayout>
 #include <QLabel>
-#include <QLineEdit>
-#include <QMenu>
 #include <QMouseEvent>
 #include <QPushButton>
 #include <QVBoxLayout>
@@ -15,20 +13,22 @@ namespace {
 class ServiceResizeGrip final : public QWidget
 {
 public:
-    explicit ServiceResizeGrip(QWidget *parent)
-        : QWidget(parent)
+    ServiceResizeGrip(QWidget *window, QWidget *parent)
+        : QWidget(parent), m_window(window)
     {
         setCursor(Qt::SizeFDiagCursor);
-        setFixedSize(14, 14);
+        setFixedSize(24, 24);
+        setMouseTracking(true);
     }
 
 protected:
     void mousePressEvent(QMouseEvent *event) override
     {
-        if (event->button() == Qt::LeftButton) {
+        if (event->button() == Qt::LeftButton && m_window) {
             m_resizing = true;
             m_startGlobal = event->globalPosition().toPoint();
-            m_startSize = parentWidget()->size();
+            m_startSize = m_window->size();
+            grabMouse(Qt::SizeFDiagCursor);
             event->accept();
             return;
         }
@@ -37,27 +37,30 @@ protected:
 
     void mouseMoveEvent(QMouseEvent *event) override
     {
-        if (!m_resizing || !(event->buttons() & Qt::LeftButton)) {
+        if (!m_resizing || !(event->buttons() & Qt::LeftButton) || !m_window) {
             QWidget::mouseMoveEvent(event);
             return;
         }
 
         const QPoint delta = event->globalPosition().toPoint() - m_startGlobal;
-        auto *window = parentWidget();
-        if (window) {
-            window->resize(qMax(window->minimumWidth(), m_startSize.width() + delta.x()),
-                           qMax(window->minimumHeight(), m_startSize.height() + delta.y()));
-        }
+        m_window->resize(qMax(m_window->minimumWidth(), m_startSize.width() + delta.x()),
+                         qMax(m_window->minimumHeight(), m_startSize.height() + delta.y()));
         event->accept();
     }
 
     void mouseReleaseEvent(QMouseEvent *event) override
     {
-        m_resizing = false;
+        if (m_resizing) {
+            m_resizing = false;
+            releaseMouse();
+            event->accept();
+            return;
+        }
         QWidget::mouseReleaseEvent(event);
     }
 
 private:
+    QWidget *m_window = nullptr;
     bool m_resizing = false;
     QPoint m_startGlobal;
     QSize m_startSize;
@@ -66,8 +69,7 @@ private:
 } // namespace
 
 OtterServiceWindow::OtterServiceWindow(const QString &title, QWidget *content, QWidget *parent)
-    : QFrame(parent),
-      m_content(content)
+    : QFrame(parent), m_content(content)
 {
     setObjectName(QStringLiteral("serviceWindow"));
     setFrameShape(QFrame::StyledPanel);
@@ -113,60 +115,15 @@ OtterServiceWindow::OtterServiceWindow(const QString &title, QWidget *content, Q
 
     auto *resizeBar = new QHBoxLayout;
     resizeBar->setContentsMargins(0, 0, 0, 0);
+    resizeBar->setMinimumHeight(24);
     resizeBar->addStretch(1);
-    auto *sizeGrip = new ServiceResizeGrip(this);
+    auto *sizeGrip = new ServiceResizeGrip(this, this);
     sizeGrip->setObjectName(QStringLiteral("serviceWindowSizeGrip"));
     resizeBar->addWidget(sizeGrip, 0, Qt::AlignRight | Qt::AlignBottom);
-    outer->addLayout(resizeBar);
+    outer->addLayout(resizeBar, 0);
 
     connect(m_minimizeButton, &QPushButton::clicked, this, &OtterServiceWindow::minimize);
     connect(m_closeButton, &QPushButton::clicked, this, &OtterServiceWindow::closeWindow);
-
-    setupChatEmojiButton();
-}
-
-void OtterServiceWindow::setupChatEmojiButton()
-{
-    if (!m_content || m_titleLabel->text() != QStringLiteral("Community Chat"))
-        return;
-
-    auto *chatEdit = m_content->findChild<QLineEdit *>(QStringLiteral("chatEdit"));
-    auto *sendButton = m_content->findChild<QPushButton *>(QStringLiteral("sendChatButton"));
-    if (!chatEdit || !sendButton)
-        return;
-
-    auto *inputLayout = qobject_cast<QHBoxLayout *>(chatEdit->parentWidget()->layout());
-    if (!inputLayout)
-        return;
-
-    auto *emojiButton = new QPushButton(QStringLiteral("😊"), m_content);
-    emojiButton->setObjectName(QStringLiteral("chatEmojiButton"));
-    emojiButton->setToolTip(QStringLiteral("Choose an emoji"));
-    emojiButton->setFixedWidth(38);
-    inputLayout->insertWidget(inputLayout->indexOf(sendButton), emojiButton);
-
-    connect(emojiButton, &QPushButton::clicked, this, [emojiButton, chatEdit]() {
-        auto *menu = new QMenu(emojiButton);
-        const QStringList emojis = {
-            QStringLiteral("😀"), QStringLiteral("😃"), QStringLiteral("😄"),
-            QStringLiteral("😁"), QStringLiteral("😂"), QStringLiteral("🤣"),
-            QStringLiteral("😊"), QStringLiteral("😎"), QStringLiteral("😍"),
-            QStringLiteral("🤔"), QStringLiteral("👍"), QStringLiteral("👎"),
-            QStringLiteral("❤️"), QStringLiteral("🎉"), QStringLiteral("🔥"),
-            QStringLiteral("🦦")
-        };
-
-        for (const QString &emoji : emojis) {
-            auto *action = menu->addAction(emoji);
-            connect(action, &QAction::triggered, chatEdit, [chatEdit, emoji]() {
-                chatEdit->insert(emoji);
-                chatEdit->setFocus();
-            });
-        }
-
-        menu->exec(emojiButton->mapToGlobal(QPoint(0, -menu->sizeHint().height())));
-        menu->deleteLater();
-    });
 }
 
 void OtterServiceWindow::activateWindow()
@@ -205,7 +162,6 @@ void OtterServiceWindow::mousePressEvent(QMouseEvent *event)
         event->accept();
         return;
     }
-
     QFrame::mousePressEvent(event);
 }
 
@@ -215,7 +171,6 @@ void OtterServiceWindow::mouseMoveEvent(QMouseEvent *event)
         QFrame::mouseMoveEvent(event);
         return;
     }
-
     move(mapToParent(event->position().toPoint()) - m_dragOffset);
     keepInsideDesktop();
     event->accept();
@@ -232,7 +187,6 @@ void OtterServiceWindow::keepInsideDesktop()
     const QWidget *desktop = parentWidget();
     if (!desktop)
         return;
-
     const int maxX = qMax(0, desktop->width() - width());
     const int maxY = qMax(0, desktop->height() - height());
     move(qBound(0, x(), maxX), qBound(0, y(), maxY));
@@ -260,6 +214,5 @@ bool OtterServiceWindow::eventFilter(QObject *watched, QEvent *event)
             m_dragging = false;
         }
     }
-
     return QFrame::eventFilter(watched, event);
 }
