@@ -14,6 +14,8 @@ qt_add_executable(otterlink
     mainwindow.cpp
     mainwindow.h
     mainwindow.ui
+    otterhomepage.cpp
+    otterhomepage.h
     otterlinkclient.cpp
     otterlinkclient.h
     otterlinkstyle.cpp
