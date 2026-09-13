@@ -27,6 +27,7 @@ protected:
     void mousePressEvent(QMouseEvent *event) override;
     void mouseMoveEvent(QMouseEvent *event) override;
     void mouseReleaseEvent(QMouseEvent *event) override;
+    void resizeEvent(QResizeEvent *event) override;
     bool eventFilter(QObject *watched, QEvent *event) override;
 
 private:
@@ -36,6 +37,7 @@ private:
     void setupChatEmojiButton();
 
     QWidget *m_content = nullptr;
+    QWidget *m_sizeGrip = nullptr;
     QLabel *m_titleLabel = nullptr;
     QPushButton *m_minimizeButton = nullptr;
     QPushButton *m_closeButton = nullptr;
