@@ -33,13 +33,20 @@ The current client provides:
 
 - Login to an Otter Link server
 - A three-stage classic connection presentation: Calling, Connecting, and Connected
-- Dashboard with online users and buddies
-- Community chat history
-- Sending community chat messages
-- Manual dashboard refresh
-- Automatic dashboard refresh while connected
+- An AOL-inspired desktop workspace after connection
+- A persistent service button bar
+- Movable internal service windows
+- Open/raise behavior that prevents duplicate windows for each service
+- Minimize and close controls on service windows
+- Home, People, and Community Chat service windows
+- Placeholder windows for planned Mail, Boards, News, Files, and Games services
+- Dashboard data presented through the existing client/service functions
+- Community chat history and message sending
+- Manual and automatic dashboard refresh
 - Buddy add/remove controls
 - Disconnect/logout
+
+The desktop workspace is intentionally a presentation-layer change. Existing service/network behavior is retained rather than redesigned as part of this UI work.
 
 The connection presentation is cosmetic: the HTTP login request proceeds normally while the client presents the connection sequence. If the server responds quickly, the client still completes the presentation before entering the dashboard; if authentication fails, the presentation is cancelled and the error is shown.
 
@@ -51,7 +58,7 @@ The main window layout is maintained in `mainwindow.ui` and is intended to be ed
 
 The long-term desktop experience is **retro feel, modern engine**. The Qt client will eventually have an Otter Link Classic presentation inspired by the visual language of Q-Link/AOL-era online services while using original Otter Link branding and artwork.
 
-The connection experience is the first implementation of that direction. Future work will replace the placeholder otter with artwork, add optional connection/disconnect audio, and move the presentation into a reusable theme/presentation component.
+The connection experience and desktop workspace are the first implementations of that direction. Future work will refine the desktop/window visual language, replace the placeholder otter with original artwork, and consider optional connection/disconnect audio.
 
 See `../../docs/presentation.md` for the broader design direction.
 

@@ -1,5 +1,6 @@
 #include "mainwindow.h"
 #include "otterlinkclient.h"
+#include "otterservicewindow.h"
 #include "ui_mainwindow.h"
 
 #include <QComboBox>
@@ -8,6 +9,7 @@
 #include <QFont>
 #include <QFormLayout>
 #include <QHeaderView>
+#include <QLabel>
 #include <QLineEdit>
 #include <QMessageBox>
 #include <QPushButton>
@@ -15,6 +17,7 @@
 #include <QStyle>
 #include <QTreeWidget>
 #include <QTreeWidgetItem>
+#include <QVBoxLayout>
 
 #include <initializer_list>
 
@@ -50,6 +53,19 @@ MainWindow::MainWindow(QWidget *parent)
     resize(1000, 680);
     m_refreshTimer.setInterval(5000);
     m_connectionTimer.setInterval(700);
+
+    // The old service stack remains the source for the existing service widgets.
+    // The new desktop simply presents those widgets as movable internal windows.
+    ui->serviceRail->hide();
+    ui->serviceTitleLabel->hide();
+    ui->serviceStack->hide();
+
+    m_desktop = new QFrame(ui->contentLayout->parentWidget());
+    m_desktop->setObjectName(QStringLiteral("otterDesktop"));
+    m_desktop->setFrameShape(QFrame::StyledPanel);
+    m_desktop->setFrameShadow(QFrame::Sunken);
+    m_desktop->setMinimumSize(520, 320);
+    ui->contentLayout->addWidget(m_desktop, 1);
 
     // Replace the simple Designer placeholder with the hierarchical People view.
     m_buddyTree = new QTreeWidget(ui->buddiesGroup);
@@ -97,6 +113,7 @@ MainWindow::MainWindow(QWidget *parent)
         m_connectionTimer.stop();
         m_connectionFinishTimer.stop();
         m_pendingBuddyGroups.clear();
+        closeAllServiceWindows();
         setLoggedIn(false);
     });
     connect(m_client, &OtterLinkClient::errorOccurred, this, &MainWindow::showError);
@@ -104,6 +121,7 @@ MainWindow::MainWindow(QWidget *parent)
 
 MainWindow::~MainWindow()
 {
+    closeAllServiceWindows();
     delete ui;
 }
 
@@ -217,25 +235,124 @@ void MainWindow::navigateService()
     if (!button)
         return;
 
-    setActiveServiceButton(button, {
+    if (button == ui->homeButton) {
+        openServiceWindow(QStringLiteral("home"), QStringLiteral("Welcome to Otter Link"),
+                          ui->homePage);
+    } else if (button == ui->peopleButton) {
+        openServiceWindow(QStringLiteral("people"), QStringLiteral("People"), ui->peoplePage);
+    } else if (button == ui->chatButton) {
+        openServiceWindow(QStringLiteral("chat"), QStringLiteral("Community Chat"), ui->chatPage);
+    } else {
+        const QString title = button->text();
+        auto *page = new QWidget(m_desktop);
+        auto *layout = new QVBoxLayout(page);
+        layout->setContentsMargins(18, 18, 18, 18);
+        layout->addStretch(1);
+
+        auto *titleLabel = new QLabel(title, page);
+        titleLabel->setObjectName(QStringLiteral("placeholderTitle"));
+        titleLabel->setAlignment(Qt::AlignCenter);
+        titleLabel->setProperty("placeholder", true);
+        layout->addWidget(titleLabel);
+
+        auto *infoLabel = new QLabel(
+            QStringLiteral("This Otter Link service is planned for a future release."), page);
+        infoLabel->setAlignment(Qt::AlignCenter);
+        infoLabel->setWordWrap(true);
+        layout->addWidget(infoLabel);
+        layout->addStretch(1);
+
+        openServiceWindow(title.toLower(), title, page);
+    }
+}
+
+void MainWindow::openServiceWindow(const QString &service, const QString &title, QWidget *content)
+{
+    auto existing = m_serviceWindows.value(service, nullptr);
+    if (existing) {
+        existing->activateWindow();
+        updateServiceButtonStates(existing);
+        return;
+    }
+
+    if (content == ui->homePage || content == ui->peoplePage || content == ui->chatPage)
+        ui->serviceStack->removeWidget(content);
+
+    auto *window = new OtterServiceWindow(title, content, m_desktop);
+    m_serviceWindows.insert(service, window);
+    m_windowServices.insert(window, service);
+
+    const int offset = m_nextWindowOffset;
+    m_nextWindowOffset = (m_nextWindowOffset + 28) % 140;
+    const int width = qMin(620, qMax(360, m_desktop->width() - 70));
+    const int height = qMin(440, qMax(250, m_desktop->height() - 70));
+    window->resize(width, height);
+    window->move(24 + offset, 20 + offset);
+
+    connect(window, &OtterServiceWindow::closeRequested,
+            this, &MainWindow::closeServiceWindow);
+
+    window->show();
+    window->activateWindow();
+    updateServiceButtonStates(window);
+}
+
+void MainWindow::closeServiceWindow(OtterServiceWindow *window)
+{
+    if (!window)
+        return;
+
+    const QString service = m_windowServices.take(window);
+    m_serviceWindows.remove(service);
+
+    if (service == QStringLiteral("home"))
+        restoreServicePage(ui->homePage);
+    else if (service == QStringLiteral("people"))
+        restoreServicePage(ui->peoplePage);
+    else if (service == QStringLiteral("chat"))
+        restoreServicePage(ui->chatPage);
+
+    window->deleteLater();
+    updateServiceButtonStates();
+}
+
+void MainWindow::closeAllServiceWindows()
+{
+    const auto windows = m_serviceWindows.values();
+    for (OtterServiceWindow *window : windows)
+        closeServiceWindow(window);
+
+    m_serviceWindows.clear();
+    m_windowServices.clear();
+    m_nextWindowOffset = 0;
+}
+
+void MainWindow::restoreServicePage(QWidget *page)
+{
+    if (!page)
+        return;
+
+    page->setParent(ui->serviceStack);
+    ui->serviceStack->addWidget(page);
+    page->hide();
+}
+
+void MainWindow::updateServiceButtonStates(OtterServiceWindow *activeWindow)
+{
+    QPushButton *activeButton = nullptr;
+    const QString activeService = activeWindow ? m_windowServices.value(activeWindow) : QString();
+
+    if (activeService == QStringLiteral("home"))
+        activeButton = ui->homeButton;
+    else if (activeService == QStringLiteral("people"))
+        activeButton = ui->peopleButton;
+    else if (activeService == QStringLiteral("chat"))
+        activeButton = ui->chatButton;
+
+    setActiveServiceButton(activeButton, {
         ui->homeButton, ui->peopleButton, ui->mailButton, ui->chatButton,
         ui->boardsButton, ui->newsButton, ui->filesButton, ui->gamesButton
     });
-
-    if (button == ui->homeButton) {
-        ui->serviceStack->setCurrentWidget(ui->homePage);
-        ui->serviceTitleLabel->setText(QStringLiteral("Welcome to Otter Link"));
-    } else if (button == ui->peopleButton) {
-        ui->serviceStack->setCurrentWidget(ui->peoplePage);
-        ui->serviceTitleLabel->setText(QStringLiteral("People"));
-    } else if (button == ui->chatButton) {
-        ui->serviceStack->setCurrentWidget(ui->chatPage);
-        ui->serviceTitleLabel->setText(QStringLiteral("Community Chat"));
-    } else {
-        ui->serviceStack->setCurrentWidget(ui->placeholderPage);
-        ui->placeholderTitleLabel->setText(button->text());
-        ui->serviceTitleLabel->setText(button->text());
-    }
 }
 
 void MainWindow::beginConnectionPresentation()
@@ -297,15 +414,12 @@ void MainWindow::showDashboard(const QString &displayName)
     m_connectionFinishTimer.stop();
     ui->identityLabel->setText(
         QStringLiteral("Connected as <b>%1</b>").arg(displayName.toHtmlEscaped()));
-    ui->serviceStack->setCurrentWidget(ui->homePage);
-    ui->serviceTitleLabel->setText(QStringLiteral("Welcome to Otter Link"));
-    setActiveServiceButton(ui->homeButton, {
-        ui->homeButton, ui->peopleButton, ui->mailButton, ui->chatButton,
-        ui->boardsButton, ui->newsButton, ui->filesButton, ui->gamesButton
-    });
     setLoggedIn(true);
     m_client->loadDashboard();
     m_refreshTimer.start();
+
+    // Start with the desktop itself as the home state. Home remains available from the bar.
+    updateServiceButtonStates();
 }
 
 void MainWindow::dashboardLoaded(const QStringList &buddies, const QStringList &onlineUsers,
