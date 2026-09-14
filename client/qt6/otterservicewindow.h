@@ -16,7 +16,7 @@ class OtterServiceWindow final : public QFrame
 
 public:
     explicit OtterServiceWindow(const QString &title, QWidget *content,
-                                bool resizable = false, QWidget *parent = nullptr);
+                                QWidget *parent = nullptr);
 
     QWidget *contentWidget() const { return m_content; }
     void activateWindow();
