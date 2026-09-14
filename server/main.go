@@ -77,7 +77,7 @@ func main() {
 
 	buddyService := buddies.Service{DB: database}
 	presenceService := presence.NewService()
-	chatHub := chat.NewHub(100)
+	chatHub := chat.NewHub(database, 100)
 	authAPI := api.AuthAPI{Accounts: accountService, Presence: presenceService}
 	webServer := &web.Server{Accounts: accountService, Buddies: buddyService, Presence: presenceService, Chat: chatHub}
 
@@ -109,9 +109,9 @@ func main() {
 		Addr:          oscarAddr,
 		Logger:        log.Default(),
 		Authenticator: oscar.Authenticator{Accounts: accountService, ReconnectURL: "127.0.0.1:5190"},
-		DB:            database,
-		Buddies:       buddyService,
-		Presence:      presenceService,
+		DB:             database,
+		Buddies:        buddyService,
+		Presence:       presenceService,
 	}
 	oscarErr := make(chan error, 1)
 	go func() { oscarErr <- oscarServer.ListenAndServe(ctx) }()
