@@ -1,6 +1,7 @@
 const token = localStorage.getItem('otterlink-token') || '';
 const $ = (id) => document.getElementById(id);
 let selectedUsername = '';
+let selectedChannel = null;
 
 async function request(path, options = {}) {
   const headers = {
@@ -16,36 +17,29 @@ async function request(path, options = {}) {
 function showError(message) { $('error').textContent = message || ''; }
 function showDetailError(message) { $('detail-error').textContent = message || ''; }
 function showAuditError(message) { $('audit-error').textContent = message || ''; }
-
-function formatDate(value) {
-  return value ? new Date(value).toLocaleString() : 'Never';
-}
+function showChannelError(message) { $('channel-error').textContent = message || ''; }
+function showChannelDetailError(message) { $('channel-detail-error').textContent = message || ''; }
+function formatDate(value) { return value ? new Date(value).toLocaleString() : 'Never'; }
 
 function renderUserRow(user) {
   const row = document.createElement('tr');
   row.className = 'admin-user-row';
   row.title = 'Open account details';
-  row.innerHTML = `
-    <td>${escapeHTML(user.username)}</td>
-    <td>${escapeHTML(user.display_name)}</td>
-    <td><span class="admin-badge">${escapeHTML(user.role)}</span></td>
-    <td>${escapeHTML(user.status)}</td>
-    <td><span class="presence-dot ${user.online ? 'online' : ''}"></span>${user.online ? 'Online' : 'Offline'}</td>
-    <td>${user.session_count}</td>
-    <td>${escapeHTML(formatDate(user.last_activity))}</td>`;
+  row.innerHTML = `<td>${escapeHTML(user.username)}</td><td>${escapeHTML(user.display_name)}</td><td><span class="admin-badge">${escapeHTML(user.role)}</span></td><td>${escapeHTML(user.status)}</td><td><span class="presence-dot ${user.online ? 'online' : ''}"></span>${user.online ? 'Online' : 'Offline'}</td><td>${user.session_count}</td><td>${escapeHTML(formatDate(user.last_activity))}</td>`;
   row.addEventListener('click', () => openUser(user.username));
   return row;
 }
 
 function renderAuditRow(event) {
   const row = document.createElement('tr');
-  row.innerHTML = `
-    <td>${escapeHTML(formatDate(event.created_at))}</td>
-    <td>${escapeHTML(event.actor_username)}</td>
-    <td><span class="admin-badge">${escapeHTML(event.action)}</span></td>
-    <td>${escapeHTML(event.target_username || '—')}</td>
-    <td>${escapeHTML(event.result)}</td>
-    <td>${escapeHTML(event.details || '')}</td>`;
+  row.innerHTML = `<td>${escapeHTML(formatDate(event.created_at))}</td><td>${escapeHTML(event.actor_username)}</td><td><span class="admin-badge">${escapeHTML(event.action)}</span></td><td>${escapeHTML(event.target_username || '—')}</td><td>${escapeHTML(event.result)}</td><td>${escapeHTML(event.details || '')}</td>`;
+  return row;
+}
+
+function renderChannelRow(channel) {
+  const row = document.createElement('tr');
+  row.innerHTML = `<td>${escapeHTML(channel.name)}</td><td>${escapeHTML(channel.creator || '—')}</td><td>${escapeHTML(channel.original_mod || '—')}</td><td>${channel.allow_ops_to_create_ops ? 'Yes' : 'No'}</td><td><button class="secondary channel-manage">Manage</button></td>`;
+  row.querySelector('.channel-manage').addEventListener('click', () => openChannel(channel));
   return row;
 }
 
@@ -53,24 +47,74 @@ async function refresh() {
   showError('');
   try {
     const result = await request('/api/admin/users');
-    const body = $('users');
-    body.innerHTML = '';
+    const body = $('users'); body.innerHTML = '';
     for (const user of result.users || []) body.appendChild(renderUserRow(user));
-  } catch (error) {
-    showError(error.message || String(error));
-  }
+  } catch (error) { showError(error.message || String(error)); }
 }
 
 async function refreshAudit() {
   showAuditError('');
   try {
     const result = await request('/api/admin/audit');
-    const body = $('audit-events');
-    body.innerHTML = '';
+    const body = $('audit-events'); body.innerHTML = '';
     for (const event of result.events || []) body.appendChild(renderAuditRow(event));
-  } catch (error) {
-    showAuditError(error.message || String(error));
-  }
+  } catch (error) { showAuditError(error.message || String(error)); }
+}
+
+async function refreshChannels() {
+  showChannelError('');
+  try {
+    const result = await request('/api/admin/chat/channels');
+    const body = $('channels'); body.innerHTML = '';
+    for (const channel of result.channels || []) body.appendChild(renderChannelRow(channel));
+  } catch (error) { showChannelError(error.message || String(error)); }
+}
+
+async function createChannel() {
+  const name = $('channel-name').value.trim();
+  if (!name) { showChannelError('Enter a channel name.'); return; }
+  showChannelError('');
+  try {
+    await request('/api/admin/chat/channels', { method: 'POST', body: JSON.stringify({ name, allow_ops_to_create_ops: $('channel-allow-ops').checked }) });
+    $('channel-name').value = '';
+    $('channel-allow-ops').checked = false;
+    await refreshChannels(); await refreshAudit();
+  } catch (error) { showChannelError(error.message || String(error)); }
+}
+
+function openChannel(channel) {
+  selectedChannel = channel;
+  $('channel-detail-title').textContent = channel.name;
+  $('channel-user').value = '';
+  $('channel-role').value = 'mod';
+  showChannelDetailError('');
+  $('channel-panel').classList.remove('hidden');
+}
+
+function closeChannel() {
+  selectedChannel = null;
+  $('channel-panel').classList.add('hidden');
+  showChannelDetailError('');
+}
+
+async function saveChannelRole() {
+  if (!selectedChannel) return;
+  const username = $('channel-user').value.trim();
+  if (!username) { showChannelDetailError('Enter a username.'); return; }
+  try {
+    await request(`/api/admin/chat/channels/${selectedChannel.id}/users/${encodeURIComponent(username)}/role`, { method: 'POST', body: JSON.stringify({ role: $('channel-role').value }) });
+    await refreshChannels(); await refreshAudit();
+    window.alert('Channel role updated.');
+  } catch (error) { showChannelDetailError(error.message || String(error)); }
+}
+
+async function deleteChannel() {
+  if (!selectedChannel) return;
+  if (!window.confirm(`Delete the permanent channel '${selectedChannel.name}'? This cannot be undone.`)) return;
+  try {
+    await request(`/api/admin/chat/channels/${selectedChannel.id}`, { method: 'DELETE' });
+    closeChannel(); await refreshChannels(); await refreshAudit();
+  } catch (error) { showChannelDetailError(error.message || String(error)); }
 }
 
 async function openUser(username) {
@@ -86,53 +130,29 @@ async function openUser(username) {
     $('detail-status').value = user.status;
     $('detail-meta').innerHTML = `${user.online ? 'Online' : 'Offline'} • ${user.session_count} active session${user.session_count === 1 ? '' : 's'} • Last activity: ${escapeHTML(formatDate(user.last_activity))} • Created ${escapeHTML(formatDate(user.created_at))}`;
     $('user-panel').classList.remove('hidden');
-  } catch (error) {
-    showError(error.message || String(error));
-  }
+  } catch (error) { showError(error.message || String(error)); }
 }
 
 async function saveUser() {
   if (!selectedUsername) return;
   showDetailError('');
   try {
-    await request(`/api/admin/users/${encodeURIComponent(selectedUsername)}`, {
-      method: 'PATCH',
-      body: JSON.stringify({
-        display_name: $('detail-display-name').value,
-        email: $('detail-email').value,
-        role: $('detail-role').value,
-        status: $('detail-status').value
-      })
-    });
-    await refresh();
-    await refreshAudit();
-    await openUser(selectedUsername);
-  } catch (error) {
-    showDetailError(error.message || String(error));
-  }
+    await request(`/api/admin/users/${encodeURIComponent(selectedUsername)}`, { method: 'PATCH', body: JSON.stringify({ display_name: $('detail-display-name').value, email: $('detail-email').value, role: $('detail-role').value, status: $('detail-status').value }) });
+    await refresh(); await refreshAudit(); await openUser(selectedUsername);
+  } catch (error) { showDetailError(error.message || String(error)); }
 }
 
 async function resetPassword() {
   if (!selectedUsername) return;
   const password = window.prompt(`Enter a new password for ${selectedUsername}. It must be at least 12 characters:`);
   if (password === null) return;
-  if (password.length < 12) {
-    showDetailError('Password must be at least 12 characters.');
-    return;
-  }
+  if (password.length < 12) { showDetailError('Password must be at least 12 characters.'); return; }
   showDetailError('');
   try {
-    await request(`/api/admin/users/${encodeURIComponent(selectedUsername)}/password`, {
-      method: 'POST',
-      body: JSON.stringify({ password })
-    });
+    await request(`/api/admin/users/${encodeURIComponent(selectedUsername)}/password`, { method: 'POST', body: JSON.stringify({ password }) });
     window.alert('Password reset. Existing sessions for this account have been signed out.');
-    await refresh();
-    await refreshAudit();
-    await openUser(selectedUsername);
-  } catch (error) {
-    showDetailError(error.message || String(error));
-  }
+    await refresh(); await refreshAudit(); await openUser(selectedUsername);
+  } catch (error) { showDetailError(error.message || String(error)); }
 }
 
 async function revokeSessions() {
@@ -141,13 +161,8 @@ async function revokeSessions() {
   showDetailError('');
   try {
     await request(`/api/admin/users/${encodeURIComponent(selectedUsername)}/sessions/revoke`, { method: 'POST' });
-    await refresh();
-    await refreshAudit();
-    await openUser(selectedUsername);
-    window.alert('All active sessions have been signed out.');
-  } catch (error) {
-    showDetailError(error.message || String(error));
-  }
+    await refresh(); await refreshAudit(); await openUser(selectedUsername); window.alert('All active sessions have been signed out.');
+  } catch (error) { showDetailError(error.message || String(error)); }
 }
 
 async function deleteUser() {
@@ -155,44 +170,29 @@ async function deleteUser() {
   if (!window.confirm(`Delete the account '${selectedUsername}'? This cannot be undone.`)) return;
   const password = window.prompt('Enter your admin password to confirm account deletion:');
   if (password === null) return;
-  if (!password) {
-    showDetailError('Admin password is required to delete an account.');
-    return;
-  }
-
+  if (!password) { showDetailError('Admin password is required to delete an account.'); return; }
   showDetailError('');
   try {
-    await request(`/api/admin/users/${encodeURIComponent(selectedUsername)}`, {
-      method: 'DELETE',
-      body: JSON.stringify({ password })
-    });
-    closeDetail();
-    await refresh();
-    await refreshAudit();
-  } catch (error) {
-    showDetailError(error.message || String(error));
-    await refreshAudit();
-  }
+    await request(`/api/admin/users/${encodeURIComponent(selectedUsername)}`, { method: 'DELETE', body: JSON.stringify({ password }) });
+    closeDetail(); await refresh(); await refreshAudit();
+  } catch (error) { showDetailError(error.message || String(error)); await refreshAudit(); }
 }
 
-function closeDetail() {
-  selectedUsername = '';
-  $('user-panel').classList.add('hidden');
-  showDetailError('');
-}
-
-function escapeHTML(value) {
-  return String(value ?? '').replace(/[&<>'"]/g, (character) => ({
-    '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '"':'&quot;'
-  }[character]));
-}
+function closeDetail() { selectedUsername = ''; $('user-panel').classList.add('hidden'); showDetailError(''); }
+function escapeHTML(value) { return String(value ?? '').replace(/[&<>'"]/g, (character) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '"':'&quot;' }[character])); }
 
 $('refresh').addEventListener('click', refresh);
 $('refresh-audit').addEventListener('click', refreshAudit);
+$('refresh-channels').addEventListener('click', refreshChannels);
+$('create-channel').addEventListener('click', createChannel);
 $('close-detail').addEventListener('click', closeDetail);
 $('save-user').addEventListener('click', saveUser);
 $('reset-password').addEventListener('click', resetPassword);
 $('revoke-sessions').addEventListener('click', revokeSessions);
 $('delete-user').addEventListener('click', deleteUser);
+$('close-channel-detail').addEventListener('click', closeChannel);
+$('save-channel-role').addEventListener('click', saveChannelRole);
+$('delete-channel').addEventListener('click', deleteChannel);
 refresh();
+refreshChannels();
 refreshAudit();
