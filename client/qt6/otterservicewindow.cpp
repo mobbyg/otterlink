@@ -74,8 +74,9 @@ private:
 
 } // namespace
 
-OtterServiceWindow::OtterServiceWindow(const QString &title, QWidget *content, QWidget *parent)
-    : QFrame(parent), m_content(content)
+OtterServiceWindow::OtterServiceWindow(const QString &title, QWidget *content,
+                                       bool resizable, QWidget *parent)
+    : QFrame(parent), m_content(content), m_resizable(resizable)
 {
     setObjectName(QStringLiteral("serviceWindow"));
     setFrameShape(QFrame::StyledPanel);
@@ -119,12 +120,13 @@ OtterServiceWindow::OtterServiceWindow(const QString &title, QWidget *content, Q
         outer->addWidget(m_content, 1);
     }
 
-    // Keep the resize grip above the content so it always receives mouse events.
-    // The chat content reserves matching space in its layout so the grip never
-    // obscures the Send button or other controls.
-    m_sizeGrip = new ServiceResizeGrip(this, this);
-    m_sizeGrip->setObjectName(QStringLiteral("serviceWindowSizeGrip"));
-    m_sizeGrip->raise();
+    if (m_resizable) {
+        // Only explicitly resizable service windows get a resize grip.
+        // Chat reserves matching space so the grip never obscures the Send button.
+        m_sizeGrip = new ServiceResizeGrip(this, this);
+        m_sizeGrip->setObjectName(QStringLiteral("serviceWindowSizeGrip"));
+        m_sizeGrip->raise();
+    }
 
     connect(m_minimizeButton, &QPushButton::clicked, this, &OtterServiceWindow::minimize);
     connect(m_closeButton, &QPushButton::clicked, this, &OtterServiceWindow::closeWindow);
@@ -144,9 +146,11 @@ void OtterServiceWindow::setupChatEmojiButton()
     if (!chatEdit || !sendButton || !inputLayout || !chatLayout)
         return;
 
-    // Reserve the bottom-right corner for the resize grip so it cannot sit on
-    // top of the Send button when the service window is resized.
-    chatLayout->setContentsMargins(0, 0, 18, 18);
+    if (m_resizable) {
+        // Reserve the bottom-right corner for the resize grip so it cannot sit on
+        // top of the Send button when the service window is resized.
+        chatLayout->setContentsMargins(0, 0, 18, 18);
+    }
 
     if (m_content->findChild<QPushButton *>(QStringLiteral("chatEmojiButton")))
         return;
