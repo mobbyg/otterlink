@@ -15,50 +15,26 @@
 
     <section class="card">
       <div class="section-title">
-        <div>
-          <small>ADMINISTRATION</small>
-          <h1>User Accounts</h1>
-        </div>
+        <div><small>ADMINISTRATION</small><h1>User Accounts</h1></div>
         <button id="refresh">Refresh</button>
       </div>
       <p id="error" class="error"></p>
       <div class="admin-layout">
         <div class="admin-table-wrap">
           <table class="admin-table">
-            <thead>
-              <tr><th>Username</th><th>Display name</th><th>Role</th><th>Status</th><th>Presence</th><th>Sessions</th><th>Last activity</th></tr>
-            </thead>
+            <thead><tr><th>Username</th><th>Display name</th><th>Role</th><th>Status</th><th>Presence</th><th>Sessions</th><th>Last activity</th></tr></thead>
             <tbody id="users"></tbody>
           </table>
         </div>
-
         <aside id="user-panel" class="admin-detail hidden">
-          <div class="section-title">
-            <div>
-              <small>ACCOUNT</small>
-              <h2 id="detail-title">User</h2>
-            </div>
-            <button id="close-detail" class="secondary">Close</button>
-          </div>
+          <div class="section-title"><div><small>ACCOUNT</small><h2 id="detail-title">User</h2></div><button id="close-detail" class="secondary">Close</button></div>
           <p id="detail-error" class="error"></p>
-
           <label>Username<input id="detail-username" disabled></label>
           <label>Display name<input id="detail-display-name"></label>
           <label>Email<input id="detail-email" type="email"></label>
-          <label>Role
-            <select id="detail-role">
-              <option value="user">User</option>
-              <option value="admin">Admin</option>
-            </select>
-          </label>
-          <label>Status
-            <select id="detail-status">
-              <option value="active">Active</option>
-              <option value="disabled">Disabled</option>
-            </select>
-          </label>
+          <label>Role<select id="detail-role"><option value="user">User</option><option value="admin">Admin</option></select></label>
+          <label>Status<select id="detail-status"><option value="active">Active</option><option value="disabled">Disabled</option></select></label>
           <div id="detail-meta" class="status"></div>
-
           <div class="admin-actions">
             <button id="save-user">Save Changes</button>
             <button id="reset-password" class="secondary">Reset Password</button>
@@ -72,22 +48,35 @@
 
     <section class="card" style="margin-top:20px">
       <div class="section-title">
-        <div>
-          <small>SECURITY</small>
-          <h1>Admin Activity</h1>
-        </div>
-        <button id="refresh-audit" class="secondary">Refresh</button>
+        <div><small>CHAT</small><h1>Permanent Channels</h1></div>
+        <button id="refresh-channels" class="secondary">Refresh</button>
       </div>
-      <p class="status">Recent administrative actions. Passwords and session tokens are never recorded here.</p>
-      <p id="audit-error" class="error"></p>
+      <p id="channel-error" class="error"></p>
+      <div class="admin-actions">
+        <input id="channel-name" placeholder="Channel name">
+        <label><input id="channel-allow-ops" type="checkbox"> Allow Ops to promote to Ops</label>
+        <button id="create-channel">Create Channel</button>
+      </div>
       <div class="admin-table-wrap">
         <table class="admin-table">
-          <thead>
-            <tr><th>Time</th><th>Administrator</th><th>Action</th><th>Target</th><th>Result</th><th>Details</th></tr>
-          </thead>
-          <tbody id="audit-events"></tbody>
+          <thead><tr><th>Name</th><th>Creator</th><th>Original Mod</th><th>Ops may create Ops</th><th>Manage</th></tr></thead>
+          <tbody id="channels"></tbody>
         </table>
       </div>
+      <aside id="channel-panel" class="admin-detail hidden">
+        <div class="section-title"><div><small>CHANNEL</small><h2 id="channel-detail-title">Channel</h2></div><button id="close-channel-detail" class="secondary">Close</button></div>
+        <p id="channel-detail-error" class="error"></p>
+        <label>User to manage<input id="channel-user" placeholder="username"></label>
+        <label>Role<select id="channel-role"><option value="mod">Mod 🔶</option><option value="op">Op 🟢</option><option value="user">User</option></select></label>
+        <div class="admin-actions"><button id="save-channel-role">Set Role</button><button id="delete-channel" class="danger">Delete Channel</button></div>
+      </aside>
+    </section>
+
+    <section class="card" style="margin-top:20px">
+      <div class="section-title"><div><small>SECURITY</small><h1>Admin Activity</h1></div><button id="refresh-audit" class="secondary">Refresh</button></div>
+      <p class="status">Recent administrative actions. Passwords and session tokens are never recorded here.</p>
+      <p id="audit-error" class="error"></p>
+      <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Time</th><th>Administrator</th><th>Action</th><th>Target</th><th>Result</th><th>Details</th></tr></thead><tbody id="audit-events"></tbody></table></div>
     </section>
 
     <footer>Otter Link administration • development UI</footer>
