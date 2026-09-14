@@ -1,4 +1,6 @@
 #include "otterservicewindow.h"
+#include "otterchatwidget.h"
+#include "otterlinkclient.h"
 
 #include <QAction>
 #include <QEvent>
@@ -46,7 +48,6 @@ protected:
             QWidget::mouseMoveEvent(event);
             return;
         }
-
         const QPoint delta = event->globalPosition().toPoint() - m_startGlobal;
         const int width = qMax(m_window->minimumWidth(), m_startSize.width() + delta.x());
         const int height = qMax(m_window->minimumHeight(), m_startSize.height() + delta.y());
@@ -82,6 +83,16 @@ OtterServiceWindow::OtterServiceWindow(const QString &title, QWidget *content, Q
     setFrameShadow(QFrame::Raised);
     setMinimumSize(300, 190);
     setAttribute(Qt::WA_DeleteOnClose, false);
+
+    if (title == QStringLiteral("Community Chat") && content) {
+        QWidget *topLevel = content->window();
+        auto *client = topLevel ? topLevel->findChild<OtterLinkClient *>() : nullptr;
+        auto *chatWidget = topLevel ? topLevel->findChild<OtterChatWidget *>() : nullptr;
+        if (!chatWidget && client)
+            chatWidget = new OtterChatWidget(client, nullptr);
+        if (chatWidget)
+            m_content = chatWidget;
+    }
 
     auto *outer = new QVBoxLayout(this);
     outer->setContentsMargins(2, 2, 2, 2);
@@ -120,8 +131,6 @@ OtterServiceWindow::OtterServiceWindow(const QString &title, QWidget *content, Q
     }
 
     if (m_resizable) {
-        // Only the explicitly resizable service gets a resize grip.
-        // Chat reserves matching space so the grip never obscures the Send button.
         m_sizeGrip = new ServiceResizeGrip(this, this);
         m_sizeGrip->setObjectName(QStringLiteral("serviceWindowSizeGrip"));
         m_sizeGrip->raise();
@@ -138,6 +147,10 @@ void OtterServiceWindow::setupChatEmojiButton()
     if (!m_content || m_titleLabel->text() != QStringLiteral("Community Chat"))
         return;
 
+    // The channel-aware chat widget owns its own input and emoji button.
+    if (qobject_cast<OtterChatWidget *>(m_content))
+        return;
+
     auto *chatEdit = m_content->findChild<QLineEdit *>(QStringLiteral("chatEdit"));
     auto *sendButton = m_content->findChild<QPushButton *>(QStringLiteral("sendChatButton"));
     auto *inputLayout = m_content->findChild<QHBoxLayout *>(QStringLiteral("chatInputLayout"));
@@ -145,11 +158,8 @@ void OtterServiceWindow::setupChatEmojiButton()
     if (!chatEdit || !sendButton || !inputLayout || !chatLayout)
         return;
 
-    if (m_resizable) {
-        // Reserve the bottom-right corner for the resize grip so it cannot sit on
-        // top of the Send button when the service window is resized.
+    if (m_resizable)
         chatLayout->setContentsMargins(0, 0, 18, 18);
-    }
 
     if (m_content->findChild<QPushButton *>(QStringLiteral("chatEmojiButton")))
         return;
@@ -170,7 +180,6 @@ void OtterServiceWindow::setupChatEmojiButton()
             QStringLiteral("❤️"), QStringLiteral("🎉"), QStringLiteral("🔥"),
             QStringLiteral("🦦")
         };
-
         for (const QString &emoji : emojis) {
             auto *action = menu->addAction(emoji);
             connect(action, &QAction::triggered, chatEdit, [chatEdit, emoji]() {
@@ -178,7 +187,6 @@ void OtterServiceWindow::setupChatEmojiButton()
                 chatEdit->setFocus();
             });
         }
-
         menu->exec(emojiButton->mapToGlobal(QPoint(0, -menu->sizeHint().height())));
         menu->deleteLater();
     });
@@ -203,15 +211,8 @@ void OtterServiceWindow::activateWindow()
     setFocus(Qt::OtherFocusReason);
 }
 
-void OtterServiceWindow::minimize()
-{
-    hide();
-}
-
-void OtterServiceWindow::closeWindow()
-{
-    emit closeRequested(this);
-}
+void OtterServiceWindow::minimize() { hide(); }
+void OtterServiceWindow::closeWindow() { emit closeRequested(this); }
 
 void OtterServiceWindow::mousePressEvent(QMouseEvent *event)
 {
@@ -258,32 +259,34 @@ void OtterServiceWindow::keepInsideDesktop()
     const QWidget *desktop = parentWidget();
     if (!desktop)
         return;
-    const int maxX = qMax(0, desktop->width() - width());
-    const int maxY = qMax(0, desktop->height() - height());
+    const QRect bounds = desktop->rect();
+    const int maxX = qMax(0, bounds.width() - width());
+    const int maxY = qMax(0, bounds.height() - height());
     move(qBound(0, x(), maxX), qBound(0, y(), maxY));
 }
 
 bool OtterServiceWindow::eventFilter(QObject *watched, QEvent *event)
 {
-    if (watched == m_titleLabel->parentWidget()) {
-        if (event->type() == QEvent::MouseButtonPress) {
-            auto *mouseEvent = static_cast<QMouseEvent *>(event);
-            if (mouseEvent->button() == Qt::LeftButton) {
-                m_dragging = true;
-                m_dragOffset = mouseEvent->position().toPoint();
-                raise();
-                return true;
-            }
-        } else if (event->type() == QEvent::MouseMove && m_dragging) {
-            auto *mouseEvent = static_cast<QMouseEvent *>(event);
-            if (mouseEvent->buttons() & Qt::LeftButton) {
-                move(mapToParent(mouseEvent->position().toPoint()) - m_dragOffset);
-                keepInsideDesktop();
-                return true;
-            }
-        } else if (event->type() == QEvent::MouseButtonRelease) {
-            m_dragging = false;
+    if (watched == m_titleLabel->parentWidget() && event->type() == QEvent::MouseButtonPress) {
+        auto *mouse = static_cast<QMouseEvent *>(event);
+        if (mouse->button() == Qt::LeftButton) {
+            m_dragging = true;
+            m_dragOffset = mouse->position().toPoint();
+            raise();
+            return true;
         }
+    }
+    if (watched == m_titleLabel->parentWidget() && event->type() == QEvent::MouseMove) {
+        auto *mouse = static_cast<QMouseEvent *>(event);
+        if (m_dragging && (mouse->buttons() & Qt::LeftButton)) {
+            move(mapToParent(mouse->position().toPoint()) - m_dragOffset);
+            keepInsideDesktop();
+            return true;
+        }
+    }
+    if (watched == m_titleLabel->parentWidget() && event->type() == QEvent::MouseButtonRelease) {
+        m_dragging = false;
+        return true;
     }
     return QFrame::eventFilter(watched, event);
 }
