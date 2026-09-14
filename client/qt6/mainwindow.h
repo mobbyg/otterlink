@@ -6,7 +6,6 @@
 
 class QFrame;
 class QTreeWidget;
-class OtterChatWidget;
 class OtterHomePage;
 class OtterServiceWindow;
 
@@ -56,7 +55,6 @@ private:
     QTreeWidget *m_buddyTree = nullptr;
     QFrame *m_desktop = nullptr;
     OtterHomePage *m_homePage = nullptr;
-    OtterChatWidget *m_chatWidget = nullptr;
     QHash<QString, QString> m_buddyGroups;
     QHash<QString, QString> m_pendingBuddyGroups;
     QHash<QString, OtterServiceWindow *> m_serviceWindows;
