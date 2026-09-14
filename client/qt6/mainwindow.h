@@ -44,8 +44,7 @@ private:
     void setLoggedIn(bool loggedIn);
     void beginConnectionPresentation();
     void rebuildBuddyTree(const QStringList &buddies, const QStringList &onlineUsers);
-    void openServiceWindow(const QString &service, const QString &title, QWidget *content,
-                           bool resizable = false);
+    void openServiceWindow(const QString &service, const QString &title, QWidget *content);
     void closeServiceWindow(OtterServiceWindow *window);
     void closeAllServiceWindows();
     void restoreServicePage(QWidget *page);
