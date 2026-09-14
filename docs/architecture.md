@@ -14,6 +14,7 @@ It is intentionally different from a traditional BBS project. The server provide
 4. **Clean third-party boundaries.** Open OSCAR remains an independently licensed MIT component/service.
 5. **Offline and low-bandwidth awareness.** Retro clients should be able to cache useful state and synchronize efficiently.
 6. **Retro presentation, modern engine.** The service infrastructure remains modern while clients may deliberately evoke the connected-computer experience of the 1980s and 1990s.
+7. **Specific behavior, specific ownership.** Service-specific behavior should live in service-specific components rather than being generalized into shared UI infrastructure without a clear need.
 
 ## Server layers
 
@@ -25,7 +26,8 @@ It is intentionally different from a traditional BBS project. The server provide
 +--------------------------------------------------+
 | Authentication | Accounts | Sessions | Presence  |
 +--------------------------------------------------+
-| Forums | Messages | Mail | Files | News | Games  |
+| Chat | Forums | Messages | Mail | Files | News   |
+| Games | OtterWeb and other online services       |
 +--------------------------------------------------+
 | Persistence / Database                           |
 +--------------------------------------------------+
@@ -48,10 +50,44 @@ The original server bootstrap milestone is complete. The implementation now incl
 - Online/offline presence tracking
 - Initial buddy presence delivery
 - Presence fan-out to connected watchers
+- Multi-room persistent Community Chat
+- Temporary user-created chat rooms and permanent administrator-created rooms
+- Original and delegated moderator roles plus Operator roles
+- Chat moderation, bans, kicks, unbanning, and role management
+- Protected web administration for chat channels and roles
+- A dedicated Qt 6 Community Chat service window
 
-The next implementation focus is end-to-end messaging and broader client interoperability, rather than further expanding the initial server bootstrap.
+The next implementation focus is building out the service model and client experience around these working foundations, rather than expanding the initial server bootstrap in isolation.
 
 ## Chat / IM
+
+Community Chat is implemented as a dedicated server service with persistent SQLite-backed channel state and message history. It is exposed through the web API and the Qt client rather than being tied to either presentation.
+
+Channels may be temporary user-created rooms or permanent administrator-created rooms. Temporary rooms are removed when all users leave. Permanent channels are managed through the protected administration surface.
+
+Each channel has a role hierarchy:
+
+- **User** — ordinary channel member
+- **Operator** — may moderate ordinary users and may create Operators when the channel permits it
+- **Moderator** — may moderate users and Operators and may assign Operator roles
+- **Original Moderator** — the channel's original creator/moderator, with additional ownership semantics
+
+The original creator automatically regains Original Moderator status when returning to the channel. Delegated moderators do not receive that automatic restoration. Only the Original Moderator can create another Moderator.
+
+Moderation and role assignment are enforced by the server, not merely by the client UI. The Qt client presents the appropriate controls for the current user's role.
+
+The service currently exposes channel-oriented operations including:
+
+- List channels
+- Create a channel
+- Retrieve channel state
+- Join/leave a channel
+- Send and retrieve messages
+- Assign channel roles
+- Kick or ban users
+- Unban users
+
+## OSCAR compatibility
 
 OSCAR compatibility is treated as a separate compatibility layer rather than the definition of the Otter Link service model.
 
@@ -73,6 +109,8 @@ The Qt client should use Qt Designer `.ui` files for substantial layouts rather 
 The intended desktop experience is **retro feel, modern engine**. The default classic presentation can draw from the visual language of Q-Link/AOL-era online services while using original Otter Link branding and artwork. The client should retain sensible modern behavior rather than reproducing historical limitations.
 
 The client should eventually provide an optional dial-up-style connection presentation with three conceptual stages — Calling, Connecting/Carrier, and Connected — synchronized with the actual connection state. Connection audio should be independently optional from the visual sequence, with separate controls for connection and disconnect effects.
+
+Service windows should own service-specific behavior. For example, Community Chat uses a dedicated `OtterChatWidget` rather than adding chat-specific state and controls to the generic service-window implementation.
 
 See [`docs/presentation.md`](presentation.md) for the presentation and connection-experience direction.
 
@@ -109,6 +147,63 @@ The current development protocol is a simple framed, line-oriented JSON transpor
 
 The message model should support parent/child relationships so conversations form trees. The presentation is intentionally C-Net-inspired: conference listings show the top-level messages, while replies are discovered by entering the original message/thread rather than appearing as a flat list of every reply.
 
+## OtterWeb
+
+OtterWeb is the planned web-browsing, directory, and search service for Otter Link.
+
+The goal is to make web browsing feel like a service inside Otter Link rather than simply opening an external browser. The planned modern implementation uses a dedicated Qt 6 `OtterBrowserWidget` backed by Qt WebEngine.
+
+```text
+Otter Link Qt Client
+        |
+        +-- OtterWebWidget
+        |      |
+        |      +-- Qt WebEngine
+        |      +-- Favorites / History
+        |      +-- OtterWeb Home / Portal
+        |      +-- OtterWeb Directory
+        |      +-- Search
+        |
+        +-- Otter Link services
+```
+
+Planned browser capabilities include:
+
+- Back / forward navigation
+- Reload
+- Home
+- Address/search field
+- Favorites/bookmarks
+- History
+- Modern Web browsing
+- Retro Web browsing
+
+The default home page should be an OtterLink-branded portal inspired by the late-1990s/early-2000s online-service experience. It should provide search, directory categories, featured sites, community links, Otter Link service links, and an entry point to Retro Web content while using original branding and content.
+
+Retro Web support may integrate historical-web providers such as Protoweb. Providers should remain integrations rather than becoming hard dependencies of the browser architecture.
+
+The planned OtterWeb directory may initially be curated manually, with categories such as News, Technology, Computing, Retro Computing, Games, Ham Radio, Entertainment, Community, Personal Sites, and Otter Link Services.
+
+A modest future search index can crawl public web content and index fields such as URL, page title, description, headings, visible text, keywords, category, and last indexed time. Otter Link's own services can also be indexed. Users may eventually submit sites for directory/search inclusion, with moderation before curated placement.
+
+OtterWeb is deliberately not intended to become a replacement for Google. The useful milestone is an integrated portal, browser, directory, and small search service that fits the Otter Link experience.
+
+Implementation order:
+
+1. Dedicated Qt WebEngine browser widget
+2. Navigation and address/search bar
+3. OtterWeb home page
+4. Favorites/bookmarks
+5. History
+6. Modern Web browsing
+7. Retro Web/provider support
+8. OtterWeb directory
+9. Search index
+10. Crawler
+11. Site submission and moderation
+
+The browser and portal should be useful before the crawler and search system are attempted.
+
 ## Milestones
 
 ### Complete
@@ -123,15 +218,19 @@ The message model should support parent/child relationships so conversations for
 8. Implement initial buddy list and presence behavior.
 9. Establish the first usable web development client.
 10. Establish the first usable Qt 6 native desktop client foundation.
+11. Implement persistent multi-room Community Chat and its moderation model.
+12. Add protected web administration for chat channels and roles.
+13. Add the Qt 6 Community Chat service window.
 
 ### Next
 
 1. Exercise the OSCAR implementation against real clients and capture interoperability gaps.
 2. Complete reliable OSCAR messaging/session behavior needed for an end-to-end IM milestone.
-3. Expand the native service protocol around the same account, presence, and messaging model.
-4. Build the Qt client into a practical development/test client with messaging, buddy management, and live refresh.
+3. Expand the native service protocol around the same account, presence, chat, and messaging model.
+4. Continue building the Qt client into a practical development/test client with messaging, buddy management, chat, and live refresh.
 5. Begin the client-side presentation/theme layer, keeping the retro experience independent of the service implementation.
 6. Add the optional dial-up-style connection presentation and independently controlled connection audio.
-7. Begin implementing the first actual retro-platform client.
+7. Begin the OtterWeb browser and portal milestone with a dedicated browser widget.
+8. Begin implementing the first actual retro-platform client.
 
-The project should continue to favor small, testable protocol increments over attempting to implement the entire historical service at once.
+The project should continue to favor small, testable service increments over attempting to implement the entire historical service at once.
