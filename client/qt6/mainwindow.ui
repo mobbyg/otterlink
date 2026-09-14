@@ -11,16 +11,18 @@
     <item><widget class="QStackedWidget" name="stackedWidget">
       <widget class="QWidget" name="authPage">
        <layout class="QVBoxLayout" name="authLayout"><property name="leftMargin"><number>80</number></property><property name="rightMargin"><number>80</number></property>
-        <item><spacer name="authTop"><property name="orientation"><enum>Qt::Vertical</enum></property><property name="sizeHint" stdset="0"><size><width>20</width><height>60</height></size></property></spacer></item>
-        <item><widget class="QLabel" name="titleLabel"><property name="text"><string>&lt;h1&gt;Otter Link&lt;/h1&gt;&lt;p&gt;Connected community service for modern and retro computers.&lt;/p&gt;&lt;p&gt;🐾 Your online world awaits.&lt;/p&gt;</string></property><property name="textFormat"><enum>Qt::RichText</enum></property><property name="alignment"><set>Qt::AlignCenter</set></property></widget></item>
-        <item><spacer name="authGap"><property name="orientation"><enum>Qt::Vertical</enum></property><property name="sizeHint" stdset="0"><size><width>20</width><height>25</height></size></property></spacer></item>
+        <item><spacer name="authTop"><property name="orientation"><enum>Qt::Vertical</enum></property><property name="sizeHint" stdset="0"><size><width>20</width><height>35</height></size></property></spacer></item>
+        <item alignment="Qt::AlignHCenter"><widget class="QLabel" name="titleLabel"><property name="minimumSize"><size><width>400</width><height>120</height></size></property><property name="maximumSize"><size><width>400</width><height>120</height></size></property><property name="text"><string>&lt;img src=":/images/otterlink_logo.png" width="400" height="120"&gt;</string></property><property name="textFormat"><enum>Qt::RichText</enum></property><property name="alignment"><set>Qt::AlignCenter</set></property></widget></item>
+        <item><widget class="QLabel" name="taglineLabel"><property name="text"><string>Connected community service for modern and retro computers.</string></property><property name="wordWrap"><bool>true</bool></property><property name="alignment"><set>Qt::AlignCenter</set></property></widget></item>
+        <item><widget class="QLabel" name="welcomeLabel"><property name="text"><string>🐾 Your online world awaits.</string></property><property name="alignment"><set>Qt::AlignCenter</set></property></widget></item>
+        <item><spacer name="authGap"><property name="orientation"><enum>Qt::Vertical</enum></property><property name="sizeHint" stdset="0"><size><width>20</width><height>18</height></size></property></spacer></item>
         <item><layout class="QFormLayout" name="loginForm">
           <item row="0" column="0"><widget class="QLabel" name="serverLabel"><property name="text"><string>Server:</string></property></widget></item><item row="0" column="1"><widget class="QLineEdit" name="serverEdit"><property name="text"><string>http://127.0.0.1:9090</string></property></widget></item>
           <item row="1" column="0"><widget class="QLabel" name="usernameLabel"><property name="text"><string>Username:</string></property></widget></item><item row="1" column="1"><widget class="QLineEdit" name="usernameEdit"/></item>
           <item row="2" column="0"><widget class="QLabel" name="passwordLabel"><property name="text"><string>Password:</string></property></widget></item><item row="2" column="1"><widget class="QLineEdit" name="passwordEdit"><property name="echoMode"><enum>QLineEdit::Password</enum></property></widget></item>
         </layout></item>
         <item><widget class="QPushButton" name="loginButton"><property name="text"><string>☎  Connect to Otter Link</string></property></widget></item>
-        <item><spacer name="authBottom"><property name="orientation"><enum>Qt::Vertical</enum></property><property name="sizeHint" stdset="0"><size><width>20</width><height>60</height></size></property></spacer></item>
+        <item><spacer name="authBottom"><property name="orientation"><enum>Qt::Vertical</enum></property><property name="sizeHint" stdset="0"><size><width>20</width><height>35</height></size></property></spacer></item>
        </layout>
       </widget>
       <widget class="QWidget" name="connectionPage">
