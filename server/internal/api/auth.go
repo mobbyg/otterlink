@@ -8,12 +8,14 @@ import (
 	"strings"
 
 	"github.com/mobbyg/otterlink/server/internal/accounts"
+	"github.com/mobbyg/otterlink/server/internal/chat"
 	"github.com/mobbyg/otterlink/server/internal/presence"
 )
 
 type AuthAPI struct {
 	Accounts accounts.Service
 	Presence *presence.Service
+	Chat     *chat.Hub
 }
 
 type registerRequest struct {
@@ -72,6 +74,12 @@ func (a AuthAPI) Logout(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, "invalid session", http.StatusUnauthorized)
 		return
+	}
+	if a.Chat != nil {
+		if err := a.Chat.LeaveAll(user.ID); err != nil {
+			http.Error(w, "chat logout cleanup failed", http.StatusInternalServerError)
+			return
+		}
 	}
 	if err := a.Accounts.Logout(token); err != nil {
 		http.Error(w, "logout failed", http.StatusInternalServerError)

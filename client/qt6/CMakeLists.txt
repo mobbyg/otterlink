@@ -20,6 +20,8 @@ qt_add_executable(otterlink
     otterlinkclient.h
     otterlinkstyle.cpp
     otterlinkstyle.h
+    otterchatwidget.cpp
+    otterchatwidget.h
     otterservicewindow.cpp
     otterservicewindow.h
     resources/otterlink.qrc

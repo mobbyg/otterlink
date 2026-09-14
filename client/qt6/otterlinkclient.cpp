@@ -168,10 +168,126 @@ void OtterLinkClient::sendChatMessage(const QString &message)
     connect(reply, &QNetworkReply::finished, this, [this, reply]() {
         if (reply->error() != QNetworkReply::NoError)
             emit errorOccurred(serverErrorMessage(reply, reply->errorString()));
-        else {
+        else
             emit chatMessageSent();
-            loadDashboard();
+        reply->deleteLater();
+    });
+}
+
+void OtterLinkClient::sendChatMessage(qint64 channelId, const QString &message)
+{
+    QJsonObject body{{QStringLiteral("message"), message}};
+    auto *reply = m_network.post(
+        request(QStringLiteral("/api/chat/channels/%1/messages").arg(channelId)),
+        QJsonDocument(body).toJson(QJsonDocument::Compact));
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+        if (reply->error() != QNetworkReply::NoError)
+            emit errorOccurred(serverErrorMessage(reply, reply->errorString()));
+        else
+            emit chatMessageSent();
+        reply->deleteLater();
+    });
+}
+
+void OtterLinkClient::loadChatChannels()
+{
+    auto *reply = m_network.get(request(QStringLiteral("/api/chat/channels")));
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+        if (reply->error() != QNetworkReply::NoError) {
+            emit errorOccurred(serverErrorMessage(reply, reply->errorString()));
+        } else {
+            const QJsonDocument doc = QJsonDocument::fromJson(reply->readAll());
+            emit chatChannelsLoaded(doc.object().value(QStringLiteral("channels")).toArray());
         }
+        reply->deleteLater();
+    });
+}
+
+void OtterLinkClient::createChatChannel(const QString &name, bool allowOpsToCreateOps)
+{
+    QJsonObject body{{QStringLiteral("name"), name},
+                     {QStringLiteral("allow_ops_to_create_ops"), allowOpsToCreateOps}};
+    auto *reply = m_network.post(request(QStringLiteral("/api/chat/channels")),
+                                 QJsonDocument(body).toJson(QJsonDocument::Compact));
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+        if (reply->error() != QNetworkReply::NoError) {
+            emit errorOccurred(serverErrorMessage(reply, reply->errorString()));
+        } else {
+            emit chatActionCompleted();
+            loadChatChannels();
+        }
+        reply->deleteLater();
+    });
+}
+
+void OtterLinkClient::joinChatChannel(qint64 channelId)
+{
+    auto *reply = m_network.post(
+        request(QStringLiteral("/api/chat/channels/%1/join").arg(channelId)), QByteArray());
+    connect(reply, &QNetworkReply::finished, this, [this, reply, channelId]() {
+        if (reply->error() != QNetworkReply::NoError) {
+            emit errorOccurred(serverErrorMessage(reply, reply->errorString()));
+        } else {
+            m_joinedChatChannels.insert(channelId);
+            const QJsonObject obj = QJsonDocument::fromJson(reply->readAll()).object();
+            emit chatChannelLoaded(
+                obj.value(QStringLiteral("channel")).toObject(),
+                obj.value(QStringLiteral("members")).toArray(),
+                obj.value(QStringLiteral("messages")).toArray(),
+                obj.value(QStringLiteral("member")).toObject().value(QStringLiteral("role")).toString());
+        }
+        reply->deleteLater();
+    });
+}
+
+void OtterLinkClient::leaveChatChannel(qint64 channelId)
+{
+    auto *reply = m_network.post(
+        request(QStringLiteral("/api/chat/channels/%1/leave").arg(channelId)), QByteArray());
+    connect(reply, &QNetworkReply::finished, this, [this, reply, channelId]() {
+        if (reply->error() != QNetworkReply::NoError) {
+            emit errorOccurred(serverErrorMessage(reply, reply->errorString()));
+        } else {
+            m_joinedChatChannels.remove(channelId);
+            emit chatActionCompleted();
+        }
+        reply->deleteLater();
+    });
+}
+
+void OtterLinkClient::setChatRole(qint64 channelId, const QString &username, const QString &role)
+{
+    QJsonObject body{{QStringLiteral("role"), role}};
+    const QString encoded = QString::fromUtf8(QUrl::toPercentEncoding(username));
+    const QString path = QStringLiteral("/api/chat/channels/%1/users/%2/role")
+                             .arg(channelId)
+                             .arg(encoded);
+    auto *reply = m_network.post(request(path),
+                                 QJsonDocument(body).toJson(QJsonDocument::Compact));
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+        if (reply->error() != QNetworkReply::NoError)
+            emit errorOccurred(serverErrorMessage(reply, reply->errorString()));
+        else
+            emit chatActionCompleted();
+        reply->deleteLater();
+    });
+}
+
+void OtterLinkClient::moderateChatUser(qint64 channelId, const QString &username,
+                                       const QString &action)
+{
+    QJsonObject body{{QStringLiteral("action"), action}};
+    const QString encoded = QString::fromUtf8(QUrl::toPercentEncoding(username));
+    const QString path = QStringLiteral("/api/chat/channels/%1/users/%2/moderate")
+                             .arg(channelId)
+                             .arg(encoded);
+    auto *reply = m_network.post(request(path),
+                                 QJsonDocument(body).toJson(QJsonDocument::Compact));
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+        if (reply->error() != QNetworkReply::NoError)
+            emit errorOccurred(serverErrorMessage(reply, reply->errorString()));
+        else
+            emit chatActionCompleted();
         reply->deleteLater();
     });
 }
@@ -210,7 +326,8 @@ void OtterLinkClient::removeBuddy(const QString &username)
         return;
     }
 
-    QNetworkRequest req = request(QStringLiteral("/api/buddies?username=") + QUrl::toPercentEncoding(trimmed));
+    QNetworkRequest req = request(QStringLiteral("/api/buddies?username=")
+                                  + QString::fromUtf8(QUrl::toPercentEncoding(trimmed)));
     auto *reply = m_network.deleteResource(req);
     connect(reply, &QNetworkReply::finished, this, [this, reply]() {
         if (reply->error() != QNetworkReply::NoError) {
@@ -227,13 +344,16 @@ void OtterLinkClient::logout()
 {
     if (m_token.isEmpty()) {
         m_username.clear();
+        m_joinedChatChannels.clear();
         emit loggedOut();
         return;
     }
+
     auto *reply = m_network.post(request(QStringLiteral("/api/auth/logout")), QByteArray());
     connect(reply, &QNetworkReply::finished, this, [this, reply]() {
         m_token.clear();
         m_username.clear();
+        m_joinedChatChannels.clear();
         emit loggedOut();
         reply->deleteLater();
     });

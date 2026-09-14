@@ -1,10 +1,13 @@
 #pragma once
 
-#include <QObject>
+#include <QJsonArray>
+#include <QJsonObject>
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
+#include <QSet>
 #include <QString>
 #include <QStringList>
+#include <QObject>
 
 class OtterLinkClient final : public QObject
 {
@@ -20,6 +23,13 @@ public:
     void login(const QString &username, const QString &password);
     void loadDashboard();
     void sendChatMessage(const QString &message);
+    void sendChatMessage(qint64 channelId, const QString &message);
+    void loadChatChannels();
+    void createChatChannel(const QString &name, bool allowOpsToCreateOps);
+    void joinChatChannel(qint64 channelId);
+    void leaveChatChannel(qint64 channelId);
+    void setChatRole(qint64 channelId, const QString &username, const QString &role);
+    void moderateChatUser(qint64 channelId, const QString &username, const QString &action);
     void addBuddy(const QString &username);
     void removeBuddy(const QString &username);
     void logout();
@@ -31,6 +41,10 @@ signals:
     void buddyAdded(const QString &username);
     void buddyChanged();
     void chatMessageSent();
+    void chatChannelsLoaded(const QJsonArray &channels);
+    void chatChannelLoaded(const QJsonObject &channel, const QJsonArray &members,
+                           const QJsonArray &messages, const QString &role);
+    void chatActionCompleted();
     void loggedOut();
     void errorOccurred(const QString &message);
 
@@ -41,4 +55,5 @@ private:
     QString m_baseUrl = QStringLiteral("http://127.0.0.1:9090");
     QString m_token;
     QString m_username;
+    QSet<qint64> m_joinedChatChannels;
 };
