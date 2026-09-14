@@ -8,7 +8,7 @@
 #include <QDialog>
 #include <QDialogButtonBox>
 #include <QHBoxLayout>
-#include <QInputDialog>
+#include <QLabel>
 #include <QLineEdit>
 #include <QListWidget>
 #include <QMenu>
@@ -177,18 +177,29 @@ bool OtterChatWidget::canAssignRole(const QString &targetRole, const QString &ne
 
 void OtterChatWidget::createChannel()
 {
-    bool ok = false;
-    const QString name = QInputDialog::getText(this, QStringLiteral("Create Chat Room"), QStringLiteral("Room name:"), QLineEdit::Normal, QString(), &ok).trimmed();
-    if (!ok || name.isEmpty()) return;
     QDialog dialog(this);
     dialog.setWindowTitle(QStringLiteral("Create Chat Room"));
     auto *layout = new QVBoxLayout(&dialog);
+    auto *nameLabel = new QLabel(QStringLiteral("Room name:"), &dialog);
+    auto *nameEdit = new QLineEdit(&dialog);
+    nameEdit->setPlaceholderText(QStringLiteral("Enter a room name"));
     auto *check = new QCheckBox(QStringLiteral("Allow Ops to promote to Ops"), &dialog);
     auto *buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, &dialog);
-    layout->addWidget(check); layout->addWidget(buttons);
+    auto *okButton = buttons->button(QDialogButtonBox::Ok);
+    okButton->setEnabled(false);
+    layout->addWidget(nameLabel);
+    layout->addWidget(nameEdit);
+    layout->addWidget(check);
+    layout->addWidget(buttons);
+    connect(nameEdit, &QLineEdit::textChanged, &dialog, [okButton](const QString &text) {
+        okButton->setEnabled(!text.trimmed().isEmpty());
+    });
     connect(buttons, &QDialogButtonBox::accepted, &dialog, &QDialog::accept);
     connect(buttons, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
+    nameEdit->setFocus();
     if (dialog.exec() != QDialog::Accepted) return;
+    const QString name = nameEdit->text().trimmed();
+    if (name.isEmpty()) return;
     m_client->createChatChannel(name, check->isChecked());
 }
 
