@@ -7,7 +7,7 @@ Otter Link is an open-source online service inspired by the classic Quantum Link
 
 ## Current status
 
-Otter Link is in active development. The server foundation is working, and the project now has first usable web and Qt 6 client surfaces for exercising the account, buddy, presence, and chat portions of the service.
+Otter Link is in active development. The server foundation is working, and the project now has usable web and Qt 6 client surfaces for accounts, buddies, presence, and multi-room community chat.
 
 Currently implemented or wired into the server:
 
@@ -18,7 +18,7 @@ Currently implemented or wired into the server:
 - HTTP session/authentication API
 - Development web client served by the Go server
 - Web client dashboard with account, buddy, presence, and community chat views
-- Initial protected web administration foundation with account roles, user management, session management, and an admin activity log
+- Protected web administration foundation with account roles, user management, session management, audit logging, and chat channel management
 - Native framed TCP client protocol on port `8023`
 - OSCAR compatibility service on port `5190`
 - OSCAR authentication/login flow
@@ -30,10 +30,14 @@ Currently implemented or wired into the server:
 - Online/offline presence tracking
 - Initial buddy presence delivery
 - Presence fan-out to connected watchers
-- Shared in-memory chat history used by the web client and native protocol
+- Multi-room Community Chat with persistent message history
+- Temporary user-created chat rooms and permanent administrator-created rooms
+- Chat channel roles with original/delegated moderators and Operators
+- Chat moderation, bans, kicks, and role management
+- Qt 6 Community Chat client with channel switching, room creation, user list, roles, and moderation controls
 - Tests covering the server, chat service, and OSCAR protocol components
 
-This is **not yet a finished AIM replacement or public service**. The OSCAR implementation and native service protocol are being built incrementally, with the web client serving as a practical development surface while the service model takes shape.
+This is **not yet a finished AIM replacement or public service**. The OSCAR implementation and native service protocol are being built incrementally, with the web and Qt clients serving as practical development surfaces while the service model takes shape.
 
 ## Services and ports
 
@@ -42,12 +46,13 @@ This is **not yet a finished AIM replacement or public service**. The OSCAR impl
 | HTTP / web client | `:9090` | Web UI, health, registration, login, logout, service APIs, and administration |
 | Otter Link protocol | `:8023` | Development client/service protocol |
 | OSCAR compatibility | `:5190` | AIM/OSCAR-compatible client connectivity |
+| OtterWeb | Planned | Integrated web browser, portal, directory, and search service |
 
 Open `http://localhost:9090/` after starting the server to use the development UI.
 
 The initial web administration surface is available at `http://localhost:9090/admin`. Administrative data is protected server-side by the account's `admin` role; the Qt client does not expose administration functions.
 
-The administration surface currently supports account editing, password resets, session revocation, account deletion safeguards, and a recent activity/audit view. Audit entries record administrative actions and outcomes without recording passwords or session tokens.
+The administration surface currently supports account editing, password resets, session revocation, account deletion safeguards, chat channel management, role management, and a recent activity/audit view. Audit entries record administrative actions and outcomes without recording passwords or session tokens.
 
 The HTTP API also exposes:
 
@@ -60,8 +65,16 @@ The HTTP API also exposes:
 - `GET /api/buddies`
 - `POST /api/buddies`
 - `DELETE /api/buddies?username=...`
-- `GET /api/chat`
-- `POST /api/chat`
+- `GET /api/chat/channels`
+- `POST /api/chat/channels`
+- `GET /api/chat/channels/{id}`
+- `POST /api/chat/channels/{id}/join`
+- `POST /api/chat/channels/{id}/leave`
+- `POST /api/chat/channels/{id}/messages`
+- `POST /api/chat/channels/{id}/roles`
+- `POST /api/chat/channels/{id}/moderate`
+- `POST /api/chat/channels/{id}/unban`
+- `/api/admin/chat/*` — admin role required
 - `GET /api/admin/users` — admin role required
 - `GET /api/admin/audit` — admin role required
 
@@ -141,12 +154,13 @@ The long-term service model includes:
 
 - Accounts and profiles
 - Presence
-- Instant messaging and chat
+- Instant messaging and community chat
 - Mail
 - Threaded boards/conferences
 - Files
 - News and notifications
 - Games and other online services
+- OtterWeb browsing, directory, and search services
 
 See [`docs/architecture.md`](docs/architecture.md) for the architectural direction and [`docs/protocol.md`](docs/protocol.md) for the developing Otter Link client protocol.
 
@@ -160,12 +174,42 @@ It currently provides:
 - Current-user display
 - Buddy list management
 - Online-user display
-- Shared community chat
+- Multi-room community chat
 - Automatic refresh while connected
 
 The initial administration surface is intentionally separate from the normal client experience. It is being built as a web/server concern so administrative operations do not become part of the Qt 6 client or the retro client protocol surface.
 
+The Qt 6 client now includes a dedicated Community Chat service window with room selection, room creation, message history, active-user display, channel roles, and moderation controls.
+
 It is a **development client**, not the final Otter Link UI. As the service grows, this surface can evolve into a richer modern client while native clients continue to present the same underlying services in platform-appropriate ways.
+
+## OtterWeb
+
+**OtterWeb is a planned future Otter Link service.**
+
+The goal is to make web browsing feel like a service inside Otter Link rather than simply opening an external browser. The planned experience combines a Qt 6 WebEngine browser, an OtterLink-branded portal/home page, favorites, history, a web directory, a small search index, Modern Web browsing, and Retro Web browsing.
+
+The portal should take inspiration from the late-1990s/early-2000s online-service experience while using original OtterLink/OtterWeb branding and content. Planned directory categories include news, technology, computing, retro computing, games, ham radio, entertainment, community, personal sites, and Otter Link services.
+
+Retro Web support may integrate historical-web providers such as Protoweb, but OtterWeb should treat those providers as integrations rather than making the browser itself dependent on any one provider.
+
+A future OtterWeb index may crawl and index modest amounts of public web content using fields such as URL, title, description, headings, visible text, keywords, category, and last indexed time. Users may eventually be able to submit sites for directory/search inclusion, with moderation before curated placement.
+
+The intended implementation order is:
+
+1. Dedicated Qt WebEngine browser widget
+2. Navigation and address/search bar
+3. OtterWeb home page
+4. Favorites/bookmarks
+5. History
+6. Modern Web browsing
+7. Retro Web/provider support
+8. OtterWeb directory
+9. Search index
+10. Crawler
+11. Site submission and moderation
+
+The browser and portal should be useful before the crawler and search system are attempted.
 
 ## OSCAR compatibility
 
@@ -173,6 +217,6 @@ OSCAR support is being implemented as a compatibility layer so existing AIM/OSCA
 
 ## Project direction
 
-The immediate goal is to turn the current server and OSCAR foundation into a useful end-to-end online service, using the development web client as a practical test surface while keeping the underlying Otter Link service model independent of any one client or legacy protocol.
+The immediate goal is to turn the current server, chat, and OSCAR foundation into a useful end-to-end online service, using the web and Qt clients as practical test surfaces while keeping the underlying Otter Link service model independent of any one client or legacy protocol.
 
 The long-term goal remains **one service, many clients** — from a modern desktop application to machines that were considered cutting-edge decades ago.
