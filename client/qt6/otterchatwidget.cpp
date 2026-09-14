@@ -4,13 +4,14 @@
 
 #include <QCheckBox>
 #include <QComboBox>
+#include <QCursor>
+#include <QDialog>
+#include <QDialogButtonBox>
 #include <QHBoxLayout>
 #include <QInputDialog>
-#include <QLabel>
 #include <QLineEdit>
 #include <QListWidget>
 #include <QMenu>
-#include <QMessageBox>
 #include <QPushButton>
 #include <QVBoxLayout>
 
@@ -34,9 +35,7 @@ OtterChatWidget::OtterChatWidget(OtterLinkClient *client, QWidget *parent)
 
     auto *body = new QHBoxLayout;
     m_chatList = new QListWidget(this);
-    m_chatList->setObjectName(QStringLiteral("chatMessages"));
     m_userList = new QListWidget(this);
-    m_userList->setObjectName(QStringLiteral("chatUsers"));
     m_userList->setContextMenuPolicy(Qt::CustomContextMenu);
     m_userList->setMinimumWidth(150);
     m_userList->setMaximumWidth(220);
@@ -80,10 +79,7 @@ OtterChatWidget::OtterChatWidget(OtterLinkClient *client, QWidget *parent)
     loadChannels();
 }
 
-void OtterChatWidget::loadChannels()
-{
-    m_client->loadChatChannels();
-}
+void OtterChatWidget::loadChannels() { m_client->loadChatChannels(); }
 
 void OtterChatWidget::channelsLoaded(const QJsonArray &channels)
 {
@@ -105,11 +101,8 @@ void OtterChatWidget::channelsLoaded(const QJsonArray &channels)
     m_channelCombo->blockSignals(false);
     if (select >= 0) channelChanged(select);
     else {
-        m_channelId = 0;
-        m_channelName.clear();
-        m_role.clear();
-        m_chatList->clear();
-        m_userList->clear();
+        m_channelId = 0; m_channelName.clear(); m_role.clear();
+        m_chatList->clear(); m_userList->clear();
         m_chatList->addItem(QStringLiteral("No chat rooms exist yet. Use + to create one."));
     }
 }
@@ -119,15 +112,13 @@ void OtterChatWidget::channelChanged(int index)
     if (index < 0) return;
     const qint64 id = m_channelCombo->itemData(index).toLongLong();
     if (id < 1) return;
-    if (m_channelId > 0 && m_channelId != id)
-        m_client->leaveChatChannel(m_channelId);
+    if (m_channelId > 0 && m_channelId != id) m_client->leaveChatChannel(m_channelId);
     m_channelId = id;
     m_channelName = m_channelCombo->currentText();
     m_client->joinChatChannel(m_channelId);
 }
 
-void OtterChatWidget::channelLoaded(const QJsonObject &channel, const QJsonArray &members,
-                                    const QJsonArray &messages, const QString &role)
+void OtterChatWidget::channelLoaded(const QJsonObject &channel, const QJsonArray &members, const QJsonArray &messages, const QString &role)
 {
     m_channelId = static_cast<qint64>(channel.value(QStringLiteral("id")).toDouble());
     m_channelName = channel.value(QStringLiteral("name")).toString();
@@ -138,8 +129,7 @@ void OtterChatWidget::channelLoaded(const QJsonObject &channel, const QJsonArray
 
 void OtterChatWidget::populateUsers(const QJsonArray &members)
 {
-    m_userList->clear();
-    m_userRoles.clear();
+    m_userList->clear(); m_userRoles.clear();
     for (const QJsonValue &value : members) {
         const QJsonObject member = value.toObject();
         const QJsonObject user = member.value(QStringLiteral("user")).toObject();
@@ -173,7 +163,6 @@ QString OtterChatWidget::roleIcon(const QString &role) const
     if (role == QStringLiteral("op")) return QStringLiteral("🟢");
     return QString();
 }
-
 QString OtterChatWidget::currentUsername() const { return m_client->accountName(); }
 
 QString OtterChatWidget::selectedUsername() const
@@ -204,14 +193,12 @@ void OtterChatWidget::createChannel()
     bool ok = false;
     const QString name = QInputDialog::getText(this, QStringLiteral("Create Chat Room"), QStringLiteral("Room name:"), QLineEdit::Normal, QString(), &ok).trimmed();
     if (!ok || name.isEmpty()) return;
-
     QDialog dialog(this);
     dialog.setWindowTitle(QStringLiteral("Create Chat Room"));
     auto *layout = new QVBoxLayout(&dialog);
     auto *check = new QCheckBox(QStringLiteral("Allow Ops to promote to Ops"), &dialog);
     auto *buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, &dialog);
-    layout->addWidget(check);
-    layout->addWidget(buttons);
+    layout->addWidget(check); layout->addWidget(buttons);
     connect(buttons, &QDialogButtonBox::accepted, &dialog, &QDialog::accept);
     connect(buttons, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
     if (dialog.exec() != QDialog::Accepted) return;
@@ -226,16 +213,8 @@ void OtterChatWidget::sendMessage()
     m_client->sendChatMessage(m_channelId, message);
 }
 
-void OtterChatWidget::refreshCurrentChannel()
-{
-    if (m_channelId > 0) m_client->joinChatChannel(m_channelId);
-}
-
-void OtterChatWidget::actionCompleted()
-{
-    loadChannels();
-    if (m_channelId > 0) m_client->joinChatChannel(m_channelId);
-}
+void OtterChatWidget::refreshCurrentChannel() { if (m_channelId > 0) m_client->joinChatChannel(m_channelId); }
+void OtterChatWidget::actionCompleted() { loadChannels(); if (m_channelId > 0) m_client->joinChatChannel(m_channelId); }
 
 void OtterChatWidget::userContextMenu(const QPoint &position)
 {
@@ -244,7 +223,6 @@ void OtterChatWidget::userContextMenu(const QPoint &position)
     const QString username = item->data(Qt::UserRole).toString();
     const QString targetRole = item->data(Qt::UserRole + 1).toString();
     if (username.isEmpty() || username.compare(currentUsername(), Qt::CaseInsensitive) == 0) return;
-
     QMenu menu(this);
     if (canAssignRole(targetRole, QStringLiteral("mod"))) menu.addAction(QStringLiteral("🔶 Make Mod"), this, [this, username]() { m_client->setChatRole(m_channelId, username, QStringLiteral("mod")); });
     if (canAssignRole(targetRole, QStringLiteral("op"))) menu.addAction(QStringLiteral("🟢 Make Op"), this, [this, username]() { m_client->setChatRole(m_channelId, username, QStringLiteral("op")); });
@@ -259,8 +237,5 @@ void OtterChatWidget::userContextMenu(const QPoint &position)
 
 void OtterChatWidget::showError(const QString &message)
 {
-    if (message.isEmpty()) return;
-    // Keep ordinary server errors visible without turning every network refresh
-    // into a modal interruption. The status is shown in the chat list.
-    m_chatList->addItem(QStringLiteral("[Chat] %1").arg(message));
+    if (!message.isEmpty()) m_chatList->addItem(QStringLiteral("[Chat] %1").arg(message));
 }
