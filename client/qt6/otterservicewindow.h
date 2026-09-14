@@ -16,7 +16,7 @@ class OtterServiceWindow final : public QFrame
 
 public:
     explicit OtterServiceWindow(const QString &title, QWidget *content,
-                                QWidget *parent = nullptr);
+                                bool resizable = false, QWidget *parent = nullptr);
 
     QWidget *contentWidget() const { return m_content; }
     void activateWindow();
@@ -42,6 +42,7 @@ private:
     QLabel *m_titleLabel = nullptr;
     QPushButton *m_minimizeButton = nullptr;
     QPushButton *m_closeButton = nullptr;
+    bool m_resizable = false;
     bool m_dragging = false;
     bool m_initialSizeApplied = false;
     QPoint m_dragOffset;
