@@ -1,15 +1,14 @@
 <img width="400" height="120" alt="otterlink_logo" src="https://github.com/user-attachments/assets/9da99a3d-298b-4740-9e55-6af0f387c59f" />
 
-
 **Your connection to the online world of yesterday.**
 
-Otter Link is an open-source online service inspired by the classic Quantum Link / Q-Link / AOL model. The goal is to provide one shared service that can be reached by modern clients as well as native retro clients for platforms such as Amiga, C64/C128, and Commander X16.
+Otter Link is an open-source online service inspired by the classic Quantum Link / Q-Link / AOL model. It is designed as **one service, many clients**, with modern clients and future native clients for platforms such as Amiga, C64/C128, and Commander X16.
 
 ## Current status
 
-Otter Link is in active development. The server foundation is working, and the project now has usable web and Qt 6 client surfaces for accounts, buddies, presence, and multi-room community chat.
+Otter Link is an active development project. The server, development web client, Qt 6 client, account system, presence, buddy handling, Community Chat, native protocol foundation, and OSCAR compatibility layer are working pieces of the project.
 
-Currently implemented or wired into the server:
+### Currently implemented
 
 - Go server with graceful shutdown
 - SQLite persistence
@@ -17,44 +16,42 @@ Currently implemented or wired into the server:
 - Account registration and authentication
 - HTTP session/authentication API
 - Development web client served by the Go server
-- Web client dashboard with account, buddy, presence, and community chat views
-- Protected web administration foundation with account roles, user management, session management, audit logging, and chat channel management
+- Web dashboard with account, buddies, presence, and Community Chat
+- Protected web administration
+- Account management and session management
+- Administrative audit logging
 - Native framed TCP client protocol on port `8023`
 - OSCAR compatibility service on port `5190`
-- OSCAR authentication/login flow
-- OSCAR session/BOS handling
-- OSCAR rate information handling
-- OSCAR location/user-info queries, including Query2
-- Buddy list add/delete
-- Buddy watcher lookup
-- Online/offline presence tracking
-- Initial buddy presence delivery
-- Presence fan-out to connected watchers
+- OSCAR authentication/login, session/BOS, rate information, and location/user-info flows
+- Buddy list add/delete and buddy watcher lookup
+- Online/offline presence tracking and presence fan-out
 - Multi-room Community Chat with persistent message history
-- Temporary user-created chat rooms and permanent administrator-created rooms
-- Chat channel roles with original/delegated moderators and Operators
-- Chat moderation, bans, kicks, and role management
-- Qt 6 Community Chat client with channel switching, room creation, user list, roles, and moderation controls
-- Tests covering the server, chat service, and OSCAR protocol components
+- Temporary user-created rooms and permanent administrator-created rooms
+- Chat channel roles, moderation, bans, kicks, unbanning, and role management
+- Qt 6 Community Chat service window
+- Automated tests for server, chat, and OSCAR components
 
-This is **not yet a finished AIM replacement or public service**. The OSCAR implementation and native service protocol are being built incrementally, with the web and Qt clients serving as practical development surfaces while the service model takes shape.
+## What it is not
+
+Otter Link is **not yet a finished AIM replacement or public service**.
+
+The OSCAR implementation is an incremental compatibility layer, not a claim of complete AIM/OSCAR compatibility. The native Otter Link protocol is also still under development.
+
+The web and Qt clients are development clients and practical service test surfaces. They are not yet the final modern client experience, and native retro clients are not yet implemented.
 
 ## Services and ports
 
 | Service | Default | Purpose |
 |---|---:|---|
-| HTTP / web client | `:9090` | Web UI, health, registration, login, logout, service APIs, and administration |
-| Otter Link protocol | `:8023` | Development client/service protocol |
+| HTTP / web client | `:9090` | Web UI, health, authentication, service APIs, and administration |
+| Otter Link protocol | `:8023` | Native development client/service protocol |
 | OSCAR compatibility | `:5190` | AIM/OSCAR-compatible client connectivity |
-| OtterWeb | Planned | Integrated web browser, portal, directory, and search service |
 
-Open `http://localhost:9090/` after starting the server to use the development UI.
+After starting the server, open `http://localhost:9090/` for the development web client.
 
-The initial web administration surface is available at `http://localhost:9090/admin`. Administrative data is protected server-side by the account's `admin` role; the Qt client does not expose administration functions.
+## HTTP API
 
-The administration surface currently supports account editing, password resets, session revocation, account deletion safeguards, chat channel management, role management, and a recent activity/audit view. Audit entries record administrative actions and outcomes without recording passwords or session tokens.
-
-The HTTP API also exposes:
+Current public HTTP endpoints include:
 
 - `GET /api/health`
 - `POST /api/auth/register`
@@ -78,37 +75,43 @@ The HTTP API also exposes:
 - `GET /api/admin/users` — admin role required
 - `GET /api/admin/audit` — admin role required
 
-## Quick start
+Detailed protocol and architecture documentation lives in [`docs/`](docs/).
+
+## Build and run
 
 ### Requirements
 
 - Go 1.24 or newer
-- SQLite support is provided by the Go SQLite driver; no separate SQLite server is required
+- A C compiler/toolchain suitable for the Go SQLite driver
+- Qt 6 for the native Qt client
 
-### Run the server
+### Server
+
+Run directly from the repository:
 
 ```sh
 cd server
 go run .
 ```
 
-By default this starts all three server interfaces and creates `data/otterlink.db`.
-
-Then open `http://localhost:9090/` in a browser.
-
-Check the HTTP service directly with:
+Build a server binary:
 
 ```sh
-curl http://localhost:9090/api/health
+cd server
+go build -o otterlink-server .
 ```
 
-Expected response:
+The server creates `data/otterlink.db` by default.
 
-```json
-{"status":"ok","service":"otter-link"}
+### Tests
+
+From `server`:
+
+```sh
+go test ./...
 ```
 
-### Configuration
+## Configuration
 
 Environment variables:
 
@@ -118,21 +121,54 @@ Environment variables:
 - `OTTERLINK_DB` — SQLite database path; default `data/otterlink.db`
 - `OTTERLINK_ADMIN_USERNAME` — existing account to grant the `admin` role at server startup; unset by default
 
-For example, after creating your normal account:
+For example:
 
 ```sh
 OTTERLINK_ADMIN_USERNAME=yourusername go run .
 ```
 
-The setting only promotes the named existing account; it does not create an account or set a password.
+This promotes the named existing account; it does not create an account or set a password.
 
-### Tests
+## Administration
 
-From the `server` directory:
+The web administration surface is available at:
 
-```sh
-go test ./...
+```text
+http://localhost:9090/admin
 ```
+
+Administrative access is protected server-side by the account's `admin` role. The Qt client does not expose administration functions.
+
+Current administration functions include:
+
+- Account editing
+- Password resets
+- Session revocation
+- Account deletion safeguards
+- Chat channel management
+- Chat role management
+- Recent activity/audit view
+
+Audit entries record administrative actions and outcomes without recording passwords or session tokens.
+
+## Development clients
+
+### Web client
+
+The web client is embedded in the Go server and requires no separate frontend build system. It currently provides:
+
+- Registration and login
+- Current-user information
+- Buddy list management
+- Online-user display
+- Multi-room Community Chat
+- Automatic refresh while connected
+
+### Qt 6 client
+
+The Qt client currently provides the modern desktop development surface, including the Community Chat service window with room selection, room creation, message history, active-user display, roles, and moderation controls.
+
+The desktop presentation is still under development. The client architecture keeps service-specific behavior in dedicated service components rather than putting it into generic window infrastructure.
 
 ## Repository layout
 
@@ -144,79 +180,9 @@ go test ./...
 └── tests/     Project-level test material
 ```
 
-The development web client lives under `server/internal/web` and is embedded into the Go server, so it does not require a separate frontend build system.
+## Documentation
 
-## Architecture
+- [`docs/architecture.md`](docs/architecture.md) — service and client architecture
+- [`docs/protocol.md`](docs/protocol.md) — developing Otter Link protocol
 
-The server owns identity, persistence, permissions, sessions, and service state. Clients are responsible for presentation and interaction appropriate to their platform.
-
-The long-term service model includes:
-
-- Accounts and profiles
-- Presence
-- Instant messaging and community chat
-- Mail
-- Threaded boards/conferences
-- Files
-- News and notifications
-- Games and other online services
-- OtterWeb browsing, directory, and search services
-
-See [`docs/architecture.md`](docs/architecture.md) for the architectural direction and [`docs/protocol.md`](docs/protocol.md) for the developing Otter Link client protocol.
-
-## Development UI
-
-The web client is deliberately a small, dependency-free browser UI rather than a separate frontend application. It is intended to give us a real surface for testing service behavior and to establish the visual and interaction direction for a future modern client.
-
-It currently provides:
-
-- Account registration and login
-- Current-user display
-- Buddy list management
-- Online-user display
-- Multi-room community chat
-- Automatic refresh while connected
-
-The initial administration surface is intentionally separate from the normal client experience. It is being built as a web/server concern so administrative operations do not become part of the Qt 6 client or the retro client protocol surface.
-
-The Qt 6 client now includes a dedicated Community Chat service window with room selection, room creation, message history, active-user display, channel roles, and moderation controls.
-
-It is a **development client**, not the final Otter Link UI. As the service grows, this surface can evolve into a richer modern client while native clients continue to present the same underlying services in platform-appropriate ways.
-
-## OtterWeb
-
-**OtterWeb is a planned future Otter Link service.**
-
-The goal is to make web browsing feel like a service inside Otter Link rather than simply opening an external browser. The planned experience combines a Qt 6 WebEngine browser, an OtterLink-branded portal/home page, favorites, history, a web directory, a small search index, Modern Web browsing, and Retro Web browsing.
-
-The portal should take inspiration from the late-1990s/early-2000s online-service experience while using original OtterLink/OtterWeb branding and content. Planned directory categories include news, technology, computing, retro computing, games, ham radio, entertainment, community, personal sites, and Otter Link services.
-
-Retro Web support may integrate historical-web providers such as Protoweb, but OtterWeb should treat those providers as integrations rather than making the browser itself dependent on any one provider.
-
-A future OtterWeb index may crawl and index modest amounts of public web content using fields such as URL, title, description, headings, visible text, keywords, category, and last indexed time. Users may eventually be able to submit sites for directory/search inclusion, with moderation before curated placement.
-
-The intended implementation order is:
-
-1. Dedicated Qt WebEngine browser widget
-2. Navigation and address/search bar
-3. OtterWeb home page
-4. Favorites/bookmarks
-5. History
-6. Modern Web browsing
-7. Retro Web/provider support
-8. OtterWeb directory
-9. Search index
-10. Crawler
-11. Site submission and moderation
-
-The browser and portal should be useful before the crawler and search system are attempted.
-
-## OSCAR compatibility
-
-OSCAR support is being implemented as a compatibility layer so existing AIM/OSCAR clients can be used while Otter Link's native service protocol is developed. The implementation is intentionally incremental: passing a protocol exchange or client startup sequence does not imply that every OSCAR service is supported.
-
-## Project direction
-
-The immediate goal is to turn the current server, chat, and OSCAR foundation into a useful end-to-end online service, using the web and Qt clients as practical test surfaces while keeping the underlying Otter Link service model independent of any one client or legacy protocol.
-
-The long-term goal remains **one service, many clients** — from a modern desktop application to machines that were considered cutting-edge decades ago.
+Future services and client features are tracked in GitHub issues rather than maintained as a roadmap in this README. The root README is intentionally kept focused on **what exists, what does not yet exist, and how to build, run, test, and administer the current system**.
