@@ -31,8 +31,21 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/buddies", s.buddyList)
 	mux.HandleFunc("POST /api/buddies", s.buddyAdd)
 	mux.HandleFunc("DELETE /api/buddies", s.buddyRemove)
-	mux.HandleFunc("GET /api/chat", s.chatList)
-	mux.HandleFunc("POST /api/chat", s.chatSend)
+
+	mux.HandleFunc("GET /api/chat/channels", s.chatChannels)
+	mux.HandleFunc("POST /api/chat/channels", s.chatChannelCreate)
+	mux.HandleFunc("GET /api/chat/channels/{channelID}", s.chatChannel)
+	mux.HandleFunc("POST /api/chat/channels/{channelID}/join", s.chatChannelJoin)
+	mux.HandleFunc("POST /api/chat/channels/{channelID}/leave", s.chatChannelLeave)
+	mux.HandleFunc("POST /api/chat/channels/{channelID}/messages", s.chatChannelMessages)
+	mux.HandleFunc("POST /api/chat/channels/{channelID}/users/{username}/role", s.chatChannelRole)
+	mux.HandleFunc("POST /api/chat/channels/{channelID}/users/{username}/moderate", s.chatChannelModerate)
+
+	// Legacy routes remain so older clients fail cleanly while the channel-aware
+	// client is being rolled out.
+	mux.HandleFunc("GET /api/chat", s.chatLegacyList)
+	mux.HandleFunc("POST /api/chat", s.chatLegacySend)
+
 	mux.HandleFunc("GET /api/admin/users", s.adminUsers)
 	mux.HandleFunc("GET /api/admin/audit", s.adminAudit)
 	mux.HandleFunc("GET /api/admin/users/{username}", s.adminUserDetail)
@@ -40,6 +53,10 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /api/admin/users/{username}/password", s.adminUserPasswordReset)
 	mux.HandleFunc("POST /api/admin/users/{username}/sessions/revoke", s.adminUserSessionsRevoke)
 	mux.HandleFunc("DELETE /api/admin/users/{username}", s.adminUserDelete)
+	mux.HandleFunc("GET /api/admin/chat/channels", s.adminChatChannels)
+	mux.HandleFunc("POST /api/admin/chat/channels", s.adminChatChannelCreate)
+	mux.HandleFunc("DELETE /api/admin/chat/channels/{channelID}", s.adminChatChannelDelete)
+	mux.HandleFunc("POST /api/admin/chat/channels/{channelID}/users/{username}/role", s.adminChatChannelRole)
 	return mux
 }
 
@@ -75,7 +92,6 @@ func (s *Server) user(r *http.Request) (accounts.User, bool) {
 	if err != nil {
 		return accounts.User{}, false
 	}
-
 	if s.Presence != nil {
 		s.Presence.OnlineHTTP(user, tokenConnectionID(value))
 	}
@@ -108,87 +124,37 @@ func (s *Server) buddyList(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{"buddies": list})
 }
 
-type buddyRequest struct {
-	Username string `json:"username"`
-}
+type buddyRequest struct { Username string `json:"username"` }
 
 func (s *Server) buddyAdd(w http.ResponseWriter, r *http.Request) {
 	user, ok := s.user(r)
-	if !ok {
-		http.Error(w, "unauthorized", http.StatusUnauthorized)
-		return
-	}
+	if !ok { http.Error(w, "unauthorized", http.StatusUnauthorized); return }
 	var req buddyRequest
-	if !decodeJSON(w, r, &req) {
-		return
-	}
+	if !decodeJSON(w, r, &req) { return }
 	buddy, err := s.Buddies.Add(user.ID, req.Username)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
+	if err != nil { http.Error(w, err.Error(), http.StatusBadRequest); return }
 	writeJSON(w, http.StatusCreated, buddy)
 }
 
 func (s *Server) buddyRemove(w http.ResponseWriter, r *http.Request) {
 	user, ok := s.user(r)
-	if !ok {
-		http.Error(w, "unauthorized", http.StatusUnauthorized)
-		return
-	}
+	if !ok { http.Error(w, "unauthorized", http.StatusUnauthorized); return }
 	username := strings.TrimSpace(r.URL.Query().Get("username"))
-	if username == "" {
-		http.Error(w, "username is required", http.StatusBadRequest)
-		return
-	}
-	if err := s.Buddies.Remove(user.ID, username); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
+	if username == "" { http.Error(w, "username is required", http.StatusBadRequest); return }
+	if err := s.Buddies.Remove(user.ID, username); err != nil { http.Error(w, err.Error(), http.StatusBadRequest); return }
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (s *Server) chatList(w http.ResponseWriter, r *http.Request) {
-	if _, ok := s.user(r); !ok {
-		http.Error(w, "unauthorized", http.StatusUnauthorized)
-		return
-	}
-	if s.Chat == nil {
-		http.Error(w, "chat unavailable", http.StatusInternalServerError)
-		return
-	}
-	writeJSON(w, http.StatusOK, map[string]any{"messages": s.Chat.List()})
+func (s *Server) chatLegacyList(w http.ResponseWriter, r *http.Request) {
+	if _, ok := s.user(r); !ok { http.Error(w, "unauthorized", http.StatusUnauthorized); return }
+	channels, err := s.Chat.ListChannels()
+	if err != nil { http.Error(w, "unable to list chat channels", http.StatusInternalServerError); return }
+	writeJSON(w, http.StatusOK, map[string]any{"channels": channels})
 }
 
-type chatRequest struct {
-	Message string `json:"message"`
-}
-
-func (s *Server) chatSend(w http.ResponseWriter, r *http.Request) {
-	user, ok := s.user(r)
-	if !ok {
-		http.Error(w, "unauthorized", http.StatusUnauthorized)
-		return
-	}
-	if s.Chat == nil {
-		http.Error(w, "chat unavailable", http.StatusInternalServerError)
-		return
-	}
-	var req chatRequest
-	if !decodeJSON(w, r, &req) {
-		return
-	}
-	message := strings.TrimSpace(req.Message)
-	if message == "" {
-		http.Error(w, "message is required", http.StatusBadRequest)
-		return
-	}
-	if len([]rune(message)) > 2000 {
-		http.Error(w, "message exceeds 2000 characters", http.StatusBadRequest)
-		return
-	}
-	created := s.Chat.Publish(chat.User{ID: user.ID, Username: user.Username, DisplayName: user.DisplayName}, message)
-	writeJSON(w, http.StatusCreated, created)
+func (s *Server) chatLegacySend(w http.ResponseWriter, r *http.Request) {
+	if _, ok := s.user(r); !ok { http.Error(w, "unauthorized", http.StatusUnauthorized); return }
+	http.Error(w, "chat now requires a channel", http.StatusGone)
 }
 
 func decodeJSON(w http.ResponseWriter, r *http.Request, dst any) bool {
