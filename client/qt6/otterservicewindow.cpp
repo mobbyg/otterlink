@@ -74,9 +74,8 @@ private:
 
 } // namespace
 
-OtterServiceWindow::OtterServiceWindow(const QString &title, QWidget *content,
-                                       bool resizable, QWidget *parent)
-    : QFrame(parent), m_content(content), m_resizable(resizable)
+OtterServiceWindow::OtterServiceWindow(const QString &title, QWidget *content, QWidget *parent)
+    : QFrame(parent), m_content(content), m_resizable(title == QStringLiteral("Community Chat"))
 {
     setObjectName(QStringLiteral("serviceWindow"));
     setFrameShape(QFrame::StyledPanel);
@@ -121,7 +120,7 @@ OtterServiceWindow::OtterServiceWindow(const QString &title, QWidget *content,
     }
 
     if (m_resizable) {
-        // Only explicitly resizable service windows get a resize grip.
+        // Only the explicitly resizable service gets a resize grip.
         // Chat reserves matching space so the grip never obscures the Send button.
         m_sizeGrip = new ServiceResizeGrip(this, this);
         m_sizeGrip->setObjectName(QStringLiteral("serviceWindowSizeGrip"));
