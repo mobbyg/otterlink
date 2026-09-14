@@ -21,7 +21,6 @@ OtterChatWidget::OtterChatWidget(OtterLinkClient *client, QWidget *parent)
     auto *layout = new QVBoxLayout(this);
     layout->setContentsMargins(8, 8, 8, 8);
     layout->setSpacing(6);
-
     auto *channelBar = new QHBoxLayout;
     m_channelCombo = new QComboBox(this);
     m_channelCombo->setMinimumWidth(220);
@@ -32,7 +31,6 @@ OtterChatWidget::OtterChatWidget(OtterLinkClient *client, QWidget *parent)
     channelBar->addWidget(m_channelCombo, 1);
     channelBar->addWidget(m_createButton);
     layout->addLayout(channelBar);
-
     auto *body = new QHBoxLayout;
     m_chatList = new QListWidget(this);
     m_userList = new QListWidget(this);
@@ -42,7 +40,6 @@ OtterChatWidget::OtterChatWidget(OtterLinkClient *client, QWidget *parent)
     body->addWidget(m_chatList, 1);
     body->addWidget(m_userList);
     layout->addLayout(body, 1);
-
     auto *input = new QHBoxLayout;
     m_chatEdit = new QLineEdit(this);
     m_chatEdit->setPlaceholderText(QStringLiteral("Type a message..."));
@@ -53,7 +50,6 @@ OtterChatWidget::OtterChatWidget(OtterLinkClient *client, QWidget *parent)
     input->addWidget(m_emojiButton);
     input->addWidget(m_sendButton);
     layout->addLayout(input);
-
     connect(m_channelCombo, qOverload<int>(&QComboBox::currentIndexChanged), this, &OtterChatWidget::channelChanged);
     connect(m_createButton, &QPushButton::clicked, this, &OtterChatWidget::createChannel);
     connect(m_sendButton, &QPushButton::clicked, this, &OtterChatWidget::sendMessage);
@@ -64,7 +60,6 @@ OtterChatWidget::OtterChatWidget(OtterLinkClient *client, QWidget *parent)
     connect(m_client, &OtterLinkClient::chatActionCompleted, this, &OtterChatWidget::actionCompleted);
     connect(m_client, &OtterLinkClient::chatMessageSent, this, &OtterChatWidget::refreshCurrentChannel);
     connect(m_client, &OtterLinkClient::errorOccurred, this, &OtterChatWidget::showError);
-
     connect(m_emojiButton, &QPushButton::clicked, this, [this]() {
         auto *menu = new QMenu(m_emojiButton);
         const QStringList emojis = {QStringLiteral("😀"), QStringLiteral("😃"), QStringLiteral("😄"), QStringLiteral("😁"), QStringLiteral("😂"), QStringLiteral("🤣"), QStringLiteral("😊"), QStringLiteral("😎"), QStringLiteral("😍"), QStringLiteral("🤔"), QStringLiteral("👍"), QStringLiteral("👎"), QStringLiteral("❤️"), QStringLiteral("🎉"), QStringLiteral("🔥"), QStringLiteral("🦦")};
@@ -75,7 +70,6 @@ OtterChatWidget::OtterChatWidget(OtterLinkClient *client, QWidget *parent)
         menu->exec(m_emojiButton->mapToGlobal(QPoint(0, -menu->sizeHint().height())));
         menu->deleteLater();
     });
-
     loadChannels();
 }
 
@@ -100,11 +94,7 @@ void OtterChatWidget::channelsLoaded(const QJsonArray &channels)
     m_channelCombo->setCurrentIndex(select);
     m_channelCombo->blockSignals(false);
     if (select >= 0) channelChanged(select);
-    else {
-        m_channelId = 0; m_channelName.clear(); m_role.clear();
-        m_chatList->clear(); m_userList->clear();
-        m_chatList->addItem(QStringLiteral("No chat rooms exist yet. Use + to create one."));
-    }
+    else { m_channelId = 0; m_channelName.clear(); m_role.clear(); m_chatList->clear(); m_userList->clear(); m_chatList->addItem(QStringLiteral("No chat rooms exist yet. Use + to create one.")); }
 }
 
 void OtterChatWidget::channelChanged(int index)
@@ -164,12 +154,7 @@ QString OtterChatWidget::roleIcon(const QString &role) const
     return QString();
 }
 QString OtterChatWidget::currentUsername() const { return m_client->accountName(); }
-
-QString OtterChatWidget::selectedUsername() const
-{
-    const auto *item = m_userList->itemAt(m_userList->mapFromGlobal(QCursor::pos()));
-    return item ? item->data(Qt::UserRole).toString() : QString();
-}
+QString OtterChatWidget::selectedUsername() const { const auto *item = m_userList->itemAt(m_userList->mapFromGlobal(QCursor::pos())); return item ? item->data(Qt::UserRole).toString() : QString(); }
 
 bool OtterChatWidget::canModerate(const QString &targetRole) const
 {
@@ -183,9 +168,11 @@ bool OtterChatWidget::canModerate(const QString &targetRole) const
 bool OtterChatWidget::canAssignRole(const QString &targetRole, const QString &newRole) const
 {
     if (targetRole == QStringLiteral("original_mod")) return false;
-    if (newRole == QStringLiteral("mod")) return m_role == QStringLiteral("original_mod");
-    if (newRole == QStringLiteral("op")) return m_role == QStringLiteral("original_mod") || m_role == QStringLiteral("mod") || m_role == QStringLiteral("op");
-    return m_role == QStringLiteral("original_mod") || m_role == QStringLiteral("mod");
+    if (newRole == QStringLiteral("mod")) return m_role == QStringLiteral("original_mod") && targetRole == QStringLiteral("user");
+    if (newRole == QStringLiteral("op")) return targetRole == QStringLiteral("user") && (m_role == QStringLiteral("original_mod") || m_role == QStringLiteral("mod") || m_role == QStringLiteral("op"));
+    if (targetRole == QStringLiteral("mod")) return m_role == QStringLiteral("original_mod");
+    if (targetRole == QStringLiteral("op")) return m_role == QStringLiteral("original_mod") || m_role == QStringLiteral("mod");
+    return false;
 }
 
 void OtterChatWidget::createChannel()
@@ -226,7 +213,7 @@ void OtterChatWidget::userContextMenu(const QPoint &position)
     QMenu menu(this);
     if (canAssignRole(targetRole, QStringLiteral("mod"))) menu.addAction(QStringLiteral("🔶 Make Mod"), this, [this, username]() { m_client->setChatRole(m_channelId, username, QStringLiteral("mod")); });
     if (canAssignRole(targetRole, QStringLiteral("op"))) menu.addAction(QStringLiteral("🟢 Make Op"), this, [this, username]() { m_client->setChatRole(m_channelId, username, QStringLiteral("op")); });
-    if (canAssignRole(targetRole, QStringLiteral("user")) && (targetRole == QStringLiteral("mod") || targetRole == QStringLiteral("op"))) menu.addAction(QStringLiteral("Remove Role"), this, [this, username]() { m_client->setChatRole(m_channelId, username, QStringLiteral("user")); });
+    if (canAssignRole(targetRole, QStringLiteral("user"))) menu.addAction(QStringLiteral("Remove Role"), this, [this, username]() { m_client->setChatRole(m_channelId, username, QStringLiteral("user")); });
     if (canModerate(targetRole)) {
         if (!menu.isEmpty()) menu.addSeparator();
         menu.addAction(QStringLiteral("Kick"), this, [this, username]() { m_client->moderateChatUser(m_channelId, username, QStringLiteral("kick")); });
