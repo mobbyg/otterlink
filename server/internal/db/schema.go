@@ -55,6 +55,46 @@ CREATE TABLE IF NOT EXISTS audit_log (
 CREATE INDEX IF NOT EXISTS idx_audit_log_created_at ON audit_log(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_audit_log_actor_user_id ON audit_log(actor_user_id);
 CREATE INDEX IF NOT EXISTS idx_audit_log_target_user_id ON audit_log(target_user_id);
+
+CREATE TABLE IF NOT EXISTS chat_channels (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL UNIQUE COLLATE NOCASE,
+    creator_user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    original_mod_user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
+    permanent INTEGER NOT NULL DEFAULT 0,
+    allow_ops_to_create_ops INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS chat_channel_members (
+    channel_id INTEGER NOT NULL REFERENCES chat_channels(id) ON DELETE CASCADE,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    role TEXT NOT NULL DEFAULT 'user',
+    joined_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (channel_id, user_id),
+    CHECK (role IN ('user', 'op', 'mod', 'original_mod'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_chat_channel_members_user_id ON chat_channel_members(user_id);
+
+CREATE TABLE IF NOT EXISTS chat_channel_bans (
+    channel_id INTEGER NOT NULL REFERENCES chat_channels(id) ON DELETE CASCADE,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (channel_id, user_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_chat_channel_bans_user_id ON chat_channel_bans(user_id);
+
+CREATE TABLE IF NOT EXISTS chat_messages (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    channel_id INTEGER NOT NULL REFERENCES chat_channels(id) ON DELETE CASCADE,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    message TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_chat_messages_channel_id ON chat_messages(channel_id, id);
 `
 
 func Initialize(db *sql.DB) error {
@@ -65,8 +105,6 @@ func Initialize(db *sql.DB) error {
 		return fmt.Errorf("initialize schema: %w", err)
 	}
 
-	// Existing databases predate roles. SQLite does not provide
-	// ALTER TABLE ... ADD COLUMN IF NOT EXISTS, so inspect the table first.
 	rows, err := db.Query(`PRAGMA table_info(users)`)
 	if err != nil {
 		return fmt.Errorf("inspect users schema: %w", err)
