@@ -42,6 +42,7 @@ private:
     QLabel *m_titleLabel = nullptr;
     QPushButton *m_minimizeButton = nullptr;
     QPushButton *m_closeButton = nullptr;
+    bool m_resizable = false;
     bool m_dragging = false;
     bool m_initialSizeApplied = false;
     QPoint m_dragOffset;
