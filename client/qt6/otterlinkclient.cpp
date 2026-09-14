@@ -28,12 +28,7 @@ QString serverErrorMessage(QNetworkReply *reply, const QString &fallback)
 }
 
 OtterLinkClient::OtterLinkClient(QObject *parent) : QObject(parent) {}
-
-void OtterLinkClient::setBaseUrl(const QString &url)
-{
-    m_baseUrl = url.trimmed();
-    while (m_baseUrl.endsWith('/')) m_baseUrl.chop(1);
-}
+void OtterLinkClient::setBaseUrl(const QString &url) { m_baseUrl = url.trimmed(); while (m_baseUrl.endsWith('/')) m_baseUrl.chop(1); }
 QString OtterLinkClient::baseUrl() const { return m_baseUrl; }
 QString OtterLinkClient::accountName() const { return m_username; }
 
@@ -55,13 +50,7 @@ void OtterLinkClient::login(const QString &username, const QString &password)
         const QString token = obj.value(QStringLiteral("token")).toString();
         const QJsonObject user = obj.value(QStringLiteral("user")).toObject();
         if (token.isEmpty()) emit errorOccurred(QStringLiteral("Login response did not contain a token."));
-        else {
-            m_token = token;
-            m_username = user.value(QStringLiteral("username")).toString().trimmed();
-            if (m_username.isEmpty()) m_username = user.value(QStringLiteral("display_name")).toString().trimmed();
-            if (m_username.isEmpty()) m_username = username.trimmed();
-            emit loggedIn(m_username);
-        }
+        else { m_token = token; m_username = user.value(QStringLiteral("username")).toString().trimmed(); if (m_username.isEmpty()) m_username = user.value(QStringLiteral("display_name")).toString().trimmed(); if (m_username.isEmpty()) m_username = username.trimmed(); emit loggedIn(m_username); }
         reply->deleteLater();
     });
 }
@@ -74,87 +63,50 @@ void OtterLinkClient::loadDashboard()
     const auto finish = [this, pending]() { if (--pending->remaining == 0) emit dashboardLoaded(pending->buddies, pending->online, pending->chat); };
     const auto load = [this, pending, finish](const QString &path, const std::function<void(const QJsonObject &)> &handler) {
         auto *reply = m_network.get(request(path));
-        connect(reply, &QNetworkReply::finished, this, [this, reply, handler, finish]() {
-            if (reply->error() != QNetworkReply::NoError) { emit errorOccurred(serverErrorMessage(reply, reply->errorString())); reply->deleteLater(); finish(); return; }
-            handler(QJsonDocument::fromJson(reply->readAll()).object()); reply->deleteLater(); finish();
-        });
+        connect(reply, &QNetworkReply::finished, this, [this, reply, handler, finish]() { if (reply->error() != QNetworkReply::NoError) { emit errorOccurred(serverErrorMessage(reply, reply->errorString())); reply->deleteLater(); finish(); return; } handler(QJsonDocument::fromJson(reply->readAll()).object()); reply->deleteLater(); finish(); });
     };
-    load(QStringLiteral("/api/buddies"), [pending](const QJsonObject &obj) {
-        for (const auto value : obj.value(QStringLiteral("buddies")).toArray()) pending->buddies << value.toObject().value(QStringLiteral("username")).toString();
-    });
-    load(QStringLiteral("/api/presence"), [pending, this](const QJsonObject &obj) {
-        for (const auto value : obj.value(QStringLiteral("users")).toArray()) {
-            const QString username = value.toObject().value(QStringLiteral("username")).toString().trimmed();
-            if (!username.isEmpty() && username.compare(m_username, Qt::CaseInsensitive) != 0) pending->online << username;
-        }
-        pending->online.removeDuplicates(); pending->online.sort(Qt::CaseInsensitive);
-    });
-    load(QStringLiteral("/api/chat"), [pending](const QJsonObject &obj) {
-        for (const auto value : obj.value(QStringLiteral("messages")).toArray()) {
-            const QJsonObject message = value.toObject();
-            const QJsonObject from = message.value(QStringLiteral("from")).toObject();
-            pending->chat << QStringLiteral("%1: %2").arg(from.value(QStringLiteral("display_name")).toString(from.value(QStringLiteral("username")).toString()), message.value(QStringLiteral("message")).toString());
-        }
-    });
+    load(QStringLiteral("/api/buddies"), [pending](const QJsonObject &obj) { for (const auto value : obj.value(QStringLiteral("buddies")).toArray()) pending->buddies << value.toObject().value(QStringLiteral("username")).toString(); });
+    load(QStringLiteral("/api/presence"), [pending, this](const QJsonObject &obj) { for (const auto value : obj.value(QStringLiteral("users")).toArray()) { const QString username = value.toObject().value(QStringLiteral("username")).toString().trimmed(); if (!username.isEmpty() && username.compare(m_username, Qt::CaseInsensitive) != 0) pending->online << username; } pending->online.removeDuplicates(); pending->online.sort(Qt::CaseInsensitive); });
+    load(QStringLiteral("/api/chat"), [pending](const QJsonObject &obj) { for (const auto value : obj.value(QStringLiteral("messages")).toArray()) { const QJsonObject message = value.toObject(); const QJsonObject from = message.value(QStringLiteral("from")).toObject(); pending->chat << QStringLiteral("%1: %2").arg(from.value(QStringLiteral("display_name")).toString(from.value(QStringLiteral("username")).toString()), message.value(QStringLiteral("message")).toString()); } });
 }
 
 void OtterLinkClient::sendChatMessage(const QString &message)
 {
     QJsonObject body{{QStringLiteral("message"), message}};
     auto *reply = m_network.post(request(QStringLiteral("/api/chat")), QJsonDocument(body).toJson(QJsonDocument::Compact));
-    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
-        if (reply->error() != QNetworkReply::NoError) emit errorOccurred(serverErrorMessage(reply, reply->errorString())); else emit chatMessageSent();
-        reply->deleteLater();
-    });
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() { if (reply->error() != QNetworkReply::NoError) emit errorOccurred(serverErrorMessage(reply, reply->errorString())); else emit chatMessageSent(); reply->deleteLater(); });
 }
 
 void OtterLinkClient::sendChatMessage(qint64 channelId, const QString &message)
 {
     QJsonObject body{{QStringLiteral("message"), message}};
     auto *reply = m_network.post(request(QStringLiteral("/api/chat/channels/%1/messages").arg(channelId)), QJsonDocument(body).toJson(QJsonDocument::Compact));
-    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
-        if (reply->error() != QNetworkReply::NoError) emit errorOccurred(serverErrorMessage(reply, reply->errorString())); else emit chatMessageSent();
-        reply->deleteLater();
-    });
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() { if (reply->error() != QNetworkReply::NoError) emit errorOccurred(serverErrorMessage(reply, reply->errorString())); else emit chatMessageSent(); reply->deleteLater(); });
 }
 
 void OtterLinkClient::loadChatChannels()
 {
     auto *reply = m_network.get(request(QStringLiteral("/api/chat/channels")));
-    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
-        if (reply->error() != QNetworkReply::NoError) emit errorOccurred(serverErrorMessage(reply, reply->errorString()));
-        else emit chatChannelsLoaded(QJsonDocument::fromJson(reply->readAll()).object().value(QStringLiteral("channels")).toArray());
-        reply->deleteLater();
-    });
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() { if (reply->error() != QNetworkReply::NoError) emit errorOccurred(serverErrorMessage(reply, reply->errorString())); else emit chatChannelsLoaded(QJsonDocument::fromJson(reply->readAll()).object().value(QStringLiteral("channels")).toArray()); reply->deleteLater(); });
 }
 
 void OtterLinkClient::createChatChannel(const QString &name, bool allowOpsToCreateOps)
 {
     QJsonObject body{{QStringLiteral("name"), name}, {QStringLiteral("allow_ops_to_create_ops"), allowOpsToCreateOps}};
     auto *reply = m_network.post(request(QStringLiteral("/api/chat/channels")), QJsonDocument(body).toJson(QJsonDocument::Compact));
-    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
-        if (reply->error() != QNetworkReply::NoError) emit errorOccurred(serverErrorMessage(reply, reply->errorString())); else { emit chatActionCompleted(); loadChatChannels(); }
-        reply->deleteLater();
-    });
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() { if (reply->error() != QNetworkReply::NoError) emit errorOccurred(serverErrorMessage(reply, reply->errorString())); else { emit chatActionCompleted(); loadChatChannels(); } reply->deleteLater(); });
 }
 
 void OtterLinkClient::joinChatChannel(qint64 channelId)
 {
     auto *reply = m_network.post(request(QStringLiteral("/api/chat/channels/%1/join").arg(channelId)), QByteArray());
-    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
-        if (reply->error() != QNetworkReply::NoError) emit errorOccurred(serverErrorMessage(reply, reply->errorString()));
-        else {
-            const QJsonObject obj = QJsonDocument::fromJson(reply->readAll()).object();
-            emit chatChannelLoaded(obj.value(QStringLiteral("channel")).toObject(), obj.value(QStringLiteral("members")).toArray(), obj.value(QStringLiteral("messages")).toArray(), obj.value(QStringLiteral("member")).toObject().value(QStringLiteral("role")).toString());
-        }
-        reply->deleteLater();
-    });
+    connect(reply, &QNetworkReply::finished, this, [this, reply, channelId]() { if (reply->error() != QNetworkReply::NoError) emit errorOccurred(serverErrorMessage(reply, reply->errorString())); else { m_joinedChatChannels.insert(channelId); const QJsonObject obj = QJsonDocument::fromJson(reply->readAll()).object(); emit chatChannelLoaded(obj.value(QStringLiteral("channel")).toObject(), obj.value(QStringLiteral("members")).toArray(), obj.value(QStringLiteral("messages")).toArray(), obj.value(QStringLiteral("member")).toObject().value(QStringLiteral("role")).toString()); } reply->deleteLater(); });
 }
 
 void OtterLinkClient::leaveChatChannel(qint64 channelId)
 {
     auto *reply = m_network.post(request(QStringLiteral("/api/chat/channels/%1/leave").arg(channelId)), QByteArray());
-    connect(reply, &QNetworkReply::finished, this, [this, reply]() { if (reply->error() != QNetworkReply::NoError) emit errorOccurred(serverErrorMessage(reply, reply->errorString())); else emit chatActionCompleted(); reply->deleteLater(); });
+    connect(reply, &QNetworkReply::finished, this, [this, reply, channelId]() { if (reply->error() != QNetworkReply::NoError) emit errorOccurred(serverErrorMessage(reply, reply->errorString())); else { m_joinedChatChannels.remove(channelId); emit chatActionCompleted(); } reply->deleteLater(); });
 }
 
 void OtterLinkClient::setChatRole(qint64 channelId, const QString &username, const QString &role)
@@ -177,28 +129,26 @@ void OtterLinkClient::moderateChatUser(qint64 channelId, const QString &username
 
 void OtterLinkClient::addBuddy(const QString &username)
 {
-    const QString trimmed = username.trimmed();
-    if (trimmed.isEmpty()) { emit errorOccurred(QStringLiteral("Enter a username to add.")); return; }
+    const QString trimmed = username.trimmed(); if (trimmed.isEmpty()) { emit errorOccurred(QStringLiteral("Enter a username to add.")); return; }
     QJsonObject body{{QStringLiteral("username"), trimmed}};
     auto *reply = m_network.post(request(QStringLiteral("/api/buddies")), QJsonDocument(body).toJson(QJsonDocument::Compact));
-    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
-        if (reply->error() != QNetworkReply::NoError) emit errorOccurred(serverErrorMessage(reply, reply->errorString()));
-        else { const QString username = QJsonDocument::fromJson(reply->readAll()).object().value(QStringLiteral("username")).toString().trimmed(); emit buddyAdded(username); emit buddyChanged(); loadDashboard(); }
-        reply->deleteLater();
-    });
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() { if (reply->error() != QNetworkReply::NoError) emit errorOccurred(serverErrorMessage(reply, reply->errorString())); else { const QString username = QJsonDocument::fromJson(reply->readAll()).object().value(QStringLiteral("username")).toString().trimmed(); emit buddyAdded(username); emit buddyChanged(); loadDashboard(); } reply->deleteLater(); });
 }
 
 void OtterLinkClient::removeBuddy(const QString &username)
 {
-    const QString trimmed = username.trimmed();
-    if (trimmed.isEmpty()) { emit errorOccurred(QStringLiteral("Select a buddy to remove.")); return; }
+    const QString trimmed = username.trimmed(); if (trimmed.isEmpty()) { emit errorOccurred(QStringLiteral("Select a buddy to remove.")); return; }
     auto *reply = m_network.deleteResource(request(QStringLiteral("/api/buddies?username=") + QString::fromUtf8(QUrl::toPercentEncoding(trimmed))));
     connect(reply, &QNetworkReply::finished, this, [this, reply]() { if (reply->error() != QNetworkReply::NoError) emit errorOccurred(serverErrorMessage(reply, reply->errorString())); else { emit buddyChanged(); loadDashboard(); } reply->deleteLater(); });
 }
 
 void OtterLinkClient::logout()
 {
-    if (m_token.isEmpty()) { m_username.clear(); emit loggedOut(); return; }
+    if (m_token.isEmpty()) { m_username.clear(); m_joinedChatChannels.clear(); emit loggedOut(); return; }
+    const auto channels = m_joinedChatChannels.values();
+    for (const qint64 channelId : channels)
+        m_network.post(request(QStringLiteral("/api/chat/channels/%1/leave").arg(channelId)), QByteArray())->deleteLater();
+    m_joinedChatChannels.clear();
     auto *reply = m_network.post(request(QStringLiteral("/api/auth/logout")), QByteArray());
     connect(reply, &QNetworkReply::finished, this, [this, reply]() { m_token.clear(); m_username.clear(); emit loggedOut(); reply->deleteLater(); });
 }
