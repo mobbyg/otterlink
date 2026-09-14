@@ -2,11 +2,12 @@
 
 #include <QJsonArray>
 #include <QJsonObject>
-#include <QObject>
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
+#include <QSet>
 #include <QString>
 #include <QStringList>
+#include <QObject>
 
 class OtterLinkClient final : public QObject
 {
@@ -54,4 +55,5 @@ private:
     QString m_baseUrl = QStringLiteral("http://127.0.0.1:9090");
     QString m_token;
     QString m_username;
+    QSet<qint64> m_joinedChatChannels;
 };
