@@ -39,11 +39,10 @@
           <h2>Buddies</h2>
           <form id="add-buddy"><input name="username" placeholder="Username" required><button>Add</button></form>
           <ul id="buddies" class="people"></ul>
-          <h2>Online now</h2>
-          <ul id="online" class="people"></ul>
         </aside>
         <section class="card chat-card">
           <div class="section-title"><h2>Community Chat</h2><small>Shared service test area</small></div>
+          <label class="chat-channel-label">Channel<select id="chat-channel"></select></label>
           <div id="chat" class="chat"></div>
           <form id="send-chat" class="composer"><input name="message" maxlength="2000" placeholder="Say something…" autocomplete="off" required><button>Send</button></form>
         </section>
