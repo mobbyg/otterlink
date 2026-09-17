@@ -1,4 +1,4 @@
-const state = { token: localStorage.getItem('otterlink-token') || '', user: null };
+const state = { token: localStorage.getItem('otterlink-token') || '', user: null, channelId: null };
 const $ = (id) => document.getElementById(id);
 
 async function request(path, options = {}) {
@@ -42,18 +42,30 @@ $('add-buddy').addEventListener('submit', async (event) => {
   catch (error) { alert(error.message); }
 });
 
+$('chat-channel').addEventListener('change', async (event) => {
+  const channelId = Number(event.target.value);
+  if (!channelId) return;
+  try {
+    await request(`/api/chat/channels/${channelId}/join`, { method:'POST' });
+    state.channelId = channelId;
+    await refreshChat();
+  } catch (error) { alert(error.message); await refreshChannels(); }
+});
+
 $('send-chat').addEventListener('submit', async (event) => {
-  event.preventDefault(); const input = event.target.elements.message;
-  try { await request('/api/chat', { method:'POST', body:{ message:input.value } }); input.value=''; await refreshChat(); }
+  event.preventDefault();
+  const input = event.target.elements.message;
+  if (!state.channelId) { alert('Select a chat channel first.'); return; }
+  try { await request(`/api/chat/channels/${state.channelId}/messages`, { method:'POST', body:{ message:input.value } }); input.value=''; await refreshChat(); }
   catch (error) { alert(error.message); }
 });
 
 $('logout').addEventListener('click', async () => {
   try { await request('/api/auth/logout', { method:'POST' }); } catch (_) {}
-  state.token=''; localStorage.removeItem('otterlink-token'); state.user=null; showAuth();
+  state.token=''; state.channelId=null; localStorage.removeItem('otterlink-token'); state.user=null; showAuth();
 });
 
-async function refresh() { await Promise.all([refreshBuddies(), refreshPresence(), refreshChat()]); }
+async function refresh() { await Promise.all([refreshBuddies(), refreshChannels(), refreshChat()]); }
 async function refreshBuddies() {
   const result = await request('/api/buddies'); const online = new Set((await request('/api/presence')).users.map(u => u.username.toLowerCase()));
   $('buddies').innerHTML = '';
@@ -66,12 +78,31 @@ async function refreshBuddies() {
     $('buddies').appendChild(li);
   }
 }
-async function refreshPresence() {
-  const result = await request('/api/presence'); $('online').innerHTML='';
-  for (const user of result.users) { const li=document.createElement('li'); li.className='online'; li.textContent=user.display_name || user.username; $('online').appendChild(li); }
+async function refreshChannels() {
+  const result = await request('/api/chat/channels');
+  const select = $('chat-channel');
+  const previous = state.channelId;
+  select.innerHTML = '';
+  for (const channel of result.channels || []) {
+    const option = document.createElement('option');
+    option.value = channel.id;
+    option.textContent = channel.name;
+    select.appendChild(option);
+  }
+  if (!result.channels || result.channels.length === 0) {
+    state.channelId = null;
+    return;
+  }
+  const selected = result.channels.some(channel => channel.id === previous) ? previous : result.channels[0].id;
+  select.value = selected;
+  if (selected !== previous) {
+    try { await request(`/api/chat/channels/${selected}/join`, { method:'POST' }); } catch (_) {}
+  }
+  state.channelId = selected;
 }
 async function refreshChat() {
-  const result = await request('/api/chat'); const box=$('chat'); box.innerHTML='';
+  if (!state.channelId) { $('chat').innerHTML = ''; return; }
+  const result = await request(`/api/chat/channels/${state.channelId}`); const box=$('chat'); box.innerHTML='';
   for (const message of result.messages || []) {
     const row=document.createElement('article'); row.className='msg';
     const who=document.createElement('strong'); who.textContent=message.from.display_name || message.from.username;
@@ -84,8 +115,8 @@ async function refreshChat() {
 
 async function start() {
   try {
-    state.user = await request('/api/me'); $('identity').textContent = state.user.display_name || state.user.username; showApp(); await refresh();
-  } catch (_) { state.token=''; localStorage.removeItem('otterlink-token'); showAuth(); }
+    state.user = await request('/api/me'); showApp(); await refresh();
+  } catch (_) { state.token=''; state.channelId=null; localStorage.removeItem('otterlink-token'); showAuth(); }
 }
 
 if (state.token) start(); else showAuth();
