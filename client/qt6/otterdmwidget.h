@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QTimer>
 #include <QWidget>
 
 class QListWidget;
@@ -18,10 +19,12 @@ private slots:
     void sendMessage();
     void conversationLoaded(const QJsonObject &conversation);
     void messageSent(const QJsonObject &message);
+    void refreshConversation();
 
 private:
     OtterLinkClient *m_client = nullptr;
     QString m_username;
     QListWidget *m_messages = nullptr;
     QLineEdit *m_input = nullptr;
+    QTimer m_refreshTimer;
 };
