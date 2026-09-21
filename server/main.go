@@ -78,8 +78,9 @@ func main() {
 	buddyService := buddies.Service{DB: database}
 	presenceService := presence.NewService()
 	chatHub := chat.NewHub(database, 100)
+	dmService := dm.Service{DB: database, Limit: 100}
 	authAPI := api.AuthAPI{Accounts: accountService, Presence: presenceService, Chat: chatHub}
-	webServer := &web.Server{Accounts: accountService, Buddies: buddyService, Presence: presenceService, Chat: chatHub}
+	webServer := &web.Server{Accounts: accountService, Buddies: buddyService, Presence: presenceService, Chat: chatHub, DM: dmService}
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/health", healthHandler)
