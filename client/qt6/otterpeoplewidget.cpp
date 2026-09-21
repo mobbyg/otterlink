@@ -4,6 +4,7 @@
 #include <QFont>
 #include <QHBoxLayout>
 #include <QInputDialog>
+#include <QLineEdit>
 #include <QMenu>
 #include <QPushButton>
 #include <QSignalBlocker>
