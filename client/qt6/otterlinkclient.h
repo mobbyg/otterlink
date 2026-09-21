@@ -36,6 +36,10 @@ public:
     void sendDirectMessage(const QString &username, const QString &message);
     void markDirectMessagesRead(const QString &username);
     void setAway(bool away);
+    void loadEvents(int year, int month);
+    void createEvent(const QJsonObject &event);
+    void updateEvent(qint64 eventId, const QJsonObject &event);
+    void deleteEvent(qint64 eventId);
     void logout();
 
 signals:
@@ -49,6 +53,9 @@ signals:
     void directUnreadLoaded(const QJsonArray &messages);
     void presenceLoaded(const QJsonArray &users);
     void awayChanged(bool away);
+    void eventsLoaded(const QJsonArray &events, int year, int month);
+    void eventChanged(const QJsonObject &event);
+    void eventDeleted(qint64 eventId);
     void chatMessageSent();
     void chatChannelsLoaded(const QJsonArray &channels);
     void chatChannelLoaded(const QJsonObject &channel, const QJsonArray &members,
