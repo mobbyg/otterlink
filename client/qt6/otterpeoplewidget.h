@@ -17,6 +17,7 @@ public:
     explicit OtterPeopleWidget(OtterLinkClient *client, QWidget *parent = nullptr);
     void setBuddies(const QStringList &buddies, const QStringList &onlineUsers);
     void setUnread(const QJsonArray &messages);
+    void setPresence(const QJsonArray &users);
     bool away() const { return m_away; }
     void toggleAway();
 
@@ -39,6 +40,7 @@ private:
     QTreeWidget *m_tree = nullptr;
     QHash<QString, QString> m_groups;
     QHash<QString, int> m_unread;
+    QHash<QString, QString> m_status;
     QStringList m_buddies;
     QStringList m_online;
     bool m_away = false;
