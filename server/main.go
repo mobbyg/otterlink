@@ -19,6 +19,7 @@ import (
 	"github.com/mobbyg/otterlink/server/internal/buddies"
 	"github.com/mobbyg/otterlink/server/internal/chat"
 	"github.com/mobbyg/otterlink/server/internal/db"
+	"github.com/mobbyg/otterlink/server/internal/dm"
 	"github.com/mobbyg/otterlink/server/internal/oscar"
 	"github.com/mobbyg/otterlink/server/internal/presence"
 	"github.com/mobbyg/otterlink/server/internal/protocol"
