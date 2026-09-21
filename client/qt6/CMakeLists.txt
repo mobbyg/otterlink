@@ -22,6 +22,10 @@ qt_add_executable(otterlink
     otterlinkstyle.h
     otterchatwidget.cpp
     otterchatwidget.h
+    otterpeoplewidget.cpp
+    otterpeoplewidget.h
+    otterdmwidget.cpp
+    otterdmwidget.h
     otterservicewindow.cpp
     otterservicewindow.h
     resources/otterlink.qrc

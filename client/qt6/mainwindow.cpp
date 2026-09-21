@@ -2,6 +2,8 @@
 #include "otterhomepage.h"
 #include "otterlinkclient.h"
 #include "otterservicewindow.h"
+#include "otterpeoplewidget.h"
+#include "otterdmwidget.h"
 #include "ui_mainwindow.h"
 
 #include <QComboBox>
@@ -13,6 +15,9 @@
 #include <QLabel>
 #include <QLineEdit>
 #include <QMessageBox>
+#include <QMenu>
+#include <QMenuBar>
+#include <QAction>
 #include <QPushButton>
 #include <QSignalBlocker>
 #include <QStyle>
@@ -87,7 +92,19 @@ MainWindow::MainWindow(QWidget *parent)
                     ui->gamesButton->click();
             });
 
-    // Replace the simple Designer placeholder with the hierarchical People view.
+    // People owns its own buddy-list interactions; the legacy Designer controls remain
+    // hidden so this change does not disturb the surrounding desktop/service layout.
+    m_peopleWidget = new OtterPeopleWidget(m_client, ui->peoplePage);
+    ui->peopleLayout->removeWidget(ui->buddiesGroup);
+    ui->peopleLayout->removeWidget(ui->peopleInfoLabel);
+    ui->buddiesGroup->hide();
+    ui->peopleInfoLabel->hide();
+    ui->peopleLayout->addWidget(m_peopleWidget);
+    connect(m_peopleWidget, &OtterPeopleWidget::privateMessageRequested,
+            this, &MainWindow::openPrivateMessage);
+
+    // Keep the existing tree alive for compatibility with the current UI-generated
+    // members while the dedicated People widget becomes the active implementation.
     m_buddyTree = new QTreeWidget(ui->buddiesGroup);
     m_buddyTree->setObjectName(QStringLiteral("buddyTree"));
     m_buddyTree->setHeaderHidden(true);
@@ -128,6 +145,10 @@ MainWindow::MainWindow(QWidget *parent)
     connect(m_client, &OtterLinkClient::loggedIn, this, &MainWindow::showDashboard);
     connect(m_client, &OtterLinkClient::dashboardLoaded, this, &MainWindow::dashboardLoaded);
     connect(m_client, &OtterLinkClient::buddyAdded, this, &MainWindow::buddyAdded);
+    connect(m_client, &OtterLinkClient::directUnreadLoaded,
+            this, &MainWindow::directUnreadLoaded);
+    connect(m_client, &OtterLinkClient::presenceLoaded,
+            m_peopleWidget, &OtterPeopleWidget::setPresence);
     connect(m_client, &OtterLinkClient::loggedOut, this, [this]() {
         m_refreshTimer.stop();
         m_connectionTimer.stop();
@@ -137,6 +158,26 @@ MainWindow::MainWindow(QWidget *parent)
         setLoggedIn(false);
     });
     connect(m_client, &OtterLinkClient::errorOccurred, this, &MainWindow::showError);
+
+    auto *fileMenu = menuBar()->addMenu(QStringLiteral("File"));
+    auto *awayAction = fileMenu->addAction(QStringLiteral("Away / AFK"));
+    connect(awayAction, &QAction::triggered, this, [this]() {
+        if (m_peopleWidget)
+            m_peopleWidget->toggleAway();
+    });
+    auto *messageAction = fileMenu->addAction(QStringLiteral("Send Private Message..."));
+    connect(messageAction, &QAction::triggered, this, [this]() {
+        const auto items = m_peopleWidget ? m_peopleWidget->findChildren<QTreeWidget *>() : QList<QTreeWidget *>();
+        if (m_peopleWidget && !items.isEmpty()) {
+            const auto selected = items.first()->selectedItems();
+            if (!selected.isEmpty())
+                openPrivateMessage(selected.first()->data(0, Qt::UserRole).toString());
+        }
+    });
+    menuBar()->addMenu(QStringLiteral("Edit"));
+    menuBar()->addMenu(QStringLiteral("Service"));
+    menuBar()->addMenu(QStringLiteral("Help"));
+
 }
 
 MainWindow::~MainWindow()
@@ -337,6 +378,7 @@ void MainWindow::closeServiceWindow(OtterServiceWindow *window)
     updateServiceButtonStates();
 }
 
+
 void MainWindow::closeAllServiceWindows()
 {
     const auto windows = m_serviceWindows.values();
@@ -447,6 +489,8 @@ void MainWindow::dashboardLoaded(const QStringList &buddies, const QStringList &
                                  const QStringList &chatMessages)
 {
     rebuildBuddyTree(buddies, onlineUsers);
+    if (m_peopleWidget)
+        m_peopleWidget->setBuddies(buddies, onlineUsers);
 
     ui->onlineList->clear();
     for (const QString &user : onlineUsers)
@@ -548,6 +592,22 @@ void MainWindow::buddySelectionChanged()
         QStringLiteral("<h3>%1</h3><p>%2</p>")
             .arg(username.toHtmlEscaped())
             .arg(online ? QStringLiteral("Online") : QStringLiteral("Offline")));
+}
+
+void MainWindow::directUnreadLoaded(const QJsonArray &messages)
+{
+    if (m_peopleWidget)
+        m_peopleWidget->setUnread(messages);
+}
+
+void MainWindow::openPrivateMessage(const QString &username)
+{
+    const QString trimmed = username.trimmed();
+    if (trimmed.isEmpty())
+        return;
+    auto *widget = new OtterDmWidget(m_client, trimmed, m_desktop);
+    openServiceWindow(QStringLiteral("dm:%1").arg(trimmed.toLower()),
+                      QStringLiteral("Private Message - %1").arg(trimmed), widget);
 }
 
 void MainWindow::showError(const QString &message)

@@ -19,6 +19,7 @@ import (
 	"github.com/mobbyg/otterlink/server/internal/buddies"
 	"github.com/mobbyg/otterlink/server/internal/chat"
 	"github.com/mobbyg/otterlink/server/internal/db"
+	"github.com/mobbyg/otterlink/server/internal/dm"
 	"github.com/mobbyg/otterlink/server/internal/oscar"
 	"github.com/mobbyg/otterlink/server/internal/presence"
 	"github.com/mobbyg/otterlink/server/internal/protocol"
@@ -78,8 +79,9 @@ func main() {
 	buddyService := buddies.Service{DB: database}
 	presenceService := presence.NewService()
 	chatHub := chat.NewHub(database, 100)
+	dmService := dm.Service{DB: database, Limit: 100}
 	authAPI := api.AuthAPI{Accounts: accountService, Presence: presenceService, Chat: chatHub}
-	webServer := &web.Server{Accounts: accountService, Buddies: buddyService, Presence: presenceService, Chat: chatHub}
+	webServer := &web.Server{Accounts: accountService, Buddies: buddyService, Presence: presenceService, Chat: chatHub, DM: dmService}
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/health", healthHandler)

@@ -9,6 +9,7 @@ import (
 	"github.com/mobbyg/otterlink/server/internal/accounts"
 	"github.com/mobbyg/otterlink/server/internal/buddies"
 	"github.com/mobbyg/otterlink/server/internal/chat"
+	"github.com/mobbyg/otterlink/server/internal/dm"
 	"github.com/mobbyg/otterlink/server/internal/presence"
 )
 
@@ -20,6 +21,7 @@ type Server struct {
 	Buddies  buddies.Service
 	Presence *presence.Service
 	Chat     *chat.Hub
+	DM       dm.Service
 }
 
 func (s *Server) Handler() http.Handler {
@@ -28,9 +30,14 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /admin", s.adminIndex)
 	mux.HandleFunc("GET /static/", s.static)
 	mux.HandleFunc("GET /api/presence", s.presenceList)
+	mux.HandleFunc("POST /api/presence/away", s.presenceAway)
 	mux.HandleFunc("GET /api/buddies", s.buddyList)
 	mux.HandleFunc("POST /api/buddies", s.buddyAdd)
 	mux.HandleFunc("DELETE /api/buddies", s.buddyRemove)
+	mux.HandleFunc("GET /api/messages", s.messageConversation)
+	mux.HandleFunc("POST /api/messages", s.messageSend)
+	mux.HandleFunc("POST /api/messages/read", s.messageRead)
+	mux.HandleFunc("GET /api/messages/unread", s.messageUnread)
 
 	mux.HandleFunc("GET /api/chat/channels", s.chatChannels)
 	mux.HandleFunc("POST /api/chat/channels", s.chatChannelCreate)

@@ -1,12 +1,14 @@
 #pragma once
 
 #include <QHash>
+#include <QJsonArray>
 #include <QMainWindow>
 #include <QTimer>
 
 class QFrame;
 class QTreeWidget;
 class OtterHomePage;
+class OtterPeopleWidget;
 class OtterServiceWindow;
 
 namespace Ui {
@@ -39,6 +41,8 @@ private slots:
     void showError(const QString &message);
     void buddySelectionChanged();
     void buddyAdded(const QString &username);
+    void directUnreadLoaded(const QJsonArray &messages);
+    void openPrivateMessage(const QString &username);
 
 private:
     void setLoggedIn(bool loggedIn);
@@ -55,6 +59,7 @@ private:
     QTreeWidget *m_buddyTree = nullptr;
     QFrame *m_desktop = nullptr;
     OtterHomePage *m_homePage = nullptr;
+    OtterPeopleWidget *m_peopleWidget = nullptr;
     QHash<QString, QString> m_buddyGroups;
     QHash<QString, QString> m_pendingBuddyGroups;
     QHash<QString, OtterServiceWindow *> m_serviceWindows;

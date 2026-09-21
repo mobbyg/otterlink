@@ -104,7 +104,7 @@ void OtterLinkClient::loadDashboard()
         QStringList buddies;
         QStringList online;
         QStringList chat;
-        int remaining = 3;
+        int remaining = 4;
     };
     auto pending = std::make_shared<Pending>();
 
@@ -137,6 +137,7 @@ void OtterLinkClient::loadDashboard()
         }
     });
     load(QStringLiteral("/api/presence"), [pending, this](const QJsonObject &obj) {
+        emit presenceLoaded(obj.value(QStringLiteral("users")).toArray());
         for (const auto value : obj.value(QStringLiteral("users")).toArray()) {
             const QJsonObject user = value.toObject();
             const QString username = user.value(QStringLiteral("username")).toString().trimmed();
@@ -157,6 +158,9 @@ void OtterLinkClient::loadDashboard()
                                           from.value(QStringLiteral("username")).toString()),
                                       message.value(QStringLiteral("message")).toString());
         }
+    });
+    load(QStringLiteral("/api/messages/unread"), [this](const QJsonObject &obj) {
+        emit directUnreadLoaded(obj.value(QStringLiteral("messages")).toArray());
     });
 }
 
@@ -355,6 +359,59 @@ void OtterLinkClient::logout()
         m_username.clear();
         m_joinedChatChannels.clear();
         emit loggedOut();
+        reply->deleteLater();
+    });
+}
+
+void OtterLinkClient::loadDirectConversation(const QString &username)
+{
+    const QString encoded = QString::fromUtf8(QUrl::toPercentEncoding(username.trimmed()));
+    auto *reply = m_network.get(request(QStringLiteral("/api/messages?with=") + encoded));
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+        if (reply->error() != QNetworkReply::NoError)
+            emit errorOccurred(serverErrorMessage(reply, reply->errorString()));
+        else
+            emit directConversationLoaded(QJsonDocument::fromJson(reply->readAll()).object());
+        reply->deleteLater();
+    });
+}
+
+void OtterLinkClient::sendDirectMessage(const QString &username, const QString &message)
+{
+    QJsonObject body{{QStringLiteral("username"), username}, {QStringLiteral("message"), message}};
+    auto *reply = m_network.post(request(QStringLiteral("/api/messages")),
+                                 QJsonDocument(body).toJson(QJsonDocument::Compact));
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+        if (reply->error() != QNetworkReply::NoError)
+            emit errorOccurred(serverErrorMessage(reply, reply->errorString()));
+        else
+            emit directMessageSent(QJsonDocument::fromJson(reply->readAll()).object());
+        reply->deleteLater();
+    });
+}
+
+void OtterLinkClient::markDirectMessagesRead(const QString &username)
+{
+    QJsonObject body{{QStringLiteral("username"), username}};
+    auto *reply = m_network.post(request(QStringLiteral("/api/messages/read")),
+                                 QJsonDocument(body).toJson(QJsonDocument::Compact));
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+        if (reply->error() != QNetworkReply::NoError)
+            emit errorOccurred(serverErrorMessage(reply, reply->errorString()));
+        reply->deleteLater();
+    });
+}
+
+void OtterLinkClient::setAway(bool away)
+{
+    QJsonObject body{{QStringLiteral("away"), away}};
+    auto *reply = m_network.post(request(QStringLiteral("/api/presence/away")),
+                                 QJsonDocument(body).toJson(QJsonDocument::Compact));
+    connect(reply, &QNetworkReply::finished, this, [this, reply, away]() {
+        if (reply->error() != QNetworkReply::NoError)
+            emit errorOccurred(serverErrorMessage(reply, reply->errorString()));
+        else
+            emit awayChanged(away);
         reply->deleteLater();
     });
 }
