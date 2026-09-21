@@ -67,3 +67,9 @@ footer { text-align:center; color:#78909e; font-size:.75rem; padding:24px; }
 .event-description textarea { width:100%; min-height:132px; margin-top:6px; padding:11px 12px; border:1px solid #3b5667; border-radius:9px; background:#0c151c; color:#fff; outline:none; resize:vertical; font:inherit; }
 .event-description textarea:focus { border-color:var(--golden-orange); box-shadow:0 0 0 2px #efa00b33; }
 @media (max-width:700px) { .event-form { grid-template-columns:1fr; } .event-dates { grid-template-columns:1fr; } }
+
+.admin-nav { display:flex; gap:10px; flex-wrap:wrap; margin:-8px 0 24px; padding:10px; background:var(--card-dark); border:1px solid var(--card-border); border-radius:12px; }
+.admin-nav a { flex:1 1 180px; text-align:center; padding:10px 14px; border-radius:9px; background:var(--ocean-deep); color:#fff; font-weight:700; text-decoration:none; }
+.admin-nav a:hover { filter:brightness(1.08); }
+.admin-nav a:focus { outline:2px solid var(--golden-orange); outline-offset:2px; }
+@media (max-width:700px) { .admin-nav { flex-direction:column; } .admin-nav a { flex-basis:auto; } }
