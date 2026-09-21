@@ -10,6 +10,7 @@ import (
 	"github.com/mobbyg/otterlink/server/internal/buddies"
 	"github.com/mobbyg/otterlink/server/internal/chat"
 	"github.com/mobbyg/otterlink/server/internal/dm"
+	"github.com/mobbyg/otterlink/server/internal/events"
 	"github.com/mobbyg/otterlink/server/internal/presence"
 )
 
@@ -22,6 +23,7 @@ type Server struct {
 	Presence *presence.Service
 	Chat     *chat.Hub
 	DM       dm.Service
+	Events   events.Service
 }
 
 func (s *Server) Handler() http.Handler {
@@ -38,6 +40,10 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /api/messages", s.messageSend)
 	mux.HandleFunc("POST /api/messages/read", s.messageRead)
 	mux.HandleFunc("GET /api/messages/unread", s.messageUnread)
+	mux.HandleFunc("GET /api/events", s.eventList)
+	mux.HandleFunc("POST /api/events", s.eventCreate)
+	mux.HandleFunc("PATCH /api/events/{eventID}", s.eventUpdate)
+	mux.HandleFunc("DELETE /api/events/{eventID}", s.eventDelete)
 
 	mux.HandleFunc("GET /api/chat/channels", s.chatChannels)
 	mux.HandleFunc("POST /api/chat/channels", s.chatChannelCreate)
@@ -64,6 +70,10 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /api/admin/chat/channels", s.adminChatChannelCreate)
 	mux.HandleFunc("DELETE /api/admin/chat/channels/{channelID}", s.adminChatChannelDelete)
 	mux.HandleFunc("POST /api/admin/chat/channels/{channelID}/users/{username}/role", s.adminChatChannelRole)
+	mux.HandleFunc("GET /api/admin/events", s.adminEvents)
+	mux.HandleFunc("POST /api/admin/events", s.adminEventCreate)
+	mux.HandleFunc("PATCH /api/admin/events/{eventID}", s.adminEventUpdate)
+	mux.HandleFunc("DELETE /api/admin/events/{eventID}", s.adminEventDelete)
 	return mux
 }
 
