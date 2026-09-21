@@ -31,6 +31,10 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/buddies", s.buddyList)
 	mux.HandleFunc("POST /api/buddies", s.buddyAdd)
 	mux.HandleFunc("DELETE /api/buddies", s.buddyRemove)
+	mux.HandleFunc("GET /api/messages", s.messageConversation)
+	mux.HandleFunc("POST /api/messages", s.messageSend)
+	mux.HandleFunc("POST /api/messages/read", s.messageRead)
+	mux.HandleFunc("GET /api/messages/unread", s.messageUnread)
 
 	mux.HandleFunc("GET /api/chat/channels", s.chatChannels)
 	mux.HandleFunc("POST /api/chat/channels", s.chatChannelCreate)
