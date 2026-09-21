@@ -101,6 +101,23 @@ CREATE TABLE IF NOT EXISTS direct_messages (
 );
 CREATE INDEX IF NOT EXISTS idx_direct_messages_pair ON direct_messages(sender_id, recipient_id, id);
 CREATE INDEX IF NOT EXISTS idx_direct_messages_recipient_unread ON direct_messages(recipient_id, read_at, id);
+
+CREATE TABLE IF NOT EXISTS events (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL,
+    description TEXT NOT NULL DEFAULT '',
+    event_type TEXT NOT NULL CHECK (event_type IN ('public', 'community', 'server')),
+    created_by TEXT NOT NULL,
+    target_type TEXT NOT NULL DEFAULT 'none' CHECK (target_type IN ('none', 'chat')),
+    target_id INTEGER,
+    start_at TEXT NOT NULL,
+    end_at TEXT NOT NULL,
+    all_day INTEGER NOT NULL DEFAULT 0 CHECK (all_day IN (0,1)),
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_events_start_at ON events(start_at);
+CREATE INDEX IF NOT EXISTS idx_events_target ON events(target_type, target_id);
 `
 
 func Initialize(db *sql.DB) error {
