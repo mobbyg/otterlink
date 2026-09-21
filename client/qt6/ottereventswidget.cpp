@@ -144,6 +144,9 @@ void OtterEventsWidget::openEditor(const QJsonObject &event,bool editing)
     if(dialog.exec()!=QDialog::Accepted)return;
     QJsonObject payload{{"title",title->text().trimmed()},{"description",description->toPlainText().trimmed()},{"event_type",type->currentData().toString()},{"target_type",target->currentData().toLongLong()>0?"chat":"none"},{"target_id",target->currentData().toLongLong()},{"all_day",allDay->isChecked()}};
     if(allDay){payload["start_at"]=start->date().toString("yyyy-MM-dd");payload["end_at"]=end->date().toString("yyyy-MM-dd");}
-    else{payload["start_at"]=start->dateTime().toUTC().toString(Qt::ISODate);payload["end_at"]=end->dateTime().toUTC().toString(Qt::ISODate);}
+    else{
+        payload["start_at"]=start->dateTime().toUTC().toString("yyyy-MM-dd'T'HH:mm:ss'Z'");
+        payload["end_at"]=end->dateTime().toUTC().toString("yyyy-MM-dd'T'HH:mm:ss'Z'");
+    }
     if(editing)m_client->updateEvent(event.value("id").toVariant().toLongLong(),payload);else m_client->createEvent(payload);
 }
