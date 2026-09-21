@@ -415,3 +415,58 @@ void OtterLinkClient::setAway(bool away)
         reply->deleteLater();
     });
 }
+
+void OtterLinkClient::loadEvents(int year, int month)
+{
+    auto *reply = m_network.get(request(QStringLiteral("/api/events?year=%1&month=%2").arg(year).arg(month)));
+    connect(reply, &QNetworkReply::finished, this, [this, reply, year, month]() {
+        if (reply->error() != QNetworkReply::NoError) {
+            emit errorOccurred(serverErrorMessage(reply, reply->errorString()));
+        } else {
+            const QJsonObject obj = QJsonDocument::fromJson(reply->readAll()).object();
+            emit eventsLoaded(obj.value(QStringLiteral("events")).toArray(),
+                              obj.value(QStringLiteral("year")).toInt(year),
+                              obj.value(QStringLiteral("month")).toInt(month));
+        }
+        reply->deleteLater();
+    });
+}
+
+void OtterLinkClient::createEvent(const QJsonObject &event)
+{
+    auto *reply = m_network.post(request(QStringLiteral("/api/events")),
+                                 QJsonDocument(event).toJson(QJsonDocument::Compact));
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+        if (reply->error() != QNetworkReply::NoError)
+            emit errorOccurred(serverErrorMessage(reply, reply->errorString()));
+        else
+            emit eventChanged(QJsonDocument::fromJson(reply->readAll()).object());
+        reply->deleteLater();
+    });
+}
+
+void OtterLinkClient::updateEvent(qint64 eventId, const QJsonObject &event)
+{
+    auto *reply = m_network.sendCustomRequest(request(QStringLiteral("/api/events/%1").arg(eventId)),
+                                               "PATCH",
+                                               QJsonDocument(event).toJson(QJsonDocument::Compact));
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+        if (reply->error() != QNetworkReply::NoError)
+            emit errorOccurred(serverErrorMessage(reply, reply->errorString()));
+        else
+            emit eventChanged(QJsonDocument::fromJson(reply->readAll()).object());
+        reply->deleteLater();
+    });
+}
+
+void OtterLinkClient::deleteEvent(qint64 eventId)
+{
+    auto *reply = m_network.deleteResource(request(QStringLiteral("/api/events/%1").arg(eventId)));
+    connect(reply, &QNetworkReply::finished, this, [this, reply, eventId]() {
+        if (reply->error() != QNetworkReply::NoError)
+            emit errorOccurred(serverErrorMessage(reply, reply->errorString()));
+        else
+            emit eventDeleted(eventId);
+        reply->deleteLater();
+    });
+}
