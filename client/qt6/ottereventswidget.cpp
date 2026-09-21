@@ -1,7 +1,9 @@
 #include "ottereventswidget.h"
 #include "otterlinkclient.h"
 
+#include <QCheckBox>
 #include <QComboBox>
+#include <QDateTimeEdit>
 #include <QDate>
 #include <QDateTime>
 #include <QDialog>
