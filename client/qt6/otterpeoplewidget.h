@@ -18,6 +18,7 @@ public:
     void setBuddies(const QStringList &buddies, const QStringList &onlineUsers);
     void setUnread(const QJsonArray &messages);
     bool away() const { return m_away; }
+    void toggleAway();
 
 signals:
     void privateMessageRequested(const QString &username);
@@ -27,7 +28,6 @@ private slots:
     void addBuddy();
     void removeBuddy();
     void privateMessage();
-    void toggleAway();
     void buddySelectionChanged();
 
 private:
