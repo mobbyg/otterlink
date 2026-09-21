@@ -137,6 +137,7 @@ void OtterLinkClient::loadDashboard()
         }
     });
     load(QStringLiteral("/api/presence"), [pending, this](const QJsonObject &obj) {
+        emit presenceLoaded(obj.value(QStringLiteral("users")).toArray());
         for (const auto value : obj.value(QStringLiteral("users")).toArray()) {
             const QJsonObject user = value.toObject();
             const QString username = user.value(QStringLiteral("username")).toString().trimmed();
