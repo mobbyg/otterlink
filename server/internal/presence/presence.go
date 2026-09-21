@@ -153,6 +153,16 @@ func (s *Service) List() []User {
 	return users
 }
 
+func (s *Service) SetAway(userID int64, away bool) bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	entry, ok := s.online[userID]
+	if !ok { return false }
+	if away { entry.Status = "away" } else { entry.Status = "online" }
+	s.online[userID] = entry
+	return true
+}
+
 func (s *Service) Get(userID int64) (User, bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
