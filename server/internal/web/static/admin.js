@@ -59,9 +59,6 @@ async function createEvent() {
     await request('/api/admin/events', { method: 'POST', body: JSON.stringify(payload) });
     $('event-title').value=''; $('event-description').value=''; $('event-start').value=''; $('event-end').value='';
     await refreshEvents(); await refreshAudit();
-const initialEventDate = new Date();
-$('event-month').value = `${initialEventDate.getFullYear()}-${String(initialEventDate.getMonth()+1).padStart(2,'0')}`;
-refreshEvents();
   } catch (error) { showEventError(error.message || String(error)); }
 }
 
