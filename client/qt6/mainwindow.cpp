@@ -155,6 +155,26 @@ MainWindow::MainWindow(QWidget *parent)
         setLoggedIn(false);
     });
     connect(m_client, &OtterLinkClient::errorOccurred, this, &MainWindow::showError);
+
+    auto *fileMenu = menuBar()->addMenu(QStringLiteral("File"));
+    auto *awayAction = fileMenu->addAction(QStringLiteral("Away / AFK"));
+    connect(awayAction, &QAction::triggered, this, [this]() {
+        if (m_peopleWidget)
+            m_peopleWidget->toggleAway();
+    });
+    auto *messageAction = fileMenu->addAction(QStringLiteral("Send Private Message..."));
+    connect(messageAction, &QAction::triggered, this, [this]() {
+        const auto items = m_peopleWidget ? m_peopleWidget->findChildren<QTreeWidget *>() : QList<QTreeWidget *>();
+        if (m_peopleWidget && !items.isEmpty()) {
+            const auto selected = items.first()->selectedItems();
+            if (!selected.isEmpty())
+                openPrivateMessage(selected.first()->data(0, Qt::UserRole).toString());
+        }
+    });
+    menuBar()->addMenu(QStringLiteral("Edit"));
+    menuBar()->addMenu(QStringLiteral("Service"));
+    menuBar()->addMenu(QStringLiteral("Help"));
+
 }
 
 MainWindow::~MainWindow()
@@ -354,25 +374,6 @@ void MainWindow::closeServiceWindow(OtterServiceWindow *window)
     window->deleteLater();
     updateServiceButtonStates();
 }
-
-    auto *fileMenu = menuBar()->addMenu(QStringLiteral("File"));
-    auto *awayAction = fileMenu->addAction(QStringLiteral("Away / AFK"));
-    connect(awayAction, &QAction::triggered, this, [this]() {
-        if (m_peopleWidget)
-            m_peopleWidget->toggleAway();
-    });
-    auto *messageAction = fileMenu->addAction(QStringLiteral("Send Private Message..."));
-    connect(messageAction, &QAction::triggered, this, [this]() {
-        const auto items = m_peopleWidget ? m_peopleWidget->findChildren<QTreeWidget *>() : QList<QTreeWidget *>();
-        if (m_peopleWidget && !items.isEmpty()) {
-            const auto selected = items.first()->selectedItems();
-            if (!selected.isEmpty())
-                openPrivateMessage(selected.first()->data(0, Qt::UserRole).toString());
-        }
-    });
-    menuBar()->addMenu(QStringLiteral("Edit"));
-    menuBar()->addMenu(QStringLiteral("Service"));
-    menuBar()->addMenu(QStringLiteral("Help"));
 
 
 void MainWindow::closeAllServiceWindows()
