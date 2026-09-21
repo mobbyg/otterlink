@@ -12,8 +12,14 @@
       <div><strong>Otter Link Administration</strong><span>Server administration</span></div>
       <a class="button secondary" href="/">Back to Otter Link</a>
     </header>
+    <nav class="admin-nav" aria-label="Administration sections">
+      <a href="#users-section">User Accounts</a>
+      <a href="#channels-section">Permanent Channels</a>
+      <a href="#events-section">Server Events</a>
+      <a href="#activity-section">Admin Activity</a>
+    </nav>
 
-    <section class="card">
+    <section id="users-section" class="card">
       <div class="section-title">
         <div><small>ADMINISTRATION</small><h1>User Accounts</h1></div>
         <button id="refresh">Refresh</button>
@@ -46,7 +52,7 @@
       </div>
     </section>
 
-    <section class="card" style="margin-top:20px">
+    <section id="channels-section" class="card" style="margin-top:20px">
       <div class="section-title">
         <div><small>CHAT</small><h1>Permanent Channels</h1></div>
         <button id="refresh-channels" class="secondary">Refresh</button>
@@ -72,13 +78,36 @@
       </aside>
     </section>
 
-    <section class="card" style="margin-top:20px">
+
+    <section id="events-section" class="card" style="margin-top:20px">
+      <div class="section-title"><div><small>EVENTS</small><h1>Server Events</h1></div><div><input id="event-month" type="month"><button id="refresh-events" class="secondary">Refresh</button></div></div>
+      <p class="status">Server events are managed here. The client does not expose server administration controls.</p>
+      <p id="event-error" class="error"></p>
+      <div class="event-form">
+        <div class="event-details">
+          <label>Event title<input id="event-title" placeholder="Event title"></label>
+          <div class="event-dates">
+            <label>Start<input id="event-start" type="datetime-local"></label>
+            <label>End<input id="event-end" type="datetime-local"></label>
+          </div>
+          <div class="admin-actions">
+            <label><input id="event-all-day" type="checkbox"> All day</label>
+            <button id="create-event">Create Event</button>
+          </div>
+        </div>
+        <label class="event-description">Description<textarea id="event-description" rows="6" placeholder="Short description"></textarea></label>
+      </div>
+      <div class="admin-table-wrap">
+        <table class="admin-table"><thead><tr><th>When</th><th>Title</th><th>Description</th><th>Owner</th><th>Manage</th></tr></thead><tbody id="events"></tbody></table>
+      </div>
+    </section>
+
+    <section id="activity-section" class="card" style="margin-top:20px">
       <div class="section-title"><div><small>SECURITY</small><h1>Admin Activity</h1></div><button id="refresh-audit" class="secondary">Refresh</button></div>
       <p class="status">Recent administrative actions. Passwords and session tokens are never recorded here.</p>
       <p id="audit-error" class="error"></p>
       <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Time</th><th>Administrator</th><th>Action</th><th>Target</th><th>Result</th><th>Details</th></tr></thead><tbody id="audit-events"></tbody></table></div>
     </section>
-
     <footer>Otter Link administration • development UI</footer>
   </main>
   <script src="/static/admin.js"></script>
