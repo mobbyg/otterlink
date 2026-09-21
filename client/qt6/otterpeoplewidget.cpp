@@ -4,6 +4,7 @@
 #include <QFont>
 #include <QHBoxLayout>
 #include <QInputDialog>
+#include <QLabel>
 #include <QLineEdit>
 #include <QMenu>
 #include <QPushButton>
@@ -21,6 +22,10 @@ OtterPeopleWidget::OtterPeopleWidget(OtterLinkClient *client, QWidget *parent)
 {
     auto *layout = new QVBoxLayout(this);
     layout->setContentsMargins(8, 8, 8, 8);
+
+    auto *status = new QLabel(QStringLiteral("Status: Online"), this);
+    status->setObjectName(QStringLiteral("peopleStatusLabel"));
+    layout->addWidget(status);
 
     m_tree = new QTreeWidget(this);
     m_tree->setHeaderHidden(true);
@@ -41,6 +46,7 @@ OtterPeopleWidget::OtterPeopleWidget(OtterLinkClient *client, QWidget *parent)
 
     auto *bottom = new QHBoxLayout;
     auto *away = new QPushButton(QStringLiteral("😴 Away"), this);
+    away->setObjectName(QStringLiteral("awayButton"));
     auto *message = new QPushButton(QStringLiteral("📨 Private Message"), this);
     bottom->addWidget(away);
     bottom->addWidget(message);
@@ -69,6 +75,26 @@ void OtterPeopleWidget::setBuddies(const QStringList &buddies, const QStringList
 {
     m_buddies = buddies;
     m_online = onlineUsers;
+    rebuild();
+}
+
+void OtterPeopleWidget::setPresence(const QJsonArray &users)
+{
+    m_status.clear();
+    m_away = false;
+    for (const QJsonValue &value : users) {
+        const QJsonObject object = value.toObject();
+        const QString username = object.value(QStringLiteral("username")).toString().trimmed();
+        const QString status = object.value(QStringLiteral("status")).toString().trimmed();
+        if (!username.isEmpty()) {
+            m_status.insert(username, status.isEmpty() ? QStringLiteral("online") : status);
+            if (m_client && username.compare(m_client->accountName(), Qt::CaseInsensitive) == 0)
+                m_away = status.compare(QStringLiteral("away"), Qt::CaseInsensitive) == 0;
+        }
+    }
+    auto *statusLabel = findChild<QLabel *>(QStringLiteral("peopleStatusLabel"));
+    if (statusLabel)
+        statusLabel->setText(m_away ? QStringLiteral("Status: Away") : QStringLiteral("Status: Online"));
     rebuild();
 }
 
@@ -116,7 +142,7 @@ void OtterPeopleWidget::rebuild()
         QString group = m_groups.value(buddy, QStringLiteral("Buddies"));
         if (!groups.contains(group)) group = QStringLiteral("Buddies");
         auto *item = new QTreeWidgetItem(online ? groups.value(group) : offline);
-        const bool away = online && false;
+        const bool away = online && m_status.value(buddy).compare(QStringLiteral("away"), Qt::CaseInsensitive) == 0;
         QString left = away ? QStringLiteral("😴 ") : (online ? QStringLiteral("● ") : QStringLiteral("○ "));
         QString right;
         const int unread = m_unread.value(buddy, 0);
@@ -174,6 +200,10 @@ void OtterPeopleWidget::privateMessage()
 void OtterPeopleWidget::toggleAway()
 {
     m_away = !m_away;
+    if (auto *statusLabel = findChild<QLabel *>(QStringLiteral("peopleStatusLabel")))
+        statusLabel->setText(m_away ? QStringLiteral("Status: Away") : QStringLiteral("Status: Online"));
+    if (auto *awayButton = findChild<QPushButton *>(QStringLiteral("awayButton")))
+        awayButton->setText(m_away ? QStringLiteral("● Online") : QStringLiteral("😴 Away"));
     if (m_client) m_client->setAway(m_away);
     emit awayRequested(m_away);
 }
