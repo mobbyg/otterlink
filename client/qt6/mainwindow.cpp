@@ -353,7 +353,8 @@ void MainWindow::openServiceWindow(const QString &service, const QString &title,
 
     const int offset = m_nextWindowOffset;
     m_nextWindowOffset = (m_nextWindowOffset + 28) % 140;
-    const int width = qMin(620, qMax(360, m_desktop->width() - 70));
+    const int preferredWidth = service == QStringLiteral("events") ? 635 : 620;
+    const int width = qMin(preferredWidth, qMax(360, m_desktop->width() - 70));
     const int height = qMin(440, qMax(250, m_desktop->height() - 70));
     window->resize(width, height);
     window->move(24 + offset, 20 + offset);
