@@ -359,7 +359,7 @@ void MainWindow::closeServiceWindow(OtterServiceWindow *window)
     auto *awayAction = fileMenu->addAction(QStringLiteral("Away / AFK"));
     connect(awayAction, &QAction::triggered, this, [this]() {
         if (m_peopleWidget)
-            m_peopleWidget->awayRequested(!m_peopleWidget->away());
+            m_peopleWidget->toggleAway();
     });
     auto *messageAction = fileMenu->addAction(QStringLiteral("Send Private Message..."));
     connect(messageAction, &QAction::triggered, this, [this]() {
