@@ -1,11 +1,8 @@
 package web
 
 import (
-	"encoding/json"
 	"net/http"
 	"strings"
-
-	"github.com/mobbyg/otterlink/server/internal/dm"
 )
 
 type messageRequest struct {
@@ -65,5 +62,3 @@ func (s *Server) messageUnread(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{"messages": unread})
 }
 
-var _ dm.Service
-var _ = json.Valid
