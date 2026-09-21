@@ -9,6 +9,7 @@ import (
 	"github.com/mobbyg/otterlink/server/internal/accounts"
 	"github.com/mobbyg/otterlink/server/internal/buddies"
 	"github.com/mobbyg/otterlink/server/internal/chat"
+	"github.com/mobbyg/otterlink/server/internal/dm"
 	"github.com/mobbyg/otterlink/server/internal/presence"
 )
 
@@ -20,6 +21,7 @@ type Server struct {
 	Buddies  buddies.Service
 	Presence *presence.Service
 	Chat     *chat.Hub
+	DM       dm.Service
 }
 
 func (s *Server) Handler() http.Handler {
