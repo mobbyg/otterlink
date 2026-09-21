@@ -32,6 +32,10 @@ public:
     void moderateChatUser(qint64 channelId, const QString &username, const QString &action);
     void addBuddy(const QString &username);
     void removeBuddy(const QString &username);
+    void loadDirectConversation(const QString &username);
+    void sendDirectMessage(const QString &username, const QString &message);
+    void markDirectMessagesRead(const QString &username);
+    void setAway(bool away);
     void logout();
 
 signals:
@@ -40,6 +44,10 @@ signals:
                          const QStringList &chatMessages);
     void buddyAdded(const QString &username);
     void buddyChanged();
+    void directConversationLoaded(const QJsonObject &conversation);
+    void directMessageSent(const QJsonObject &message);
+    void directUnreadLoaded(const QJsonArray &messages);
+    void awayChanged(bool away);
     void chatMessageSent();
     void chatChannelsLoaded(const QJsonArray &channels);
     void chatChannelLoaded(const QJsonObject &channel, const QJsonArray &members,
