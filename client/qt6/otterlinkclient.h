@@ -47,6 +47,7 @@ signals:
     void directConversationLoaded(const QJsonObject &conversation);
     void directMessageSent(const QJsonObject &message);
     void directUnreadLoaded(const QJsonArray &messages);
+    void presenceLoaded(const QJsonArray &users);
     void awayChanged(bool away);
     void chatMessageSent();
     void chatChannelsLoaded(const QJsonArray &channels);
