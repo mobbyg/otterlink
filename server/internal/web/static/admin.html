@@ -12,8 +12,14 @@
       <div><strong>Otter Link Administration</strong><span>Server administration</span></div>
       <a class="button secondary" href="/">Back to Otter Link</a>
     </header>
+    <nav class="admin-nav" aria-label="Administration sections">
+      <a href="#users">User Accounts</a>
+      <a href="#channels">Permanent Channels</a>
+      <a href="#events">Server Events</a>
+      <a href="#activity">Admin Activity</a>
+    </nav>
 
-    <section class="card">
+    <section id="users" class="card">
       <div class="section-title">
         <div><small>ADMINISTRATION</small><h1>User Accounts</h1></div>
         <button id="refresh">Refresh</button>
@@ -46,7 +52,7 @@
       </div>
     </section>
 
-    <section class="card" style="margin-top:20px">
+    <section id="channels" class="card" style="margin-top:20px">
       <div class="section-title">
         <div><small>CHAT</small><h1>Permanent Channels</h1></div>
         <button id="refresh-channels" class="secondary">Refresh</button>
@@ -73,14 +79,7 @@
     </section>
 
 
-    <section class="card" style="margin-top:20px">
-      <div class="section-title"><div><small>SECURITY</small><h1>Admin Activity</h1></div><button id="refresh-audit" class="secondary">Refresh</button></div>
-      <p class="status">Recent administrative actions. Passwords and session tokens are never recorded here.</p>
-      <p id="audit-error" class="error"></p>
-      <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Time</th><th>Administrator</th><th>Action</th><th>Target</th><th>Result</th><th>Details</th></tr></thead><tbody id="audit-events"></tbody></table></div>
-    </section>
-
-    <section class="card" style="margin-top:20px">
+    <section id="events" class="card" style="margin-top:20px">
       <div class="section-title"><div><small>EVENTS</small><h1>Server Events</h1></div><div><input id="event-month" type="month"><button id="refresh-events" class="secondary">Refresh</button></div></div>
       <p class="status">Server events are managed here. The client does not expose server administration controls.</p>
       <p id="event-error" class="error"></p>
@@ -101,6 +100,13 @@
       <div class="admin-table-wrap">
         <table class="admin-table"><thead><tr><th>When</th><th>Title</th><th>Description</th><th>Owner</th><th>Manage</th></tr></thead><tbody id="events"></tbody></table>
       </div>
+    </section>
+
+    <section id="activity" class="card" style="margin-top:20px">
+      <div class="section-title"><div><small>SECURITY</small><h1>Admin Activity</h1></div><button id="refresh-audit" class="secondary">Refresh</button></div>
+      <p class="status">Recent administrative actions. Passwords and session tokens are never recorded here.</p>
+      <p id="audit-error" class="error"></p>
+      <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Time</th><th>Administrator</th><th>Action</th><th>Target</th><th>Result</th><th>Details</th></tr></thead><tbody id="audit-events"></tbody></table></div>
     </section>
     <footer>Otter Link administration • development UI</footer>
   </main>
