@@ -99,9 +99,7 @@ void OtterEventsWidget::eventsLoaded(const QJsonArray &events,int year,int month
     m_list->clear();
     for(const auto &value:events){
         const auto e=value.toObject();
-        auto *item=new QListWidgetItem(QStringLiteral("%1
-%2
-%3").arg(e.value("title").toString(),eventWhen(e),e.value("description").toString()),m_list);
+        auto *item=new QListWidgetItem(QStringLiteral("%1\n%2\n%3").arg(e.value("title").toString(),eventWhen(e),e.value("description").toString()),m_list);
         item->setToolTip(e.value("created_by").toString());
     }
 }
