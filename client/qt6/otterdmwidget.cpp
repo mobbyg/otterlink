@@ -1,9 +1,11 @@
 #include "otterdmwidget.h"
 #include "otterlinkclient.h"
 
+#include <QApplication>
 #include <QHBoxLayout>
 #include <QJsonArray>
 #include <QJsonObject>
+#include <QEvent>
 #include <QLabel>
 #include <QLineEdit>
 #include <QListWidget>
@@ -37,6 +39,9 @@ OtterDmWidget::OtterDmWidget(OtterLinkClient *client, const QString &username, Q
                 this, &OtterDmWidget::conversationLoaded);
         connect(m_client, &OtterLinkClient::directMessageSent,
                 this, &OtterDmWidget::messageSent);
+        installEventFilter(this);
+        m_messages->installEventFilter(this);
+        m_input->installEventFilter(this);
         loadConversation();
         m_refreshTimer.start();
     }
@@ -78,6 +83,24 @@ void OtterDmWidget::conversationLoaded(const QJsonObject &conversation)
         m_messages->addItem(QStringLiteral("%1: %2").arg(sender, text));
     }
     m_messages->scrollToBottom();
+    markReadIfActive();
+}
+
+void OtterDmWidget::markReadIfActive()
+{
+    if (!m_client || !isVisible()) return;
+    QWidget *focus = QApplication::focusWidget();
+    if (focus == this || (focus && (focus == m_messages || m_messages->isAncestorOf(focus)
+                                   || focus == m_input || m_input->isAncestorOf(focus))))
+        m_client->markDirectMessagesRead(m_username);
+}
+
+bool OtterDmWidget::eventFilter(QObject *watched, QEvent *event)
+{
+    if ((watched == this || watched == m_messages || watched == m_input)
+        && (event->type() == QEvent::MouseButtonPress || event->type() == QEvent::FocusIn))
+        markReadIfActive();
+    return QWidget::eventFilter(watched, event);
 }
 
 void OtterDmWidget::messageSent(const QJsonObject &message)
