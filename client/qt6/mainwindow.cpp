@@ -4,6 +4,7 @@
 #include "otterservicewindow.h"
 #include "otterpeoplewidget.h"
 #include "otterdmwidget.h"
+#include "ottereventswidget.h"
 #include "ui_mainwindow.h"
 
 #include <QComboBox>
@@ -90,6 +91,8 @@ MainWindow::MainWindow(QWidget *parent)
                     ui->newsButton->click();
                 else if (service == QStringLiteral("games"))
                     ui->gamesButton->click();
+                else if (service == QStringLiteral("events"))
+                    ui->eventsButton->click();
             });
 
     // People owns its own buddy-list interactions; the legacy Designer controls remain
@@ -136,6 +139,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->newsButton, &QPushButton::clicked, this, &MainWindow::navigateService);
     connect(ui->filesButton, &QPushButton::clicked, this, &MainWindow::navigateService);
     connect(ui->gamesButton, &QPushButton::clicked, this, &MainWindow::navigateService);
+    connect(ui->eventsButton, &QPushButton::clicked, this, &MainWindow::navigateService);
     connect(&m_refreshTimer, &QTimer::timeout, this, &MainWindow::refreshDashboard);
     connect(&m_connectionTimer, &QTimer::timeout, this, &MainWindow::advanceConnectionStage);
     connect(&m_connectionFinishTimer, &QTimer::timeout, this, &MainWindow::finishConnectionPresentation);
@@ -304,6 +308,9 @@ void MainWindow::navigateService()
         openServiceWindow(QStringLiteral("people"), QStringLiteral("People"), ui->peoplePage);
     } else if (button == ui->chatButton) {
         openServiceWindow(QStringLiteral("chat"), QStringLiteral("Community Chat"), ui->chatPage);
+    } else if (button == ui->eventsButton) {
+        auto *page = new OtterEventsWidget(m_client, m_desktop);
+        openServiceWindow(QStringLiteral("events"), QStringLiteral("Events"), page);
     } else {
         const QString title = button->text();
         auto *page = new QWidget(m_desktop);
@@ -414,7 +421,7 @@ void MainWindow::updateServiceButtonStates(OtterServiceWindow *activeWindow)
 
     setActiveServiceButton(activeButton, {
         ui->homeButton, ui->peopleButton, ui->mailButton, ui->chatButton,
-        ui->boardsButton, ui->newsButton, ui->filesButton, ui->gamesButton
+        ui->boardsButton, ui->newsButton, ui->filesButton, ui->gamesButton, ui->eventsButton
     });
 }
 
