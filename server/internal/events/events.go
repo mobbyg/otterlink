@@ -53,10 +53,30 @@ func (s Service) List(year, month int) ([]Event,error) {
     end := start.AddDate(0,1,0)
     rows, err := s.DB.Query(`SELECT id FROM events ORDER BY start_at, id`)
     if err != nil { return nil,err }
-    defer rows.Close()
+    ids := make([]int64, 0)
+    for rows.Next() {
+        var id int64
+        if err := rows.Scan(&id); err != nil {
+            rows.Close()
+            return nil, err
+        }
+        ids = append(ids, id)
+    }
+    if err := rows.Err(); err != nil {
+        rows.Close()
+        return nil, err
+    }
+    if err := rows.Close(); err != nil {
+        return nil, err
+    }
+
     result:=make([]Event,0)
-    for rows.Next(){ var id int64; if err:=rows.Scan(&id);err!=nil{return nil,err}; e,err:=s.Get(id);if err!=nil{return nil,err}; if eventOverlapsMonth(e,start,end){ result=append(result,e) } }
-    return result,rows.Err()
+    for _, id := range ids {
+        e,err:=s.Get(id)
+        if err!=nil{return nil,err}
+        if eventOverlapsMonth(e,start,end){ result=append(result,e) }
+    }
+    return result,nil
 }
 
 func (s Service) Update(id int64, title, description, eventType, targetType string, targetID int64, startAt, endAt string, allDay bool) (Event,error) {
