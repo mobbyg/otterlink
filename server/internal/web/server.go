@@ -28,6 +28,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /admin", s.adminIndex)
 	mux.HandleFunc("GET /static/", s.static)
 	mux.HandleFunc("GET /api/presence", s.presenceList)
+	mux.HandleFunc("POST /api/presence/away", s.presenceAway)
 	mux.HandleFunc("GET /api/buddies", s.buddyList)
 	mux.HandleFunc("POST /api/buddies", s.buddyAdd)
 	mux.HandleFunc("DELETE /api/buddies", s.buddyRemove)
