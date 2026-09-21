@@ -5,6 +5,7 @@
 
 class QListWidget;
 class QLineEdit;
+class QEvent;
 class OtterLinkClient;
 
 class OtterDmWidget final : public QWidget
@@ -20,6 +21,7 @@ private slots:
     void conversationLoaded(const QJsonObject &conversation);
     void messageSent(const QJsonObject &message);
     void refreshConversation();
+    void markReadIfActive();
 
 private:
     OtterLinkClient *m_client = nullptr;
@@ -27,4 +29,5 @@ private:
     QListWidget *m_messages = nullptr;
     QLineEdit *m_input = nullptr;
     QTimer m_refreshTimer;
+    bool eventFilter(QObject *watched, QEvent *event) override;
 };
