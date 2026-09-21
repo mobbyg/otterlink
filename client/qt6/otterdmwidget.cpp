@@ -30,12 +30,15 @@ OtterDmWidget::OtterDmWidget(OtterLinkClient *client, const QString &username, Q
 
     connect(send, &QPushButton::clicked, this, &OtterDmWidget::sendMessage);
     connect(m_input, &QLineEdit::returnPressed, this, &OtterDmWidget::sendMessage);
+    m_refreshTimer.setInterval(1500);
+    connect(&m_refreshTimer, &QTimer::timeout, this, &OtterDmWidget::refreshConversation);
     if (m_client) {
         connect(m_client, &OtterLinkClient::directConversationLoaded,
                 this, &OtterDmWidget::conversationLoaded);
         connect(m_client, &OtterLinkClient::directMessageSent,
                 this, &OtterDmWidget::messageSent);
         loadConversation();
+        m_refreshTimer.start();
     }
 }
 
@@ -44,6 +47,12 @@ void OtterDmWidget::loadConversation()
     if (!m_client) return;
     m_client->loadDirectConversation(m_username);
     m_client->markDirectMessagesRead(m_username);
+}
+
+void OtterDmWidget::refreshConversation()
+{
+    if (!m_client) return;
+    m_client->loadDirectConversation(m_username);
 }
 
 void OtterDmWidget::sendMessage()
