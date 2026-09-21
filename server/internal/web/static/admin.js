@@ -34,8 +34,10 @@ function renderEventRow(event) {
 async function refreshEvents() {
   showEventError('');
   const now = new Date();
+  const monthValue = $('event-month').value || `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  const [year, month] = monthValue.split('-').map(Number);
   try {
-    const result = await request(`/api/admin/events?year=${now.getFullYear()}&month=${now.getMonth()+1}`);
+    const result = await request(`/api/admin/events?year=${year}&month=${month}`);
     const body = $('events'); body.innerHTML = '';
     for (const event of result.events || []) body.appendChild(renderEventRow(event));
   } catch (error) { showEventError(error.message || String(error)); }
@@ -57,6 +59,8 @@ async function createEvent() {
     await request('/api/admin/events', { method: 'POST', body: JSON.stringify(payload) });
     $('event-title').value=''; $('event-description').value=''; $('event-start').value=''; $('event-end').value='';
     await refreshEvents(); await refreshAudit();
+const initialEventDate = new Date();
+$('event-month').value = `${initialEventDate.getFullYear()}-${String(initialEventDate.getMonth()+1).padStart(2,'0')}`;
 refreshEvents();
   } catch (error) { showEventError(error.message || String(error)); }
 }
@@ -241,6 +245,7 @@ $('close-channel-detail').addEventListener('click', closeChannel);
 $('save-channel-role').addEventListener('click', saveChannelRole);
 $('delete-channel').addEventListener('click', deleteChannel);
 $('refresh-events').addEventListener('click', refreshEvents);
+$('event-month').addEventListener('change', refreshEvents);
 $('create-event').addEventListener('click', createEvent);
 refresh();
 refreshChannels();
