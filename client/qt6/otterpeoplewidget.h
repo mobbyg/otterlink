@@ -1,6 +1,8 @@
 #pragma once
 
 #include <QHash>
+#include <QJsonArray>
+#include <QStringList>
 #include <QWidget>
 
 class QMenu;
