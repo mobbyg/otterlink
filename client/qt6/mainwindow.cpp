@@ -147,6 +147,8 @@ MainWindow::MainWindow(QWidget *parent)
     connect(m_client, &OtterLinkClient::buddyAdded, this, &MainWindow::buddyAdded);
     connect(m_client, &OtterLinkClient::directUnreadLoaded,
             this, &MainWindow::directUnreadLoaded);
+    connect(m_client, &OtterLinkClient::presenceLoaded,
+            m_peopleWidget, &OtterPeopleWidget::setPresence);
     connect(m_client, &OtterLinkClient::loggedOut, this, [this]() {
         m_refreshTimer.stop();
         m_connectionTimer.stop();
