@@ -104,7 +104,7 @@ void OtterLinkClient::loadDashboard()
         QStringList buddies;
         QStringList online;
         QStringList chat;
-        int remaining = 3;
+        int remaining = 4;
     };
     auto pending = std::make_shared<Pending>();
 
@@ -157,6 +157,9 @@ void OtterLinkClient::loadDashboard()
                                           from.value(QStringLiteral("username")).toString()),
                                       message.value(QStringLiteral("message")).toString());
         }
+    });
+    load(QStringLiteral("/api/messages/unread"), [this](const QJsonObject &obj) {
+        emit directUnreadLoaded(obj.value(QStringLiteral("messages")).toArray());
     });
 }
 
