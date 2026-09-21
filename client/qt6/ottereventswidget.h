@@ -3,6 +3,7 @@
 #include <QJsonArray>
 #include <QWidget>
 
+class QCalendarWidget;
 class QComboBox;
 class QLabel;
 class QListWidget;
@@ -18,6 +19,7 @@ public:
 private slots:
     void previousMonth();
     void nextMonth();
+    void calendarDateChanged(const QDate &date);
     void addEvent();
     void editSelected();
     void deleteSelected();
@@ -33,6 +35,7 @@ private:
 
     OtterLinkClient *m_client = nullptr;
     QLabel *m_monthLabel = nullptr;
+    QCalendarWidget *m_calendar = nullptr;
     QListWidget *m_list = nullptr;
     QPushButton *m_editButton = nullptr;
     QPushButton *m_deleteButton = nullptr;
