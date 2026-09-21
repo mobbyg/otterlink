@@ -79,6 +79,23 @@
       <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Time</th><th>Administrator</th><th>Action</th><th>Target</th><th>Result</th><th>Details</th></tr></thead><tbody id="audit-events"></tbody></table></div>
     </section>
 
+
+    <section class="card" style="margin-top:20px">
+      <div class="section-title"><div><small>EVENTS</small><h1>Server Events</h1></div><button id="refresh-events" class="secondary">Refresh</button></div>
+      <p class="status">Server events are managed here. The client does not expose server administration controls.</p>
+      <p id="event-error" class="error"></p>
+      <div class="admin-actions">
+        <input id="event-title" placeholder="Event title">
+        <input id="event-start" type="datetime-local">
+        <input id="event-end" type="datetime-local">
+        <label><input id="event-all-day" type="checkbox"> All day</label>
+        <button id="create-event">Create Event</button>
+      </div>
+      <label>Description<textarea id="event-description" rows="3" placeholder="Short description"></textarea></label>
+      <div class="admin-table-wrap">
+        <table class="admin-table"><thead><tr><th>When</th><th>Title</th><th>Description</th><th>Owner</th><th>Manage</th></tr></thead><tbody id="events"></tbody></table>
+      </div>
+    </section>
     <footer>Otter Link administration • development UI</footer>
   </main>
   <script src="/static/admin.js"></script>
