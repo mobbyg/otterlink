@@ -14,6 +14,53 @@ async function request(path, options = {}) {
   return response.json();
 }
 
+
+function showEventError(message) { $('event-error').textContent = message || ''; }
+function localEventValue(value) { if (!value) return ''; return new Date(value).toISOString(); }
+function eventWhen(event) {
+  if (event.all_day) return event.start_at === event.end_at ? event.start_at : event.start_at + ' → ' + event.end_at;
+  return formatDate(event.start_at) + ' → ' + formatDate(event.end_at);
+}
+function renderEventRow(event) {
+  const row = document.createElement('tr');
+  row.innerHTML = `<td>${escapeHTML(eventWhen(event))}</td><td>${escapeHTML(event.title)}</td><td>${escapeHTML(event.description || '')}</td><td>${escapeHTML(event.created_by)}</td><td><button class="secondary delete-event">Delete</button></td>`;
+  row.querySelector('.delete-event').addEventListener('click', async () => {
+    if (!window.confirm(`Delete server event '${event.title}'?`)) return;
+    try { await request(`/api/admin/events/${event.id}`, { method: 'DELETE' }); await refreshEvents(); }
+    catch (error) { showEventError(error.message || String(error)); }
+  });
+  return row;
+}
+async function refreshEvents() {
+  showEventError('');
+  const now = new Date();
+  try {
+    const result = await request(`/api/admin/events?year=${now.getFullYear()}&month=${now.getMonth()+1}`);
+    const body = $('events'); body.innerHTML = '';
+    for (const event of result.events || []) body.appendChild(renderEventRow(event));
+  } catch (error) { showEventError(error.message || String(error)); }
+}
+async function createEvent() {
+  const title = $('event-title').value.trim();
+  const description = $('event-description').value.trim();
+  const allDay = $('event-all-day').checked;
+  const start = $('event-start').value;
+  const end = $('event-end').value;
+  if (!title || !start || !end) { showEventError('Title, start, and end are required.'); return; }
+  const payload = { title, description, all_day: allDay };
+  if (allDay) {
+    payload.start_at = start.slice(0,10); payload.end_at = end.slice(0,10);
+  } else {
+    payload.start_at = localEventValue(start); payload.end_at = localEventValue(end);
+  }
+  try {
+    await request('/api/admin/events', { method: 'POST', body: JSON.stringify(payload) });
+    $('event-title').value=''; $('event-description').value=''; $('event-start').value=''; $('event-end').value='';
+    await refreshEvents(); await refreshAudit();
+refreshEvents();
+  } catch (error) { showEventError(error.message || String(error)); }
+}
+
 function showError(message) { $('error').textContent = message || ''; }
 function showDetailError(message) { $('detail-error').textContent = message || ''; }
 function showAuditError(message) { $('audit-error').textContent = message || ''; }
@@ -193,6 +240,8 @@ $('delete-user').addEventListener('click', deleteUser);
 $('close-channel-detail').addEventListener('click', closeChannel);
 $('save-channel-role').addEventListener('click', saveChannelRole);
 $('delete-channel').addEventListener('click', deleteChannel);
+$('refresh-events').addEventListener('click', refreshEvents);
+$('create-event').addEventListener('click', createEvent);
 refresh();
 refreshChannels();
 refreshAudit();
