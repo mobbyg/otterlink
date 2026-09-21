@@ -59,3 +59,11 @@ footer { text-align:center; color:#78909e; font-size:.75rem; padding:24px; }
 .admin-page .shell { width:min(1400px, calc(100% - 48px)); }
 @media (max-width:900px) { .admin-page .shell { width:min(1100px, calc(100% - 32px)); } .admin-layout { grid-template-columns:1fr; } .admin-detail { position:static; } }
 @media (max-width:700px) { .auth-grid,.dashboard { grid-template-columns:1fr; } .auth-grid { margin:30px auto; } .chat-card { min-height:450px; } }
+
+.event-form { display:grid; grid-template-columns:minmax(0, 1fr) minmax(0, 1fr); gap:20px; align-items:start; margin-top:4px; }
+.event-details { min-width:0; }
+.event-dates { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.event-description { min-width:0; }
+.event-description textarea { width:100%; min-height:132px; margin-top:6px; padding:11px 12px; border:1px solid #3b5667; border-radius:9px; background:#0c151c; color:#fff; outline:none; resize:vertical; font:inherit; }
+.event-description textarea:focus { border-color:var(--golden-orange); box-shadow:0 0 0 2px #efa00b33; }
+@media (max-width:700px) { .event-form { grid-template-columns:1fr; } .event-dates { grid-template-columns:1fr; } }
