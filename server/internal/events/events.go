@@ -88,12 +88,14 @@ func validate(title,description,eventType,targetType string,targetID int64,start
         if endAt<startAt{return errors.New("event end must not be before its start")}
         startDate,err:=time.Parse("2006-01-02",startAt);if err!=nil{return errors.New("invalid all-day start date")}
         if _,err:=time.Parse("2006-01-02",endAt);err!=nil{return errors.New("invalid all-day end date")}
-        if startDate.After(time.Now().UTC().AddDate(2,0,0)){return errors.New("events may only be scheduled up to 2 years ahead")}
+        maxDate := time.Now().UTC().AddDate(2,0,0)
+        endDate, _ := time.ParseInLocation("2006-01-02", endAt, time.UTC)
+        if startDate.After(maxDate) || endDate.After(maxDate){return errors.New("events may only be scheduled up to 2 years ahead")}
     } else {
         start,err:=time.Parse(time.RFC3339,startAt);if err!=nil{return errors.New("invalid start time")}
         end,err:=time.Parse(time.RFC3339,endAt);if err!=nil{return errors.New("invalid end time")}
         if end.Before(start){return errors.New("event end must not be before its start")}
-        if start.After(time.Now().UTC().AddDate(2,0,0)){return errors.New("events may only be scheduled up to 2 years ahead")}
+        if start.After(time.Now().UTC().AddDate(2,0,0)) || end.After(time.Now().UTC().AddDate(2,0,0)){return errors.New("events may only be scheduled up to 2 years ahead")}
     }
     return nil
 }
