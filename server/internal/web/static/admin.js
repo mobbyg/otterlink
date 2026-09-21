@@ -245,3 +245,5 @@ $('create-event').addEventListener('click', createEvent);
 refresh();
 refreshChannels();
 refreshAudit();
+
+refreshEvents();
