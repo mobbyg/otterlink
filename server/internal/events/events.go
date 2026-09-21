@@ -53,12 +53,11 @@ func (s Service) List(year, month int) ([]Event,error) {
     if month < 1 || month > 12 { return nil, errors.New("invalid month") }
     start := time.Date(year,time.Month(month),1,0,0,0,0,time.UTC)
     end := start.AddDate(0,1,0)
-    rows, err := s.DB.Query(`SELECT id FROM events WHERE start_at < ? AND end_at >= ? ORDER BY start_at, id`,
-        end.Format(time.RFC3339), start.Format(time.RFC3339))
+    rows, err := s.DB.Query(`SELECT id FROM events ORDER BY start_at, id`)
     if err != nil { return nil,err }
     defer rows.Close()
     result:=make([]Event,0)
-    for rows.Next(){ var id int64; if err:=rows.Scan(&id);err!=nil{return nil,err}; e,err:=s.Get(id);if err!=nil{return nil,err}; result=append(result,e) }
+    for rows.Next(){ var id int64; if err:=rows.Scan(&id);err!=nil{return nil,err}; e,err:=s.Get(id);if err!=nil{return nil,err}; if eventOverlapsMonth(e,start,end){ result=append(result,e) } }
     return result,rows.Err()
 }
 
@@ -97,4 +96,19 @@ func validate(title,description,eventType,targetType string,targetID int64,start
         if start.After(time.Now().UTC().AddDate(2,0,0)){return errors.New("events may only be scheduled up to 2 years ahead")}
     }
     return nil
+}
+
+
+func eventOverlapsMonth(e Event, monthStart, monthEnd time.Time) bool {
+    if e.AllDay {
+        start, err1 := time.ParseInLocation("2006-01-02", e.StartAt, time.UTC)
+        end, err2 := time.ParseInLocation("2006-01-02", e.EndAt, time.UTC)
+        if err1 != nil || err2 != nil { return false }
+        end = end.AddDate(0,0,1)
+        return start.Before(monthEnd) && end.After(monthStart)
+    }
+    start, err1 := time.Parse(time.RFC3339, e.StartAt)
+    end, err2 := time.Parse(time.RFC3339, e.EndAt)
+    if err1 != nil || err2 != nil { return false }
+    return start.Before(monthEnd) && end.After(monthStart)
 }
