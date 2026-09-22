@@ -15,7 +15,7 @@ func ExecuteArgs(c *Client,args []string)(Records,error){
 	if len(args)==0{return nil,fmt.Errorf("command is required")}
 	for _,a:=range args{if a=="|"||strings.Contains(a,"|"){
 		var b strings.Builder
-		for i,v:=range args{if i>0{b.WriteByte(' ')};if strings.ContainsAny(v," \t|\"'"){b.WriteByte('\"');b.WriteString(strings.ReplaceAll(v,"\"","\\\""));b.WriteByte('\"')}else{b.WriteString(v)}}
+		for i,v:=range args{if i>0{b.WriteByte(' ')};if strings.ContainsAny(v," 	|\\\"'"){b.WriteByte('"');b.WriteString(strings.ReplaceAll(v,"\\\"","\\\\\"));b.WriteByte('"')}else{b.WriteString(v)}}
 		return ExecuteLine(c,b.String())
 	}}
 	return runCommand(c,args,nil,false)
