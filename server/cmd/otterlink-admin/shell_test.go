@@ -6,14 +6,14 @@ import (
 )
 
 func TestSplitPipelineRespectsQuotes(t *testing.T) {
-	got, err := splitPipeline(\`users list | where display_name="A|B" | select username\`)
+	got, err := splitPipeline(`users list | where display_name="A|B" | select username`)
 	if err != nil { t.Fatal(err) }
-	want := []string{"users list", \`where display_name="A|B"\`, "select username"}
+	want := []string{"users list", `where display_name="A|B"`, "select username"}
 	if !reflect.DeepEqual(got, want) { t.Fatalf("got %#v want %#v", got, want) }
 }
 
 func TestTokenizeQuotes(t *testing.T) {
-	got, err := tokenize(\`chat create "My Community"\`)
+	got, err := tokenize(`chat create "My Community"`)
 	if err != nil { t.Fatal(err) }
 	want := []string{"chat", "create", "My Community"}
 	if !reflect.DeepEqual(got, want) { t.Fatalf("got %#v want %#v", got, want) }
