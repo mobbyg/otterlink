@@ -151,6 +151,26 @@ Current administration functions include:
 
 Audit entries record administrative actions and outcomes without recording passwords or session tokens.
 
+## Administration shell
+
+The repository also includes `server/cmd/otterlink-admin`, a separate command-line administration client for the existing HTTP administration API. It supports interactive administration, one-shot commands, and structured pipelines such as:
+
+```text
+users list | where status=active | select username,role
+users list | where role=admin | count
+chat list
+events list
+audit list
+```
+
+Build it from `server/` with:
+
+```sh
+go build -o otterlink-admin ./cmd/otterlink-admin
+```
+
+See [`server/cmd/otterlink-admin/README.md`](server/cmd/otterlink-admin/README.md) for the command reference and authentication details.
+
 ## Development clients
 
 ### Web client
