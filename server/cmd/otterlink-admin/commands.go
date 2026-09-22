@@ -16,7 +16,10 @@ func userCommand(c *Client,a []string)(Records,error){
 		if len(a)!=2{return nil,fmt.Errorf("usage: users get USER")};var x map[string]any;if err:=c.get("/api/admin/users/"+url.PathEscape(a[1]),&x);err!=nil{return nil,err};return Records{x},nil
 	case "update":
 		if len(a)<2{return nil,fmt.Errorf("usage: users update USER [flags]")};m,err:=flags(a[2:]);if err!=nil{return nil,err}
-		body:=map[string]any{"display_name":m["display-name"],"email":m["email"],"status":m["status"],"role":m["role"]};if body["display_name"]==nil{return nil,fmt.Errorf("--display-name is required")};if body["email"]==nil{body["email"]=""};if body["status"]==nil{body["status"]="active"};if body["role"]==nil{body["role"]="user"}
+		var current map[string]any
+		if err:=c.get("/api/admin/users/"+url.PathEscape(a[1]),&current);err!=nil{return nil,err}
+		body:=map[string]any{"display_name":current["display_name"],"email":current["email"],"status":current["status"],"role":current["role"]}
+		if v,ok:=m["display-name"];ok{body["display_name"]=v};if v,ok:=m["email"];ok{body["email"]=v};if v,ok:=m["status"];ok{body["status"]=v};if v,ok:=m["role"];ok{body["role"]=v}
 		var x map[string]any;if err:=c.patch("/api/admin/users/"+url.PathEscape(a[1]),body,&x);err!=nil{return nil,err};return Records{x},nil
 	case "password":
 		if len(a)!=2{return nil,fmt.Errorf("usage: users password USER")};p,err:=readSecret("New password: ");if err!=nil{return nil,err};if len(p)<12{return nil,fmt.Errorf("password must be at least 12 characters")};var x map[string]any;if err:=c.post("/api/admin/users/"+url.PathEscape(a[1])+"/password",map[string]any{"password":p},&x);err!=nil{return nil,err};return Records{x},nil
