@@ -11,7 +11,7 @@ func userCommand(c *Client,a []string)(Records,error){
 	if len(a)==0{return nil,fmt.Errorf("usage: users <list|get|update|password|revoke|delete>")}
 	switch a[0]{
 	case "list":
-		var x struct{Users []map[string]any \`json:"users"\`};if err:=c.get("/api/admin/users",&x);err!=nil{return nil,err};return mapsToRecords(x.Users),nil
+		var x struct{Users []map[string]any `json:"users"`};if err:=c.get("/api/admin/users",&x);err!=nil{return nil,err};return mapsToRecords(x.Users),nil
 	case "get":
 		if len(a)!=2{return nil,fmt.Errorf("usage: users get USER")};var x map[string]any;if err:=c.get("/api/admin/users/"+url.PathEscape(a[1]),&x);err!=nil{return nil,err};return Records{x},nil
 	case "update":
@@ -34,7 +34,7 @@ func chatCommand(c *Client,a []string)(Records,error){
 	if len(a)==0{return nil,fmt.Errorf("usage: chat <list|create|delete|role>")}
 	switch a[0]{
 	case "list":
-		var x struct{Channels []map[string]any \`json:"channels"\`};if err:=c.get("/api/admin/chat/channels",&x);err!=nil{return nil,err};return mapsToRecords(x.Channels),nil
+		var x struct{Channels []map[string]any `json:"channels"`};if err:=c.get("/api/admin/chat/channels",&x);err!=nil{return nil,err};return mapsToRecords(x.Channels),nil
 	case "create":
 		if len(a)<2{return nil,fmt.Errorf("usage: chat create NAME [--allow-ops]")};m,err:=flags(a[2:]);if err!=nil{return nil,err};var x map[string]any;if err:=c.post("/api/admin/chat/channels",map[string]any{"name":a[1],"allow_ops_to_create_ops":m["allow-ops"]=="true"},&x);err!=nil{return nil,err};return Records{x},nil
 	case "delete":
@@ -48,7 +48,7 @@ func eventCommand(c *Client,a []string)(Records,error){
 	if len(a)==0{return nil,fmt.Errorf("usage: events <list|create|update|delete>")}
 	switch a[0]{
 	case "list":
-		m,err:=flags(a[1:]);if err!=nil{return nil,err};path:="/api/admin/events";q:=[]string{};if m["year"]!=""{q=append(q,"year="+url.QueryEscape(m["year"]))};if m["month"]!=""{q=append(q,"month="+url.QueryEscape(m["month"]))};if len(q)>0{path+="?"+strings.Join(q,"&")};var x struct{Events []map[string]any \`json:"events"\`};if err:=c.get(path,&x);err!=nil{return nil,err};return mapsToRecords(x.Events),nil
+		m,err:=flags(a[1:]);if err!=nil{return nil,err};path:="/api/admin/events";q:=[]string{};if m["year"]!=""{q=append(q,"year="+url.QueryEscape(m["year"]))};if m["month"]!=""{q=append(q,"month="+url.QueryEscape(m["month"]))};if len(q)>0{path+="?"+strings.Join(q,"&")};var x struct{Events []map[string]any `json:"events"`};if err:=c.get(path,&x);err!=nil{return nil,err};return mapsToRecords(x.Events),nil
 	case "create","update":
 		if a[0]=="update"&&len(a)<2{return nil,fmt.Errorf("usage: events update ID [flags]")};start:=1;if a[0]=="update"{start=2};m,err:=flags(a[start:]);if err!=nil{return nil,err};body:=map[string]any{"title":m["title"],"description":m["description"],"start_at":m["start-at"],"end_at":m["end-at"],"all_day":m["all-day"]=="true"};if body["title"]==nil||body["start_at"]==nil||body["end_at"]==nil{return nil,fmt.Errorf("--title, --start-at and --end-at are required")};if a[0]=="create"{body["event_type"]="server";body["target_type"]="none";body["target_id"]=0};var x map[string]any;var e error;if a[0]=="create"{e=c.post("/api/admin/events",body,&x)}else{e=c.patch("/api/admin/events/"+url.PathEscape(a[1]),body,&x)};if e!=nil{return nil,e};return Records{x},nil
 	case "delete":
@@ -56,7 +56,7 @@ func eventCommand(c *Client,a []string)(Records,error){
 	default:return nil,fmt.Errorf("unknown events command %q",a[0])
 	}
 }
-func auditCommand(c *Client,a []string)(Records,error){if len(a)!=1||a[0]!="list"{return nil,fmt.Errorf("usage: audit list")};var x struct{Events []map[string]any \`json:"events"\`};if err:=c.get("/api/admin/audit",&x);err!=nil{return nil,err};return mapsToRecords(x.Events),nil}
-func presenceCommand(c *Client,a []string)(Records,error){if len(a)!=1||a[0]!="list"{return nil,fmt.Errorf("usage: presence list")};var x struct{Users []map[string]any \`json:"users"\`};if err:=c.get("/api/presence",&x);err!=nil{return nil,err};return mapsToRecords(x.Users),nil}
+func auditCommand(c *Client,a []string)(Records,error){if len(a)!=1||a[0]!="list"{return nil,fmt.Errorf("usage: audit list")};var x struct{Events []map[string]any `json:"events"`};if err:=c.get("/api/admin/audit",&x);err!=nil{return nil,err};return mapsToRecords(x.Events),nil}
+func presenceCommand(c *Client,a []string)(Records,error){if len(a)!=1||a[0]!="list"{return nil,fmt.Errorf("usage: presence list")};var x struct{Users []map[string]any `json:"users"`};if err:=c.get("/api/presence",&x);err!=nil{return nil,err};return mapsToRecords(x.Users),nil}
 func mapsToRecords(v []map[string]any)Records{r:=make(Records,len(v));for i,m:=range v{r[i]=Record(m)};return r}
 func flags(a []string)(map[string]string,error){out:=map[string]string{};for i:=0;i<len(a);i++{if !strings.HasPrefix(a[i],"--"){return nil,fmt.Errorf("expected flag, got %q",a[i])};p:=strings.TrimPrefix(a[i],"--");if i+1<len(a)&&!strings.HasPrefix(a[i+1],"--"){out[p]=a[i+1];i++}else{out[p]="true"}};return out,nil}
