@@ -23,10 +23,7 @@ func ExecuteArgs(c *Client, args []string) (Records, error) {
 					b.WriteByte(' ')
 				}
 				if strings.ContainsAny(v, " 	|\\\"'") {
-					b.WriteByte('"')
-					b.WriteString(strings.ReplaceAll(v, "\\", "\\\\"))
-					b.WriteString(strings.ReplaceAll(v, """, "\\""))
-					b.WriteByte('"')
+					b.WriteString(strconv.Quote(v))
 				} else {
 					b.WriteString(v)
 				}
