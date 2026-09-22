@@ -19,7 +19,7 @@ func main() {
 			fmt.Fprintln(os.Stderr, "otterlink-admin:", err)
 			os.Exit(1)
 		}
-		out, err := ExecuteLine(client, strings.Join(cfg.Command, " "))
+		out, err := ExecuteArgs(client, cfg.Command)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, "otterlink-admin:", err)
 			os.Exit(1)
