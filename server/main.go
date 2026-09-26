@@ -84,6 +84,9 @@ func main() {
 	dmService := dm.Service{DB: database, Limit: 100}
 	eventsService := events.Service{DB: database}
 	newsService := news.Service{DB: database}
+	newsCtx, newsCancel := context.WithCancel(context.Background())
+	defer newsCancel()
+	go runNewsRefreshLoop(newsCtx, newsService)
 	authAPI := api.AuthAPI{Accounts: accountService, Presence: presenceService, Chat: chatHub}
 	webServer := &web.Server{Accounts: accountService, Buddies: buddyService, Presence: presenceService, Chat: chatHub, DM: dmService, Events: eventsService, News: newsService}
 
@@ -168,6 +171,31 @@ func main() {
 		log.Printf("OSCAR shutdown timeout reached")
 	}
 	log.Printf("Otter Link stopped")
+}
+
+func runNewsRefreshLoop(ctx context.Context, service news.Service) {
+	refresh := func() {
+		count, err := service.RefreshDueSources(ctx, time.Now().UTC())
+		if err != nil {
+			log.Printf("news refresh: %v", err)
+			return
+		}
+		if count > 0 {
+			log.Printf("news refresh: refreshed %d source(s)", count)
+		}
+	}
+
+	refresh()
+	ticker := time.NewTicker(time.Minute)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ticker.C:
+			refresh()
+		case <-ctx.Done():
+			return
+		}
+	}
 }
 
 func healthHandler(w http.ResponseWriter, _ *http.Request) {
