@@ -214,6 +214,36 @@ func (s Service) ListItems(limit int, category string, sourceID int64) ([]Item, 
 	return result, rows.Err()
 }
 
+func extractImageURL(value, base string) string {
+	value = html.UnescapeString(value)
+	lower := strings.ToLower(value)
+	for {
+		start := strings.Index(lower, "<img")
+		if start < 0 {
+			return ""
+		}
+		tagEnd := strings.Index(value[start:], ">")
+		if tagEnd < 0 {
+			return ""
+		}
+		tagEnd += start
+		tag := value[start : tagEnd+1]
+		lowerTag := strings.ToLower(tag)
+		src := strings.Index(lowerTag, "src=")
+		if src >= 0 {
+			rest := strings.TrimSpace(tag[src+4:])
+			if len(rest) > 1 && (rest[0] == '\'' || rest[0] == '"') {
+				quote := rest[0]
+				if end := strings.IndexByte(rest[1:], quote); end >= 0 {
+					return normalizeURL(rest[1:end+1], base)
+				}
+			}
+		}
+		value = value[tagEnd+1:]
+		lower = strings.ToLower(value)
+	}
+}
+
 func fetchItems(ctx context.Context, client *http.Client, rawURL string) ([]Item, error) {
 	body, err := downloadFeed(ctx, client, rawURL)
 	if err != nil {
@@ -228,7 +258,7 @@ func fetchItems(ctx context.Context, client *http.Client, rawURL string) ([]Item
 			if author == "" {
 				author = strings.TrimSpace(entry.Creator)
 			}
-			imageURL := ""
+			imageURL := extractImageURL(entry.Description, rawURL)
 			for _, media := range entry.Thumbnail {
 				if media.URL != "" {
 					imageURL = media.URL
@@ -283,6 +313,7 @@ func fetchItems(ctx context.Context, client *http.Client, rawURL string) ([]Item
 		if summary == "" {
 			summary = entry.Content
 		}
+		imageURL := extractImageURL(summary, rawURL)
 		items = append(items, Item{
 			Title: cleanText(entry.Title),
 			Author: cleanText(entry.Author.Name),
@@ -290,6 +321,7 @@ func fetchItems(ctx context.Context, client *http.Client, rawURL string) ([]Item
 			Summary: cleanText(summary),
 			URL: normalizeURL(link, rawURL),
 			GUID: cleanText(entry.ID),
+			ImageURL: imageURL,
 		})
 	}
 	return items, nil
