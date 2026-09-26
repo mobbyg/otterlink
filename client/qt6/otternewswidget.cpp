@@ -18,6 +18,9 @@
 #include <QUrl>
 #include <QVBoxLayout>
 #include <QDateTime>
+#include <QNetworkAccessManager>
+#include <QNetworkRequest>
+#include <QNetworkReply>
 
 namespace {
 
@@ -49,7 +52,8 @@ QString sourceLine(const QJsonObject &item)
 
 OtterNewsWidget::OtterNewsWidget(OtterLinkClient *client, QWidget *parent)
     : QWidget(parent),
-      m_client(client)
+      m_client(client),
+      m_imageNetwork(new QNetworkAccessManager(this))
 {
     auto *root = new QVBoxLayout(this);
     root->setContentsMargins(12, 10, 12, 12);
@@ -104,8 +108,8 @@ OtterNewsWidget::OtterNewsWidget(OtterLinkClient *client, QWidget *parent)
 
     m_headlines = new QListWidget(this);
     m_headlines->setObjectName(QStringLiteral("newsHeadlines"));
-    m_headlines->setMinimumWidth(250);
-    m_headlines->setMaximumWidth(360);
+    m_headlines->setMinimumWidth(290);
+    m_headlines->setMaximumWidth(430);
     content->addWidget(m_headlines, 1);
 
     auto *article = new QVBoxLayout;
@@ -120,6 +124,14 @@ OtterNewsWidget::OtterNewsWidget(OtterLinkClient *client, QWidget *parent)
     m_meta->setObjectName(QStringLiteral("newsArticleMeta"));
     m_meta->setWordWrap(true);
     article->addWidget(m_meta);
+
+    m_image = new QLabel(this);
+    m_image->setObjectName(QStringLiteral("newsArticleImage"));
+    m_image->setAlignment(Qt::AlignCenter);
+    m_image->setMaximumSize(320, 180);
+    m_image->setScaledContents(false);
+    m_image->hide();
+    article->addWidget(m_image, 0, Qt::AlignLeft);
 
     m_summary = new QLabel(this);
     m_summary->setObjectName(QStringLiteral("newsArticleSummary"));
@@ -253,8 +265,34 @@ void OtterNewsWidget::showItem(QListWidgetItem *item)
     m_title->setText(data.value(QStringLiteral("title")).toString());
     m_meta->setText(sourceLine(data));
     m_summary->setText(data.value(QStringLiteral("summary")).toString().trimmed());
+    const QString imageUrl = data.value(QStringLiteral("image_url")).toString().trimmed();
+    m_image->clear();
+    m_image->hide();
+    if (!imageUrl.isEmpty())
+        loadArticleImage(imageUrl);
     m_selectedUrl = data.value(QStringLiteral("url")).toString().trimmed();
     m_originalButton->setEnabled(!m_selectedUrl.isEmpty());
+}
+
+void OtterNewsWidget::loadArticleImage(const QString &url)
+{
+    if (!m_imageNetwork || url.isEmpty())
+        return;
+
+    QNetworkRequest request(QUrl(url));
+    request.setHeader(QNetworkRequest::UserAgentHeader, QStringLiteral("OtterLink-News/1.0"));
+    auto *reply = m_imageNetwork->get(request);
+    connect(reply, &QNetworkReply::finished, this, [this, reply, url]() {
+        const QByteArray data = reply->error() == QNetworkReply::NoError ? reply->readAll() : QByteArray();
+        reply->deleteLater();
+        if (url != m_headlines->currentItem()->data(Qt::UserRole).toJsonObject().value(QStringLiteral("image_url")).toString().trimmed())
+            return;
+        QPixmap pixmap;
+        if (pixmap.loadFromData(data) && !pixmap.isNull()) {
+            m_image->setPixmap(pixmap.scaled(320, 180, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+            m_image->show();
+        }
+    });
 }
 
 void OtterNewsWidget::openOriginal()
@@ -267,6 +305,8 @@ void OtterNewsWidget::clearArticle()
 {
     m_title->setText(QStringLiteral("Select a headline"));
     m_meta->clear();
+    m_image->clear();
+    m_image->hide();
     m_summary->clear();
     m_selectedUrl.clear();
     m_originalButton->setEnabled(false);
