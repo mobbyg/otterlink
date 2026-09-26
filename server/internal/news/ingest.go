@@ -229,15 +229,38 @@ func sanitizeArticleHTML(value, base string) string {
 	value = strings.TrimSpace(value)
 	if value == "" { return "" }
 	value = replaceYouTubeEmbeds(value)
-	context := &htmlpkg.Node{Type: htmlpkg.ElementNode, Data: "div"}
-	fragments, err := htmlpkg.ParseFragment(strings.NewReader(value), context)
-	if err != nil { return "" }
-	root := &htmlpkg.Node{Type: htmlpkg.ElementNode, Data: "div"}
-	for _, fragment := range fragments { root.AppendChild(fragment) }
-	sanitizeHTMLChildren(root, base)
+
+	// Parse as a document so the HTML5 parser can handle arbitrary feed markup
+	// correctly, then sanitize and render only the document body contents.
+	doc, err := htmlpkg.Parse(strings.NewReader(value))
+	if err != nil {
+		return ""
+	}
+	var body *htmlpkg.Node
+	var findBody func(*htmlpkg.Node)
+	findBody = func(node *htmlpkg.Node) {
+		if body != nil {
+			return
+		}
+		if node.Type == htmlpkg.ElementNode && strings.EqualFold(node.Data, "body") {
+			body = node
+			return
+		}
+		for child := node.FirstChild; child != nil; child = child.NextSibling {
+			findBody(child)
+		}
+	}
+	findBody(doc)
+	if body == nil {
+		return ""
+	}
+
+	sanitizeHTMLChildren(body, base)
 	var out bytes.Buffer
-	for child := root.FirstChild; child != nil; child = child.NextSibling {
-		if err := htmlpkg.Render(&out, child); err != nil { return "" }
+	for child := body.FirstChild; child != nil; child = child.NextSibling {
+		if err := htmlpkg.Render(&out, child); err != nil {
+			return ""
+		}
 	}
 	return strings.TrimSpace(out.String())
 }
