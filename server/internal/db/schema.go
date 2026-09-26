@@ -133,6 +133,22 @@ CREATE TABLE IF NOT EXISTS news_sources (
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 CREATE INDEX IF NOT EXISTS idx_news_sources_enabled ON news_sources(enabled);
+
+CREATE TABLE IF NOT EXISTS news_items (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    source_id INTEGER NOT NULL REFERENCES news_sources(id) ON DELETE CASCADE,
+    title TEXT NOT NULL,
+    author TEXT NOT NULL DEFAULT '',
+    published_at TEXT,
+    summary TEXT NOT NULL DEFAULT '',
+    url TEXT NOT NULL,
+    guid TEXT NOT NULL,
+    image_url TEXT NOT NULL DEFAULT '',
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(source_id, guid)
+);
+CREATE INDEX IF NOT EXISTS idx_news_items_source_published ON news_items(source_id, published_at DESC, id DESC);
+CREATE INDEX IF NOT EXISTS idx_news_items_published ON news_items(published_at DESC, id DESC);
 `
 
 func Initialize(db *sql.DB) error {
