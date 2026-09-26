@@ -229,7 +229,8 @@ func sanitizeArticleHTML(value, base string) string {
 	value = strings.TrimSpace(value)
 	if value == "" { return "" }
 	value = replaceYouTubeEmbeds(value)
-	fragments, err := htmlpkg.ParseFragment(strings.NewReader(value), nil)
+	context := &htmlpkg.Node{Type: htmlpkg.ElementNode, Data: "div"}
+	fragments, err := htmlpkg.ParseFragment(strings.NewReader(value), context)
 	if err != nil { return "" }
 	root := &htmlpkg.Node{Type: htmlpkg.ElementNode, Data: "div"}
 	for _, fragment := range fragments { root.AppendChild(fragment) }
