@@ -354,8 +354,6 @@ void MainWindow::openKeywordTarget(const QString &type, qint64 id)
 {
     if (type == QStringLiteral("chat")) {
         ui->chatButton->click();
-        auto *chatWindow = m_serviceWindows.value(QStringLiteral("chat"), nullptr);
-        Q_UNUSED(chatWindow);
         auto *chat = findChild<OtterChatWidget *>();
         if (chat) chat->openChannel(id);
     } else if (type == QStringLiteral("event")) {
