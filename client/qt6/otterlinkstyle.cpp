@@ -64,36 +64,42 @@ void install(QApplication &app)
 
         QPushButton#homeButton, QPushButton#peopleButton, QPushButton#mailButton,
         QPushButton#chatButton, QPushButton#boardsButton, QPushButton#newsButton,
-        QPushButton#filesButton, QPushButton#gamesButton {
-            text-align: left;
-            background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                                        stop:0 #f5fbff, stop:0.48 #d8e8f2, stop:1 #b7cfdd);
-            color: #173b55;
-            border: 1px solid #7897a9;
-            border-radius: 3px;
-            padding: 6px 8px;
-            margin: 1px 4px;
-            min-height: 24px;
+        QPushButton#filesButton, QPushButton#gamesButton, QPushButton#eventsButton {
+            background: transparent;
+            color: transparent;
+            border: none;
+            padding: 3px;
+            margin: 1px;
+            min-width: 42px;
+            max-width: 42px;
+            min-height: 42px;
+            max-height: 42px;
         }
 
         QPushButton#homeButton:hover, QPushButton#peopleButton:hover, QPushButton#mailButton:hover,
         QPushButton#chatButton:hover, QPushButton#boardsButton:hover, QPushButton#newsButton:hover,
-        QPushButton#filesButton:hover, QPushButton#gamesButton:hover {
-            background: #ffffff;
-            border-color: #3d7797;
+        QPushButton#filesButton:hover, QPushButton#gamesButton:hover, QPushButton#eventsButton:hover {
+            background: rgba(255, 255, 255, 90);
+            border: 1px solid #6f9db5;
+            border-radius: 4px;
         }
 
         QPushButton#homeButton:pressed, QPushButton#peopleButton:pressed, QPushButton#mailButton:pressed,
         QPushButton#chatButton:pressed, QPushButton#boardsButton:pressed, QPushButton#newsButton:pressed,
-        QPushButton#filesButton:pressed, QPushButton#gamesButton:pressed,
+        QPushButton#filesButton:pressed, QPushButton#gamesButton:pressed, QPushButton#eventsButton:pressed {
+            background: rgba(120, 184, 215, 120);
+            border: 1px solid #3f7898;
+            border-radius: 4px;
+        }
+
         QPushButton#homeButton[active="true"], QPushButton#peopleButton[active="true"],
         QPushButton#mailButton[active="true"], QPushButton#chatButton[active="true"],
         QPushButton#boardsButton[active="true"], QPushButton#newsButton[active="true"],
-        QPushButton#filesButton[active="true"], QPushButton#gamesButton[active="true"] {
-            background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                                        stop:0 #79b8d7, stop:1 #4f91b5);
-            color: white;
-            border-color: #245e7d;
+        QPushButton#filesButton[active="true"], QPushButton#gamesButton[active="true"],
+        QPushButton#eventsButton[active="true"] {
+            background: rgba(120, 184, 215, 100);
+            border: 1px solid #3f7898;
+            border-radius: 4px;
         }
 
         QFrame#otterDesktop {
