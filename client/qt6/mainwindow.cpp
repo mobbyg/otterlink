@@ -59,7 +59,7 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
 
-    const QSize navigationIconSize(36, 36);
+    const QSize navigationIconSize(32, 32);
     const auto setNavigationIcon = [navigationIconSize](QPushButton *button,
                                                         const QString &resource) {
         button->setIcon(QIcon(resource));
