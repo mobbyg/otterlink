@@ -18,6 +18,10 @@
 #include <QUrl>
 #include <QVBoxLayout>
 #include <QDateTime>
+#include <QRegularExpression>
+#include <QTextBrowser>
+#include <QTextDocument>
+#include <QSet>
 #include <QNetworkAccessManager>
 #include <QNetworkRequest>
 #include <QNetworkReply>
@@ -125,19 +129,12 @@ OtterNewsWidget::OtterNewsWidget(OtterLinkClient *client, QWidget *parent)
     m_meta->setWordWrap(true);
     article->addWidget(m_meta);
 
-    m_image = new QLabel(this);
-    m_image->setObjectName(QStringLiteral("newsArticleImage"));
-    m_image->setAlignment(Qt::AlignCenter);
-    m_image->setMaximumSize(320, 180);
-    m_image->setScaledContents(false);
-    m_image->hide();
-    article->addWidget(m_image, 0, Qt::AlignLeft);
-
-    m_summary = new QLabel(this);
-    m_summary->setObjectName(QStringLiteral("newsArticleSummary"));
-    m_summary->setWordWrap(true);
-    m_summary->setAlignment(Qt::AlignTop | Qt::AlignLeft);
-    article->addWidget(m_summary, 1);
+    m_article = new QTextBrowser(this);
+    m_article->setObjectName(QStringLiteral("newsArticle"));
+    m_article->setReadOnly(true);
+    m_article->setOpenLinks(false);
+    m_article->setOpenExternalLinks(false);
+    article->addWidget(m_article, 1);
 
     m_originalButton = new QPushButton(QStringLiteral("Read Original"), this);
     m_originalButton->setObjectName(QStringLiteral("newsOriginalButton"));
