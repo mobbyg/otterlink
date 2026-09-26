@@ -44,5 +44,6 @@ private:
     QLabel *m_summary = nullptr;
     QPushButton *m_originalButton = nullptr;
     QString m_selectedUrl;
+    QString m_selectedImageUrl;
     QNetworkAccessManager *m_imageNetwork = nullptr;
 };
