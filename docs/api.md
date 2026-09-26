@@ -319,6 +319,52 @@ Request:
 
 Supported actions currently include `kick`, `ban`, and `unban`.
 
+## Service keywords
+
+Service keywords provide AOL/Q-Link-style community shortcuts. Keywords are normalized case-insensitively and returned in uppercase.
+
+### Resolve keyword
+
+`GET /api/keywords/{keyword}`
+
+Requires authentication.
+
+Returns the keyword's display information and associated service targets:
+
+```json
+{
+  "keyword": "RETRO",
+  "display_name": "Retro Computing",
+  "description": "Retro community",
+  "targets": [
+    {"type": "chat", "id": 7, "label": "Retro Computing Chat"},
+    {"type": "event", "id": 12, "label": "Retro Computing Night"}
+  ]
+}
+```
+
+Target types currently supported by the registry are `chat`, `event`, and `bulletin`. Bulletin targets are reserved for the Bulletin service integration.
+
+### Administrator keyword management
+
+- `GET /api/admin/keywords`
+- `PUT /api/admin/keywords/{keyword}`
+- `DELETE /api/admin/keywords/{keyword}`
+
+Admin write requests use:
+
+```json
+{
+  "display_name": "Retro Computing",
+  "description": "Retro community",
+  "targets": [
+    {"type": "chat", "id": 7, "label": "Retro Computing Chat"},
+    {"type": "event", "id": 12, "label": "Retro Computing Night"}
+  ]
+}
+```
+
+The registry is intentionally service-neutral so future services can participate without changing keyword resolution.
 ## Events
 
 ### List events
