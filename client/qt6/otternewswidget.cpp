@@ -7,10 +7,13 @@
 #include <QHBoxLayout>
 #include <QJsonArray>
 #include <QJsonObject>
+#include <QJsonValue>
 #include <QLabel>
 #include <QListWidget>
 #include <QListWidgetItem>
 #include <QPushButton>
+#include <QSignalBlocker>
+#include <QStringList>
 #include <QUrl>
 #include <QVBoxLayout>
 #include <QDateTime>
