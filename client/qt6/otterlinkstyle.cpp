@@ -151,6 +151,40 @@ void install(QApplication &app)
             background: #b9d2df;
         }
 
+
+        QLabel#newsArticleTitle {
+            color: #075b86;
+            background: transparent;
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        QLabel#newsArticleMeta {
+            color: #56758a;
+            background: transparent;
+        }
+
+        QLabel#newsArticleSummary {
+            color: #19364b;
+            background: white;
+            border: 1px solid #c0d2dc;
+            border-radius: 3px;
+            padding: 10px;
+        }
+
+        QPushButton#newsRefreshButton, QPushButton#newsOriginalButton {
+            background: #d9e9f2;
+            color: #174563;
+            border: 1px solid #7d9daf;
+            border-radius: 3px;
+            padding: 4px 9px;
+        }
+
+        QPushButton#newsRefreshButton:hover, QPushButton#newsOriginalButton:hover {
+            background: #ffffff;
+            border-color: #3f7898;
+        }
+
         QLabel#placeholderTitle {
             color: #075b86;
             background: transparent;
