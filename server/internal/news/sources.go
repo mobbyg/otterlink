@@ -88,16 +88,10 @@ func (s Service) DeleteSource(id int64) error {
 
 func (s Service) TestSource(ctx context.Context, id int64) (string, error) {
 	source, err := s.GetSource(id)
-	if err != nil { return "", err }
-
-	title, err := fetchFeed(ctx, s.client(), source.URL)
-	now := time.Now().UTC().Format(time.RFC3339)
 	if err != nil {
-		_, _ = s.DB.Exec(`UPDATE news_sources SET last_fetched_at=?,last_error=? WHERE id=?`, now, err.Error(), id)
 		return "", err
 	}
-	_, _ = s.DB.Exec(`UPDATE news_sources SET last_fetched_at=?,last_success_at=?,last_error='' WHERE id=?`, now, now, id)
-	return title, nil
+	return fetchFeed(ctx, s.client(), source.URL)
 }
 
 func (s Service) client() *http.Client {
