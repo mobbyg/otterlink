@@ -153,21 +153,150 @@ void install(QApplication &app)
 
 
         QLabel#newsMastheadTitle {
-    color: #075b86;
-    background: transparent;
-    font-size: 20px;
-    font-weight: bold;
-}
-
-QLabel#newsMastheadSubtitle {
-    color: #56758a;
-    background: transparent;
-    font-size: 11px;
-}
-QLabel#newsArticleTitle {
             color: #075b86;
             background: transparent;
-            font-size: 18px;
+            font-size: 22px;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+
+        QLabel#newsMastheadSubtitle {
+            color: #56758a;
+            background: transparent;
+            font-size: 11px;
+        }
+
+        QLabel#newsDateLabel {
+            color: #56758a;
+            background: transparent;
+            font-size: 10px;
+        }
+
+        QFrame#newsMastheadRule {
+            color: #7d9daf;
+            background: #7d9daf;
+            max-height: 1px;
+        }
+
+        QLabel#newsSectionLabel {
+            color: #56758a;
+            background: transparent;
+            font-size: 9px;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+
+        QFrame#newsFeatured, QFrame#newsLatest {
+            background: #f7fbfd;
+            border: 1px solid #a7bdc9;
+            border-radius: 3px;
+        }
+
+        QLabel#newsSectionHeading {
+            color: #075b86;
+            background: transparent;
+            font-size: 10px;
+            font-weight: bold;
+            letter-spacing: 1px;
+            border-bottom: 1px solid #c0d2dc;
+            padding-bottom: 3px;
+        }
+
+        QLabel#newsCardImage {
+            background: #dceaf1;
+            color: #6b8798;
+            border: 1px solid #b4c8d3;
+            font-size: 9px;
+            font-weight: bold;
+        }
+
+        QLabel#newsCardImage[placeholder="false"] {
+            background: #eaf3f8;
+        }
+
+        QPushButton#newsFeaturedTitle {
+            color: #173b55;
+            background: transparent;
+            border: none;
+            padding: 2px 0;
+            text-align: left;
+            font-size: 17px;
+            font-weight: bold;
+        }
+
+        QPushButton#newsFeaturedTitle:hover {
+            color: #075b86;
+            text-decoration: underline;
+        }
+
+        QLabel#newsFeaturedMeta, QLabel#newsCardMeta {
+            color: #6b8798;
+            background: transparent;
+            font-size: 9px;
+        }
+
+        QLabel#newsFeaturedSummary {
+            color: #31556b;
+            background: transparent;
+            font-size: 10px;
+        }
+
+        QLabel#newsCardTitle {
+            color: #173b55;
+            background: transparent;
+            font-size: 11px;
+            font-weight: bold;
+        }
+
+        QListWidget#newsHeadlines {
+            background: white;
+            border: 1px solid #c0d2dc;
+            border-radius: 2px;
+            padding: 1px;
+        }
+
+        QListWidget#newsHeadlines::item {
+            background: white;
+            border-bottom: 1px solid #e3edf2;
+            padding: 0;
+        }
+
+        QListWidget#newsHeadlines::item:selected {
+            background: #e4f0f6;
+            color: #17324d;
+            border-left: 3px solid #147aa8;
+        }
+
+        QLabel#newsFrontFooter {
+            color: #6b8798;
+            background: transparent;
+            font-size: 9px;
+            padding: 2px 3px;
+        }
+
+        QPushButton#newsBackButton, QPushButton#newsRefreshButton, QPushButton#newsOriginalButton {
+            background: #d9e9f2;
+            color: #174563;
+            border: 1px solid #7d9daf;
+            border-radius: 3px;
+            padding: 4px 9px;
+        }
+
+        QPushButton#newsBackButton:hover, QPushButton#newsRefreshButton:hover,
+        QPushButton#newsOriginalButton:hover {
+            background: #ffffff;
+            border-color: #3f7898;
+        }
+
+        QPushButton#newsBackButton:pressed, QPushButton#newsRefreshButton:pressed,
+        QPushButton#newsOriginalButton:pressed {
+            background: #c3dce9;
+        }
+
+        QLabel#newsArticleTitle {
+            color: #075b86;
+            background: transparent;
+            font-size: 20px;
             font-weight: bold;
         }
 
@@ -176,32 +305,12 @@ QLabel#newsArticleTitle {
             background: transparent;
         }
 
-        QLabel#newsArticleImage {
-            background: #eaf3f8;
-            border: 1px solid #a7bdc9;
-            border-radius: 3px;
-            padding: 3px;
-        }
-
-        QLabel#newsArticleSummary {
-            color: #19364b;
+        QTextBrowser#newsArticle {
             background: white;
+            color: #19364b;
             border: 1px solid #c0d2dc;
             border-radius: 3px;
-            padding: 10px;
-        }
-
-        QPushButton#newsRefreshButton, QPushButton#newsOriginalButton {
-            background: #d9e9f2;
-            color: #174563;
-            border: 1px solid #7d9daf;
-            border-radius: 3px;
-            padding: 4px 9px;
-        }
-
-        QPushButton#newsRefreshButton:hover, QPushButton#newsOriginalButton:hover {
-            background: #ffffff;
-            border-color: #3f7898;
+            padding: 8px;
         }
 
         QLabel#placeholderTitle {
