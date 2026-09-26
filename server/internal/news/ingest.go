@@ -3,7 +3,7 @@ package news
 import (
 	"context"
 	"crypto/sha256"
-	"database/sql"
+	"encoding/hex"
 	"encoding/xml"
 	"errors"
 	"fmt"
