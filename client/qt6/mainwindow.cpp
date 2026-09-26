@@ -73,7 +73,7 @@ MainWindow::MainWindow(QWidget *parent)
     setNavigationIcon(ui->peopleButton, QStringLiteral(":/images/friends.png"));
     setNavigationIcon(ui->mailButton, QStringLiteral(":/images/no_mail.png"));
     setNavigationIcon(ui->chatButton, QStringLiteral(":/images/community_chat.png"));
-    setNavigationIcon(ui->bulletinsButton, QStringLiteral(":/images/bulletins.png"));
+    setNavigationIcon(ui->boardsButton, QStringLiteral(":/images/bulletins.png"));
     setNavigationIcon(ui->newsButton, QStringLiteral(":/images/news.png"));
     setNavigationIcon(ui->webButton, QStringLiteral(":/images/web.png"));
     setNavigationIcon(ui->exploreButton, QStringLiteral(":/images/search.png"));
@@ -159,7 +159,6 @@ MainWindow::MainWindow(QWidget *parent)
     connect(ui->peopleButton, &QPushButton::clicked, this, &MainWindow::navigateService);
     connect(ui->mailButton, &QPushButton::clicked, this, &MainWindow::navigateService);
     connect(ui->chatButton, &QPushButton::clicked, this, &MainWindow::navigateService);
-    connect(ui->bulletinsButton, &QPushButton::clicked, this, &MainWindow::navigateService);
     connect(ui->boardsButton, &QPushButton::clicked, this, &MainWindow::navigateService);
     connect(ui->webButton, &QPushButton::clicked, this, &MainWindow::navigateService);
     connect(ui->exploreButton, &QPushButton::clicked, this, &MainWindow::navigateService);
@@ -342,8 +341,6 @@ void MainWindow::navigateService()
         QString title;
         if (button == ui->mailButton)
             title = QStringLiteral("Mail");
-        else if (button == ui->bulletinsButton)
-            title = QStringLiteral("Bulletins");
         else if (button == ui->boardsButton)
             title = QStringLiteral("Boards");
         else if (button == ui->newsButton)
