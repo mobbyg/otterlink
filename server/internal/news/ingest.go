@@ -43,13 +43,27 @@ type rssDocument struct {
 }
 
 type rssItem struct {
-	Title       string `xml:"title"`
-	Author      string `xml:"author"`
-	Creator     string `xml:"http://purl.org/dc/elements/1.1/ creator"`
-	Link        string `xml:"link"`
-	GUID        string `xml:"guid"`
-	PubDate     string `xml:"pubDate"`
-	Description string `xml:"description"`
+	Title       string        `xml:"title"`
+	Author      string        `xml:"author"`
+	Creator     string        `xml:"http://purl.org/dc/elements/1.1/ creator"`
+	Link        string        `xml:"link"`
+	GUID        string        `xml:"guid"`
+	PubDate     string        `xml:"pubDate"`
+	Description string        `xml:"description"`
+	Enclosure   rssEnclosure  `xml:"enclosure"`
+	Media       []rssMedia    `xml:"http://search.yahoo.com/mrss/ content"`
+	Thumbnail   []rssMedia    `xml:"http://search.yahoo.com/mrss/ thumbnail"`
+}
+
+type rssEnclosure struct {
+	URL  string `xml:"url,attr"`
+	Type string `xml:"type,attr"`
+}
+
+type rssMedia struct {
+	URL    string `xml:"url,attr"`
+	Type   string `xml:"type,attr"`
+	Medium string `xml:"medium,attr"`
 }
 
 type atomDocument struct {
@@ -210,6 +224,24 @@ func fetchItems(ctx context.Context, client *http.Client, rawURL string) ([]Item
 			if author == "" {
 				author = strings.TrimSpace(entry.Creator)
 			}
+			imageURL := ""
+			for _, media := range entry.Thumbnail {
+				if media.URL != "" {
+					imageURL = media.URL
+					break
+				}
+			}
+			if imageURL == "" {
+				for _, media := range entry.Media {
+					if media.URL != "" {
+						imageURL = media.URL
+						break
+					}
+				}
+			}
+			if imageURL == "" && strings.HasPrefix(strings.ToLower(entry.Enclosure.Type), "image/") {
+				imageURL = entry.Enclosure.URL
+			}
 			items = append(items, Item{
 				Title: cleanText(entry.Title),
 				Author: cleanText(author),
@@ -217,6 +249,7 @@ func fetchItems(ctx context.Context, client *http.Client, rawURL string) ([]Item
 				Summary: cleanText(entry.Description),
 				URL: normalizeURL(entry.Link, rawURL),
 				GUID: cleanText(entry.GUID),
+				ImageURL: normalizeURL(imageURL, rawURL),
 			})
 		}
 		return items, nil
