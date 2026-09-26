@@ -152,7 +152,7 @@ func (s Service) FetchSource(ctx context.Context, id int64) (int, error) {
 	return inserted, nil
 }
 
-func (s Service) ListItems(limit int, category string) ([]Item, error) {
+func (s Service) ListItems(limit int, category string, sourceID int64) ([]Item, error) {
 	if limit < 1 {
 		limit = 50
 	}
@@ -169,6 +169,10 @@ func (s Service) ListItems(limit int, category string) ([]Item, error) {
 	if category != "" {
 		query += ` AND s.category=?`
 		args = append(args, category)
+	}
+	if sourceID > 0 {
+		query += ` AND s.id=?`
+		args = append(args, sourceID)
 	}
 	query += ` ORDER BY CASE WHEN i.published_at IS NULL OR i.published_at='' THEN 1 ELSE 0 END, datetime(i.published_at) DESC,i.id DESC LIMIT ?`
 	args = append(args, limit)
