@@ -176,6 +176,13 @@ QLabel#newsArticleTitle {
             background: transparent;
         }
 
+        QLabel#newsArticleImage {
+            background: #eaf3f8;
+            border: 1px solid #a7bdc9;
+            border-radius: 3px;
+            padding: 3px;
+        }
+
         QLabel#newsArticleSummary {
             color: #19364b;
             background: white;
