@@ -125,6 +125,23 @@ async function testNewsSource() {
   }
 }
 
+async function refreshNewsSource() {
+  if (!selectedNewsSource) return;
+  showNewsDetailError('');
+  try {
+    const result = await request(`/api/admin/news/sources/${selectedNewsSource.id}/refresh`, { method: 'POST' });
+    window.alert(`Feed refreshed. New articles: ${result.inserted || 0}`);
+    await refreshNewsSources();
+    await refreshAudit();
+    const list = await request('/api/admin/news/sources');
+    const updated = (list.sources || []).find(item => item.id === selectedNewsSource.id);
+    if (updated) openNewsSource(updated);
+  } catch (error) {
+    showNewsDetailError(error.message || String(error));
+    await refreshNewsSources();
+  }
+}
+
 async function deleteNewsSource() {
   if (!selectedNewsSource) return;
   if (!window.confirm(`Delete the news source '${selectedNewsSource.name}'? This cannot be undone.`)) return;
@@ -369,6 +386,7 @@ $('create-news-source').addEventListener('click', createNewsSource);
 $('close-news-detail').addEventListener('click', closeNewsSource);
 $('save-news-source').addEventListener('click', saveNewsSource);
 $('test-news-source').addEventListener('click', testNewsSource);
+$('refresh-news-source').addEventListener('click', refreshNewsSource);
 $('delete-news-source').addEventListener('click', deleteNewsSource);
 $('event-month').addEventListener('change', refreshEvents);
 $('create-event').addEventListener('click', createEvent);
