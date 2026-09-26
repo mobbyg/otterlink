@@ -268,6 +268,7 @@ void OtterNewsWidget::showItem(QListWidgetItem *item)
     const QString imageUrl = data.value(QStringLiteral("image_url")).toString().trimmed();
     m_image->clear();
     m_image->hide();
+    m_selectedImageUrl = imageUrl;
     if (!imageUrl.isEmpty())
         loadArticleImage(imageUrl);
     m_selectedUrl = data.value(QStringLiteral("url")).toString().trimmed();
@@ -285,7 +286,7 @@ void OtterNewsWidget::loadArticleImage(const QString &url)
     connect(reply, &QNetworkReply::finished, this, [this, reply, url]() {
         const QByteArray data = reply->error() == QNetworkReply::NoError ? reply->readAll() : QByteArray();
         reply->deleteLater();
-        if (url != m_headlines->currentItem()->data(Qt::UserRole).toJsonObject().value(QStringLiteral("image_url")).toString().trimmed())
+        if (url != m_selectedImageUrl)
             return;
         QPixmap pixmap;
         if (pixmap.loadFromData(data) && !pixmap.isNull()) {
@@ -309,5 +310,6 @@ void OtterNewsWidget::clearArticle()
     m_image->hide();
     m_summary->clear();
     m_selectedUrl.clear();
+    m_selectedImageUrl.clear();
     m_originalButton->setEnabled(false);
 }
