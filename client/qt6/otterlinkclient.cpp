@@ -432,6 +432,24 @@ void OtterLinkClient::loadEvents(int year, int month)
     });
 }
 
+void OtterLinkClient::loadNews(int limit, const QString &category)
+{
+    QString path = QStringLiteral("/api/news?limit=%1").arg(limit);
+    if (!category.trimmed().isEmpty())
+        path += QStringLiteral("&category=") + QString::fromUtf8(QUrl::toPercentEncoding(category.trimmed()));
+
+    auto *reply = m_network.get(request(path));
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+        if (reply->error() != QNetworkReply::NoError) {
+            emit errorOccurred(serverErrorMessage(reply, reply->errorString()));
+        } else {
+            const QJsonObject obj = QJsonDocument::fromJson(reply->readAll()).object();
+            emit newsLoaded(obj.value(QStringLiteral("items")).toArray());
+        }
+        reply->deleteLater();
+    });
+}
+
 void OtterLinkClient::createEvent(const QJsonObject &event)
 {
     auto *reply = m_network.post(request(QStringLiteral("/api/events")),
