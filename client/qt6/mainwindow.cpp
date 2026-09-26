@@ -59,12 +59,14 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
 
-    const QSize navigationIconSize(28, 28);
+    const QSize navigationIconSize(36, 36);
     const auto setNavigationIcon = [navigationIconSize](QPushButton *button,
                                                         const QString &resource) {
         button->setIcon(QIcon(resource));
         button->setIconSize(navigationIconSize);
         button->setText(QString());
+        button->setFlat(true);
+        button->setCursor(Qt::PointingHandCursor);
     };
 
     setNavigationIcon(ui->homeButton, QStringLiteral(":/images/home.png"));
