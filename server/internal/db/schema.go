@@ -117,7 +117,22 @@ CREATE TABLE IF NOT EXISTS events (
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 CREATE INDEX IF NOT EXISTS idx_events_start_at ON events(start_at);
-CREATE INDEX IF NOT EXISTS idx_events_target ON events(target_type, target_id);\n\nCREATE TABLE IF NOT EXISTS news_sources (\n    id INTEGER PRIMARY KEY AUTOINCREMENT,\n    name TEXT NOT NULL,\n    url TEXT NOT NULL UNIQUE,\n    category TEXT NOT NULL,\n    enabled INTEGER NOT NULL DEFAULT 1 CHECK (enabled IN (0,1)),\n    refresh_interval_minutes INTEGER NOT NULL DEFAULT 30,\n    last_fetched_at TEXT,\n    last_success_at TEXT,\n    last_error TEXT NOT NULL DEFAULT '',\n    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,\n    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP\n);\nCREATE INDEX IF NOT EXISTS idx_news_sources_enabled ON news_sources(enabled);
+CREATE INDEX IF NOT EXISTS idx_events_target ON events(target_type, target_id);
+
+CREATE TABLE IF NOT EXISTS news_sources (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    url TEXT NOT NULL UNIQUE,
+    category TEXT NOT NULL,
+    enabled INTEGER NOT NULL DEFAULT 1 CHECK (enabled IN (0,1)),
+    refresh_interval_minutes INTEGER NOT NULL DEFAULT 30,
+    last_fetched_at TEXT,
+    last_success_at TEXT,
+    last_error TEXT NOT NULL DEFAULT '',
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_news_sources_enabled ON news_sources(enabled);
 `
 
 func Initialize(db *sql.DB) error {
