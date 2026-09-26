@@ -50,6 +50,7 @@ type rssItem struct {
 	GUID        string        `xml:"guid"`
 	PubDate     string        `xml:"pubDate"`
 	Description string        `xml:"description"`
+	ContentEncoded string    `xml:"http://purl.org/rss/1.0/modules/content/ encoded"`
 	Enclosure   rssEnclosure  `xml:"enclosure"`
 	Media       []rssMedia    `xml:"http://search.yahoo.com/mrss/ content"`
 	Thumbnail   []rssMedia    `xml:"http://search.yahoo.com/mrss/ thumbnail"`
@@ -258,7 +259,11 @@ func fetchItems(ctx context.Context, client *http.Client, rawURL string) ([]Item
 			if author == "" {
 				author = strings.TrimSpace(entry.Creator)
 			}
-			imageURL := extractImageURL(entry.Description, rawURL)
+			imageSource := entry.ContentEncoded
+			if imageSource == "" {
+				imageSource = entry.Description
+			}
+			imageURL := extractImageURL(imageSource, rawURL)
 			for _, media := range entry.Thumbnail {
 				if media.URL != "" {
 					imageURL = media.URL
