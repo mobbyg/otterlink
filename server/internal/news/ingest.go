@@ -319,7 +319,7 @@ func replaceYouTubeEmbeds(value string) string {
 		if len(parts) != 2 { return "" }
 		videoURL := normalizeYouTubeURL(parts[1])
 		if videoURL == "" { return "" }
-		return "<p><a href=\\\"" + html.EscapeString(videoURL) + "\\\">▶ Watch on YouTube</a></p>"
+		return "<p><a href=\"" + html.EscapeString(videoURL) + "\">▶ Watch on YouTube</a></p>"
 	})
 }
 
