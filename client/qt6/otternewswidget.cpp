@@ -12,6 +12,7 @@
 #include <QListWidget>
 #include <QListWidgetItem>
 #include <QPushButton>
+#include <QPixmap>
 #include <QSignalBlocker>
 #include <QStringList>
 #include <QUrl>
@@ -51,9 +52,29 @@ OtterNewsWidget::OtterNewsWidget(OtterLinkClient *client, QWidget *parent)
       m_client(client)
 {
     auto *root = new QVBoxLayout(this);
-    root->setContentsMargins(12, 12, 12, 12);
+    root->setContentsMargins(12, 10, 12, 12);
     root->setSpacing(8);
 
+    auto *masthead = new QHBoxLayout;
+    masthead->setSpacing(8);
+
+    auto *newsIcon = new QLabel(this);
+    newsIcon->setPixmap(QPixmap(QStringLiteral(":/images/news.png")).scaled(
+        32, 32, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+    newsIcon->setFixedSize(32, 32);
+    masthead->addWidget(newsIcon);
+
+    auto *mastheadText = new QVBoxLayout;
+    mastheadText->setSpacing(0);
+    auto *mastheadTitle = new QLabel(QStringLiteral("Otter Link News"), this);
+    mastheadTitle->setObjectName(QStringLiteral("newsMastheadTitle"));
+    mastheadText->addWidget(mastheadTitle);
+    auto *mastheadSubtitle = new QLabel(QStringLiteral("Headlines from around the network"), this);
+    mastheadSubtitle->setObjectName(QStringLiteral("newsMastheadSubtitle"));
+    mastheadText->addWidget(mastheadSubtitle);
+    masthead->addLayout(mastheadText);
+    masthead->addStretch(1);
+    root->addLayout(masthead);
     auto *toolbar = new QHBoxLayout;
     toolbar->setSpacing(6);
 
