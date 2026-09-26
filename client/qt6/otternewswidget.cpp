@@ -85,6 +85,13 @@ OtterNewsWidget::OtterNewsWidget(OtterLinkClient *client, QWidget *parent)
     m_categoryCombo->setMinimumWidth(140);
     m_categoryCombo->addItem(QStringLiteral("All"));
     toolbar->addWidget(m_categoryCombo);
+
+    auto *sourceLabel = new QLabel(QStringLiteral("Source:"), this);
+    toolbar->addWidget(sourceLabel);
+    m_sourceCombo = new QComboBox(this);
+    m_sourceCombo->setMinimumWidth(170);
+    m_sourceCombo->addItem(QStringLiteral("All"), 0);
+    toolbar->addWidget(m_sourceCombo);
     toolbar->addStretch(1);
 
     m_refreshButton = new QPushButton(QStringLiteral("Refresh"), this);
@@ -131,14 +138,25 @@ OtterNewsWidget::OtterNewsWidget(OtterLinkClient *client, QWidget *parent)
     connect(m_refreshButton, &QPushButton::clicked, this, &OtterNewsWidget::loadNews);
     connect(m_categoryCombo, &QComboBox::currentTextChanged,
             this, &OtterNewsWidget::loadNews);
+    connect(m_sourceCombo, &QComboBox::currentIndexChanged,
+            this, &OtterNewsWidget::loadNews);
     connect(m_headlines, &QListWidget::itemClicked,
             this, &OtterNewsWidget::showItem);
     connect(m_originalButton, &QPushButton::clicked,
             this, &OtterNewsWidget::openOriginal);
     connect(m_client, &OtterLinkClient::newsLoaded,
             this, &OtterNewsWidget::newsLoaded);
+    connect(m_client, &OtterLinkClient::newsSourcesLoaded,
+            this, &OtterNewsWidget::newsSourcesLoaded);
+    connect(m_client, &OtterLinkClient::errorOccurred,
+            this, [this](const QString &) {
+                if (m_refreshButton)
+                    m_refreshButton->setEnabled(true);
+            });
 
     clearArticle();
+    if (m_client)
+        m_client->loadNewsSources();
     loadNews();
 }
 
@@ -149,8 +167,9 @@ void OtterNewsWidget::loadNews()
     const QString category = m_categoryCombo->currentText() == QStringLiteral("All")
         ? QString()
         : m_categoryCombo->currentText();
+    const qint64 sourceId = m_sourceCombo->currentData().toLongLong();
     m_refreshButton->setEnabled(false);
-    m_client->loadNews(100, category);
+    m_client->loadNews(100, category, sourceId);
 }
 
 void OtterNewsWidget::populateCategories(const QJsonArray &items)
