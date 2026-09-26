@@ -3,6 +3,8 @@
 #include <QWidget>
 #include <QString>
 
+class QNetworkAccessManager;
+
 class QComboBox;
 class QLabel;
 class QListWidget;
@@ -29,6 +31,7 @@ private:
     void populateCategories(const QJsonArray &items);
     void populateSources(const QJsonArray &sources);
     void clearArticle();
+    void loadArticleImage(const QString &url);
 
     OtterLinkClient *m_client = nullptr;
     QComboBox *m_categoryCombo = nullptr;
@@ -37,7 +40,9 @@ private:
     QListWidget *m_headlines = nullptr;
     QLabel *m_title = nullptr;
     QLabel *m_meta = nullptr;
+    QLabel *m_image = nullptr;
     QLabel *m_summary = nullptr;
     QPushButton *m_originalButton = nullptr;
     QString m_selectedUrl;
+    QNetworkAccessManager *m_imageNetwork = nullptr;
 };
