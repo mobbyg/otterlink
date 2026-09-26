@@ -63,16 +63,31 @@ func (s Service) targets(key string) ([]Target, error) {
 func (s Service) List() ([]Keyword, error) {
 	rows, err := s.DB.Query(`SELECT keyword FROM service_keywords ORDER BY keyword`)
 	if err != nil { return nil, err }
-	defer rows.Close()
-	var result []Keyword
+
+	var keys []string
 	for rows.Next() {
 		var key string
-		if err := rows.Scan(&key); err != nil { return nil, err }
+		if err := rows.Scan(&key); err != nil {
+			rows.Close()
+			return nil, err
+		}
+		keys = append(keys, key)
+	}
+	if err := rows.Err(); err != nil {
+		rows.Close()
+		return nil, err
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+
+	result := make([]Keyword, 0, len(keys))
+	for _, key := range keys {
 		k, err := s.Resolve(key)
 		if err != nil { return nil, err }
 		result = append(result, k)
 	}
-	return result, rows.Err()
+	return result, nil
 }
 
 func (s Service) Upsert(k Keyword) error {
