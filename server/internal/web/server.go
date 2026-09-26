@@ -44,6 +44,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /api/messages/unread", s.messageUnread)
 	mux.HandleFunc("GET /api/events", s.eventList)
 	mux.HandleFunc("GET /api/news", s.newsList)
+	mux.HandleFunc("GET /api/news/sources", s.newsSources)
 	mux.HandleFunc("POST /api/events", s.eventCreate)
 	mux.HandleFunc("PATCH /api/events/{eventID}", s.eventUpdate)
 	mux.HandleFunc("DELETE /api/events/{eventID}", s.eventDelete)
