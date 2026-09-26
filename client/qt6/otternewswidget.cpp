@@ -458,7 +458,7 @@ void OtterNewsWidget::showItemData(const QJsonObject &data)
     }
 
     if (!m_selectedImageUrl.isEmpty() && !articleHtml.contains(m_selectedImageUrl)) {
-        articleHtml.prepend(QStringLiteral("<p><img src="%1"></p>")
+        articleHtml.prepend(QStringLiteral("<p><img src=\"%1\"></p>")
             .arg(m_selectedImageUrl.toHtmlEscaped()));
     }
 
