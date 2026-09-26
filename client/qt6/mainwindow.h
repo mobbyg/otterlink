@@ -10,6 +10,7 @@ class QTreeWidget;
 class OtterHomePage;
 class OtterPeopleWidget;
 class OtterServiceWindow;
+class OtterKeywordWidget;
 
 namespace Ui {
 class MainWindow;
@@ -43,6 +44,8 @@ private slots:
     void buddyAdded(const QString &username);
     void directUnreadLoaded(const QJsonArray &messages);
     void openPrivateMessage(const QString &username);
+    void enterKeyword();
+    void keywordResolved(const QJsonObject &keyword);
 
 private:
     void setLoggedIn(bool loggedIn);
@@ -53,6 +56,7 @@ private:
     void closeAllServiceWindows();
     void restoreServicePage(QWidget *page);
     void updateServiceButtonStates(OtterServiceWindow *activeWindow = nullptr);
+    void openKeywordTarget(const QString &type, qint64 id);
 
     Ui::MainWindow *ui = nullptr;
     OtterLinkClient *m_client = nullptr;
