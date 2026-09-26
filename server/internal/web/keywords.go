@@ -2,6 +2,7 @@ package web
 
 import (
 	"database/sql"
+	"errors"
 	"net/http"
 	"strings"
 
@@ -42,12 +43,39 @@ func (s *Server) adminKeywords(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{"keywords": result})
 }
 
+func (s *Server) validateKeywordTargets(targets []keywords.Target) error {
+	for _, target := range targets {
+		switch target.Type {
+		case "chat":
+			if _, err := s.chatChannelByID(target.ID); err != nil {
+				return errors.New("keyword chat target not found")
+			}
+		case "event":
+			if _, err := s.Events.Get(target.ID); err != nil {
+				if errors.Is(err, sql.ErrNoRows) {
+					return errors.New("keyword event target not found")
+				}
+				return errors.New("unable to load keyword event target")
+			}
+		case "bulletin":
+			return errors.New("bulletin keyword targets are reserved for future integration")
+		default:
+			return errors.New("invalid keyword target type")
+		}
+	}
+	return nil
+}
+
 func (s *Server) adminKeywordUpsert(w http.ResponseWriter, r *http.Request) {
 	admin, ok := s.requireAdmin(w, r)
 	if !ok { return }
 	key := strings.TrimSpace(r.PathValue("keyword"))
 	var req keywordRequest
 	if !decodeJSON(w, r, &req) { return }
+	if err := s.validateKeywordTargets(req.Targets); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 	if err := s.Keywords.Upsert(keywords.Keyword{
 		Keyword: key, DisplayName: req.DisplayName, Description: req.Description, Targets: req.Targets,
 	}); err != nil {
