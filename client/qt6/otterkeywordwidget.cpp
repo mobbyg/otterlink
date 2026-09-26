@@ -2,6 +2,7 @@
 
 #include <QFont>
 #include <QHBoxLayout>
+#include <QJsonArray>
 #include <QLabel>
 #include <QPushButton>
 #include <QVBoxLayout>
