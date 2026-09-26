@@ -280,7 +280,7 @@ void OtterNewsWidget::loadArticleImage(const QString &url)
     if (!m_imageNetwork || url.isEmpty())
         return;
 
-    QNetworkRequest request(QUrl(url));
+    QNetworkRequest request{QUrl(url)};
     request.setHeader(QNetworkRequest::UserAgentHeader, QStringLiteral("OtterLink-News/1.0"));
     auto *reply = m_imageNetwork->get(request);
     connect(reply, &QNetworkReply::finished, this, [this, reply, url]() {
