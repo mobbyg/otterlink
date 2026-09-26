@@ -22,6 +22,9 @@
 #include <QPushButton>
 #include <QRegularExpression>
 #include <QScrollArea>
+#include <QSet>
+#include <QStackedWidget>
+#include <QStyle>
 #include <QSignalBlocker>
 #include <QStringList>
 #include <QTextBrowser>
@@ -170,9 +173,7 @@ OtterNewsWidget::OtterNewsWidget(OtterLinkClient *client, QWidget *parent)
     m_featuredTitle->setObjectName(QStringLiteral("newsFeaturedTitle"));
     m_featuredTitle->setFlat(true);
     m_featuredTitle->setCursor(Qt::PointingHandCursor);
-    m_featuredTitle->setWordWrap(true);
     m_featuredTitle->setMinimumHeight(52);
-    m_featuredTitle->setTextFormat(Qt::PlainText);
     featuredLayout->addWidget(m_featuredTitle);
 
     m_featuredMeta = new QLabel(featuredFrame);
@@ -385,7 +386,7 @@ void OtterNewsWidget::newsLoaded(const QJsonArray &items)
                 loadImageIntoLabel(imageUrl, m_featuredImage, 250, 135);
         }
 
-        auto *listItem = new QListWidgetItem(m_headlines);
+        auto *listItem = new QListWidgetItem;
         listItem->setData(Qt::UserRole, item);
         listItem->setToolTip(sourceLine(item));
 
