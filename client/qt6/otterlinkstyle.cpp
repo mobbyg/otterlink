@@ -69,12 +69,12 @@ void install(QApplication &app)
             background: transparent;
             color: transparent;
             border: none;
-            padding: 3px;
-            margin: 1px;
-            min-width: 42px;
-            max-width: 42px;
-            min-height: 42px;
-            max-height: 42px;
+            padding: 2px;
+            margin: 0;
+            min-width: 38px;
+            max-width: 38px;
+            min-height: 38px;
+            max-height: 38px;
         }
 
         QPushButton#homeButton:hover, QPushButton#peopleButton:hover, QPushButton#mailButton:hover,
