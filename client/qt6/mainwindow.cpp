@@ -13,6 +13,7 @@
 #include <QFont>
 #include <QFormLayout>
 #include <QHeaderView>
+#include <QIcon>
 #include <QLabel>
 #include <QLineEdit>
 #include <QMessageBox>
@@ -57,6 +58,24 @@ MainWindow::MainWindow(QWidget *parent)
       m_client(new OtterLinkClient(this))
 {
     ui->setupUi(this);
+
+    const QSize navigationIconSize(28, 28);
+    const auto setNavigationIcon = [navigationIconSize](QPushButton *button,
+                                                        const QString &resource) {
+        button->setIcon(QIcon(resource));
+        button->setIconSize(navigationIconSize);
+        button->setText(QString());
+    };
+
+    setNavigationIcon(ui->homeButton, QStringLiteral(":/images/home.png"));
+    setNavigationIcon(ui->peopleButton, QStringLiteral(":/images/friends.png"));
+    setNavigationIcon(ui->mailButton, QStringLiteral(":/images/no_mail.png"));
+    setNavigationIcon(ui->chatButton, QStringLiteral(":/images/community_chat.png"));
+    setNavigationIcon(ui->newsButton, QStringLiteral(":/images/news.png"));
+    setNavigationIcon(ui->filesButton, QStringLiteral(":/images/files.png"));
+    setNavigationIcon(ui->gamesButton, QStringLiteral(":/images/games.png"));
+    setNavigationIcon(ui->eventsButton, QStringLiteral(":/images/events.png"));
+
     resize(1000, 680);
     m_refreshTimer.setInterval(5000);
     m_connectionTimer.setInterval(700);
@@ -606,6 +625,13 @@ void MainWindow::directUnreadLoaded(const QJsonArray &messages)
 {
     if (m_peopleWidget)
         m_peopleWidget->setUnread(messages);
+
+    if (ui->mailButton) {
+        const bool hasUnread = !messages.isEmpty();
+        ui->mailButton->setIcon(QIcon(hasUnread
+                                      ? QStringLiteral(":/images/new_mail.png")
+                                      : QStringLiteral(":/images/no_mail.png")));
+    }
 }
 
 void MainWindow::openPrivateMessage(const QString &username)
