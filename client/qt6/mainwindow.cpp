@@ -625,13 +625,6 @@ void MainWindow::directUnreadLoaded(const QJsonArray &messages)
 {
     if (m_peopleWidget)
         m_peopleWidget->setUnread(messages);
-
-    if (ui->mailButton) {
-        const bool hasUnread = !messages.isEmpty();
-        ui->mailButton->setIcon(QIcon(hasUnread
-                                      ? QStringLiteral(":/images/new_mail.png")
-                                      : QStringLiteral(":/images/no_mail.png")));
-    }
 }
 
 void MainWindow::openPrivateMessage(const QString &username)
