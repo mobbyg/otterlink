@@ -25,7 +25,7 @@ The server currently exposes three interfaces:
 
 | Transport | Default | Purpose |
 |---|---:|---|
-| HTTP | `:8080` | Account and web/API operations |
+| HTTP | `:9090` | Account and web/API operations |
 | Otter Link protocol | `:8023` | Native client/service protocol under development |
 | OSCAR compatibility | `:5190` | AIM/OSCAR interoperability |
 

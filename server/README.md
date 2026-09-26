@@ -16,7 +16,7 @@ go run .
 
 The server starts three listeners by default:
 
-- HTTP API: `:8080`
+- HTTP API: `:9090`
 - Otter Link protocol: `:8023`
 - OSCAR compatibility: `:5190`
 
@@ -27,7 +27,7 @@ It also creates `data/otterlink.db` when started.
 Health check:
 
 ```sh
-curl http://localhost:8080/api/health
+curl http://localhost:9090/api/health
 ```
 
 Expected response:
