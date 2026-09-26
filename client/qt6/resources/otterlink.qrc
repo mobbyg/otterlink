@@ -1,5 +1,15 @@
 <RCC>
     <qresource prefix="/">
         <file>images/otterlink_logo.png</file>
+        <file>images/bulletins.png</file>
+        <file>images/community_chat.png</file>
+        <file>images/events.png</file>
+        <file>images/files.png</file>
+        <file>images/friends.png</file>
+        <file>images/games.png</file>
+        <file>images/home.png</file>
+        <file>images/new_mail.png</file>
+        <file>images/news.png</file>
+        <file>images/no_mail.png</file>
     </qresource>
 </RCC>
