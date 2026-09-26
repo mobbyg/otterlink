@@ -2,6 +2,7 @@ const token = localStorage.getItem('otterlink-token') || '';
 const $ = (id) => document.getElementById(id);
 let selectedUsername = '';
 let selectedChannel = null;
+let selectedNewsSource = null;
 
 async function request(path, options = {}) {
   const headers = {
@@ -14,6 +15,127 @@ async function request(path, options = {}) {
   return response.json();
 }
 
+
+
+function showNewsError(message) { $('news-error').textContent = message || ''; }
+function showNewsDetailError(message) { $('news-detail-error').textContent = message || ''; }
+
+function newsStatus(source) {
+  if (source.last_error) return 'Error: ' + source.last_error;
+  if (source.last_success_at) return 'OK: ' + formatDate(source.last_success_at);
+  return 'Not tested yet';
+}
+
+function renderNewsSourceRow(source) {
+  const row = document.createElement('tr');
+  row.innerHTML = `<td>${escapeHTML(source.name)}</td><td>${escapeHTML(source.category)}</td><td title="${escapeHTML(source.url)}">${escapeHTML(source.url)}</td><td>${source.enabled ? 'Yes' : 'No'}</td><td>${source.refresh_interval_minutes} min</td><td>${escapeHTML(newsStatus(source))}</td><td><button class="secondary news-manage">Manage</button></td>`;
+  row.querySelector('.news-manage').addEventListener('click', () => openNewsSource(source));
+  return row;
+}
+
+async function refreshNewsSources() {
+  showNewsError('');
+  try {
+    const result = await request('/api/admin/news/sources');
+    const body = $('news-sources'); body.innerHTML = '';
+    for (const source of result.sources || []) body.appendChild(renderNewsSourceRow(source));
+  } catch (error) { showNewsError(error.message || String(error)); }
+}
+
+async function createNewsSource() {
+  const name = $('news-name').value.trim();
+  const url = $('news-url').value.trim();
+  const category = $('news-category').value.trim();
+  const refreshMinutes = Number($('news-refresh').value);
+  if (!name || !url || !category || !Number.isInteger(refreshMinutes)) {
+    showNewsError('Source name, URL, category, and refresh interval are required.');
+    return;
+  }
+  showNewsError('');
+  try {
+    await request('/api/admin/news/sources', {
+      method: 'POST',
+      body: JSON.stringify({ name, url, category, enabled: $('news-enabled').checked, refresh_interval_minutes: refreshMinutes })
+    });
+    $('news-name').value = '';
+    $('news-url').value = '';
+    $('news-category').value = '';
+    $('news-refresh').value = '30';
+    $('news-enabled').checked = true;
+    await refreshNewsSources();
+    await refreshAudit();
+  } catch (error) { showNewsError(error.message || String(error)); }
+}
+
+function openNewsSource(source) {
+  selectedNewsSource = source;
+  $('news-detail-title').textContent = source.name;
+  $('news-detail-name').value = source.name;
+  $('news-detail-url').value = source.url;
+  $('news-detail-category').value = source.category;
+  $('news-detail-refresh').value = source.refresh_interval_minutes;
+  $('news-detail-enabled').checked = source.enabled;
+  $('news-detail-status').textContent = newsStatus(source);
+  showNewsDetailError('');
+  $('news-panel').classList.remove('hidden');
+}
+
+function closeNewsSource() {
+  selectedNewsSource = null;
+  $('news-panel').classList.add('hidden');
+  showNewsDetailError('');
+}
+
+async function saveNewsSource() {
+  if (!selectedNewsSource) return;
+  showNewsDetailError('');
+  try {
+    await request(`/api/admin/news/sources/${selectedNewsSource.id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({
+        name: $('news-detail-name').value,
+        url: $('news-detail-url').value,
+        category: $('news-detail-category').value,
+        enabled: $('news-detail-enabled').checked,
+        refresh_interval_minutes: Number($('news-detail-refresh').value)
+      })
+    });
+    await refreshNewsSources();
+    await refreshAudit();
+    const result = await request('/api/admin/news/sources');
+    const updated = (result.sources || []).find(item => item.id === selectedNewsSource.id);
+    if (updated) openNewsSource(updated);
+  } catch (error) { showNewsDetailError(error.message || String(error)); }
+}
+
+async function testNewsSource() {
+  if (!selectedNewsSource) return;
+  showNewsDetailError('');
+  try {
+    const result = await request(`/api/admin/news/sources/${selectedNewsSource.id}/test`, { method: 'POST' });
+    window.alert(`Feed test succeeded. Feed title: ${result.feed_title}`);
+    await refreshNewsSources();
+    await refreshAudit();
+    const list = await request('/api/admin/news/sources');
+    const updated = (list.sources || []).find(item => item.id === selectedNewsSource.id);
+    if (updated) openNewsSource(updated);
+  } catch (error) {
+    showNewsDetailError(error.message || String(error));
+    await refreshNewsSources();
+  }
+}
+
+async function deleteNewsSource() {
+  if (!selectedNewsSource) return;
+  if (!window.confirm(`Delete the news source '${selectedNewsSource.name}'? This cannot be undone.`)) return;
+  showNewsDetailError('');
+  try {
+    await request(`/api/admin/news/sources/${selectedNewsSource.id}`, { method: 'DELETE' });
+    closeNewsSource();
+    await refreshNewsSources();
+    await refreshAudit();
+  } catch (error) { showNewsDetailError(error.message || String(error)); }
+}
 
 function showEventError(message) { $('event-error').textContent = message || ''; }
 function localEventValue(value) { if (!value) return ''; return new Date(value).toISOString(); }
@@ -242,6 +364,12 @@ $('close-channel-detail').addEventListener('click', closeChannel);
 $('save-channel-role').addEventListener('click', saveChannelRole);
 $('delete-channel').addEventListener('click', deleteChannel);
 $('refresh-events').addEventListener('click', refreshEvents);
+$('refresh-news').addEventListener('click', refreshNewsSources);
+$('create-news-source').addEventListener('click', createNewsSource);
+$('close-news-detail').addEventListener('click', closeNewsSource);
+$('save-news-source').addEventListener('click', saveNewsSource);
+$('test-news-source').addEventListener('click', testNewsSource);
+$('delete-news-source').addEventListener('click', deleteNewsSource);
 $('event-month').addEventListener('change', refreshEvents);
 $('create-event').addEventListener('click', createEvent);
 refresh();
@@ -249,3 +377,4 @@ refreshChannels();
 refreshAudit();
 
 refreshEvents();
+refreshNewsSources();
