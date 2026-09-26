@@ -217,7 +217,10 @@ void OtterNewsWidget::newsSourcesLoaded(const QJsonArray &sources)
 void OtterNewsWidget::newsLoaded(const QJsonArray &items)
 {
     m_refreshButton->setEnabled(true);
-    populateCategories(items);
+    if (m_categoryCombo->currentText() == QStringLiteral("All")
+        && m_sourceCombo->currentData().toLongLong() == 0) {
+        populateCategories(items);
+    }
 
     m_headlines->clear();
     clearArticle();
