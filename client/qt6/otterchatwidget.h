@@ -54,5 +54,6 @@ private:
     QString m_role;
     QString m_channelName;
     QHash<qint64, QJsonObject> m_channels;
+    qint64 m_pendingChannelId = 0;
     QHash<QString, QString> m_userRoles;
 };
