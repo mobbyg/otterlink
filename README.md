@@ -203,6 +203,7 @@ The desktop presentation is still under development. The client architecture kee
 ## Documentation
 
 - [`docs/architecture.md`](docs/architecture.md) — service and client architecture
+- [`docs/api.md`](docs/api.md) — current HTTP service API reference
 - [`docs/protocol.md`](docs/protocol.md) — developing Otter Link protocol
 
 Future services and client features are tracked in GitHub issues rather than maintained as a roadmap in this README. The root README is intentionally kept focused on **what exists, what does not yet exist, and how to build, run, test, and administer the current system**.
