@@ -279,7 +279,7 @@ void OtterNewsWidget::loadArticleImages(const QString &html, const QString &arti
 {
     if (!m_imageNetwork || html.isEmpty())
         return;
-    static const QRegularExpression imagePattern(QStringLiteral("<img[^>]+src=[\\\"']([^\\\"']+)[\\\"'][^>]*>"), QRegularExpression::CaseInsensitiveOption);
+    static const QRegularExpression imagePattern(QStringLiteral("<img[^>]+src=[\"']([^\"']+)[\"'][^>]*>"), QRegularExpression::CaseInsensitiveOption);
     QSet<QString> urls;
     auto match = imagePattern.globalMatch(html);
     while (match.hasNext()) {
