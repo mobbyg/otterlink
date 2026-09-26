@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QWidget>
+#include <QString>
 
 class QComboBox;
 class QLabel;
@@ -21,14 +22,17 @@ private slots:
     void loadNews();
     void showItem(QListWidgetItem *item);
     void newsLoaded(const QJsonArray &items);
+    void newsSourcesLoaded(const QJsonArray &sources);
     void openOriginal();
 
 private:
     void populateCategories(const QJsonArray &items);
+    void populateSources(const QJsonArray &sources);
     void clearArticle();
 
     OtterLinkClient *m_client = nullptr;
     QComboBox *m_categoryCombo = nullptr;
+    QComboBox *m_sourceCombo = nullptr;
     QPushButton *m_refreshButton = nullptr;
     QListWidget *m_headlines = nullptr;
     QLabel *m_title = nullptr;
