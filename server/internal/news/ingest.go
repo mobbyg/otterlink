@@ -141,7 +141,7 @@ func (s Service) FetchSource(ctx context.Context, id int64) (int, error) {
 
 	if _, err := s.DB.Exec(`DELETE FROM news_items
 		WHERE source_id=? AND id NOT IN (
-			SELECT id FROM news_items WHERE source_id=? ORDER BY COALESCE(published_at,'') DESC, id DESC LIMIT ?
+			SELECT id FROM news_items WHERE source_id=? ORDER BY CASE WHEN published_at IS NULL OR published_at='' THEN 1 ELSE 0 END, datetime(published_at) DESC, id DESC LIMIT ?
 		)`, source.ID, source.ID, maxItemsPerSource); err != nil {
 		return inserted, fmt.Errorf("apply news retention: %w", err)
 	}
@@ -170,7 +170,7 @@ func (s Service) ListItems(limit int, category string) ([]Item, error) {
 		query += ` AND s.category=?`
 		args = append(args, category)
 	}
-	query += ` ORDER BY COALESCE(i.published_at,'') DESC,i.id DESC LIMIT ?`
+	query += ` ORDER BY CASE WHEN i.published_at IS NULL OR i.published_at='' THEN 1 ELSE 0 END, datetime(i.published_at) DESC,i.id DESC LIMIT ?`
 	args = append(args, limit)
 
 	rows, err := s.DB.Query(query, args...)
