@@ -265,8 +265,12 @@ func sanitizeHTMLChildren(parent *htmlpkg.Node, base string) {
 				continue
 			}
 			if !allowedArticleTags[tag] {
+				// Move the children out before removing the wrapper. A node
+				// must be detached from its current parent before it can be
+				// attached elsewhere in the html.Node tree.
 				for grand := child.FirstChild; grand != nil; {
 					grandNext := grand.NextSibling
+					child.RemoveChild(grand)
 					parent.InsertBefore(grand, child)
 					grand = grandNext
 				}
@@ -275,7 +279,9 @@ func sanitizeHTMLChildren(parent *htmlpkg.Node, base string) {
 				continue
 			}
 			sanitizeArticleAttributes(child, base)
-			if child.Parent != nil { sanitizeHTMLChildren(child, base) }
+			if child.Parent != nil {
+				sanitizeHTMLChildren(child, base)
+			}
 		}
 		child = next
 	}
