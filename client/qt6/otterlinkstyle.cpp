@@ -152,7 +152,19 @@ void install(QApplication &app)
         }
 
 
-        QLabel#newsArticleTitle {
+        QLabel#newsMastheadTitle {
+    color: #075b86;
+    background: transparent;
+    font-size: 20px;
+    font-weight: bold;
+}
+
+QLabel#newsMastheadSubtitle {
+    color: #56758a;
+    background: transparent;
+    font-size: 11px;
+}
+QLabel#newsArticleTitle {
             color: #075b86;
             background: transparent;
             font-size: 18px;
