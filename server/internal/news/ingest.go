@@ -160,6 +160,10 @@ func (s Service) FetchSource(ctx context.Context, id int64) (int, error) {
 			_, _ = s.DB.Exec(`UPDATE news_items SET image_url=? WHERE source_id=? AND guid=? AND (image_url IS NULL OR image_url='')`,
 				item.ImageURL, source.ID, item.GUID)
 		}
+		if item.ArticleHTML != "" {
+			_, _ = s.DB.Exec(`UPDATE news_items SET article_html=? WHERE source_id=? AND guid=? AND (article_html IS NULL OR article_html='')`,
+				item.ArticleHTML, source.ID, item.GUID)
+		}
 	}
 
 	if _, err := s.DB.Exec(`DELETE FROM news_items
