@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/mobbyg/otterlink/server/internal/news"
 )
 
 type adminNewsSourceRequest struct {
@@ -39,8 +38,8 @@ func (s *Server) adminNewsSourceCreate(w http.ResponseWriter, r *http.Request) {
 func (s *Server) adminNewsSourceUpdate(w http.ResponseWriter, r *http.Request) {
 	admin, ok := s.requireAdmin(w, r)
 	if !ok { return }
-	id, ok := strconv.ParseInt(r.PathValue("sourceID"), 10, 64)
-	if !ok || id < 1 { http.Error(w, "invalid news source id", http.StatusBadRequest); return }
+	id, err := strconv.ParseInt(r.PathValue("sourceID"), 10, 64)
+	if err != nil || id < 1 { http.Error(w, "invalid news source id", http.StatusBadRequest); return }
 	var req adminNewsSourceRequest
 	if !decodeJSON(w, r, &req) { return }
 	source, err := s.News.UpdateSource(id, req.Name, req.URL, req.Category, req.Enabled, req.RefreshIntervalMinutes)
