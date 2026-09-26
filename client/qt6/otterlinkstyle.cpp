@@ -63,8 +63,9 @@ void install(QApplication &app)
         }
 
         QPushButton#homeButton, QPushButton#peopleButton, QPushButton#mailButton,
-        QPushButton#chatButton, QPushButton#boardsButton, QPushButton#newsButton,
-        QPushButton#filesButton, QPushButton#gamesButton, QPushButton#eventsButton {
+        QPushButton#chatButton, QPushButton#bulletinsButton, QPushButton#boardsButton,
+        QPushButton#newsButton, QPushButton#filesButton, QPushButton#gamesButton,
+        QPushButton#eventsButton, QPushButton#webButton, QPushButton#exploreButton {
             background: transparent;
             color: transparent;
             border: none;
@@ -77,16 +78,18 @@ void install(QApplication &app)
         }
 
         QPushButton#homeButton:hover, QPushButton#peopleButton:hover, QPushButton#mailButton:hover,
-        QPushButton#chatButton:hover, QPushButton#boardsButton:hover, QPushButton#newsButton:hover,
-        QPushButton#filesButton:hover, QPushButton#gamesButton:hover, QPushButton#eventsButton:hover {
+        QPushButton#chatButton:hover, QPushButton#bulletinsButton:hover, QPushButton#boardsButton:hover,
+        QPushButton#newsButton:hover, QPushButton#filesButton:hover, QPushButton#gamesButton:hover,
+        QPushButton#eventsButton:hover, QPushButton#webButton:hover, QPushButton#exploreButton:hover {
             background: rgba(255, 255, 255, 90);
             border: 1px solid #6f9db5;
             border-radius: 4px;
         }
 
         QPushButton#homeButton:pressed, QPushButton#peopleButton:pressed, QPushButton#mailButton:pressed,
-        QPushButton#chatButton:pressed, QPushButton#boardsButton:pressed, QPushButton#newsButton:pressed,
-        QPushButton#filesButton:pressed, QPushButton#gamesButton:pressed, QPushButton#eventsButton:pressed {
+        QPushButton#chatButton:pressed, QPushButton#bulletinsButton:pressed, QPushButton#boardsButton:pressed,
+        QPushButton#newsButton:pressed, QPushButton#filesButton:pressed, QPushButton#gamesButton:pressed,
+        QPushButton#eventsButton:pressed, QPushButton#webButton:pressed, QPushButton#exploreButton:pressed {
             background: rgba(120, 184, 215, 120);
             border: 1px solid #3f7898;
             border-radius: 4px;
@@ -96,7 +99,8 @@ void install(QApplication &app)
         QPushButton#mailButton[active="true"], QPushButton#chatButton[active="true"],
         QPushButton#boardsButton[active="true"], QPushButton#newsButton[active="true"],
         QPushButton#filesButton[active="true"], QPushButton#gamesButton[active="true"],
-        QPushButton#eventsButton[active="true"] {
+        QPushButton#eventsButton[active="true"], QPushButton#bulletinsButton[active="true"],
+        QPushButton#webButton[active="true"], QPushButton#exploreButton[active="true"] {
             background: rgba(120, 184, 215, 100);
             border: 1px solid #3f7898;
             border-radius: 4px;
