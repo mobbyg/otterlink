@@ -36,6 +36,7 @@ type Item struct {
 	URL         string `json:"url"`
 	GUID        string `json:"guid"`
 	ImageURL    string `json:"image_url,omitempty"`
+	ArticleHTML string `json:"article_html,omitempty"`
 	CreatedAt   string `json:"created_at"`
 }
 
