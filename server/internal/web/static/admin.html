@@ -16,6 +16,7 @@
       <a href="#users-section">User Accounts</a>
       <a href="#channels-section">Permanent Channels</a>
       <a href="#events-section">Server Events</a>
+      <a href="#news-section">News Feeds</a>
       <a href="#activity-section">Admin Activity</a>
     </nav>
 
@@ -100,6 +101,51 @@
       <div class="admin-table-wrap">
         <table class="admin-table"><thead><tr><th>When</th><th>Title</th><th>Description</th><th>Owner</th><th>Manage</th></tr></thead><tbody id="events"></tbody></table>
       </div>
+    </section>
+
+
+    <section id="news-section" class="card" style="margin-top:20px">
+      <div class="section-title">
+        <div><small>NEWS</small><h1>RSS / Atom Sources</h1></div>
+        <button id="refresh-news" class="secondary">Refresh</button>
+      </div>
+      <p class="status">Configure external news feeds here. Feed fetching and article aggregation will use these sources; native Otter Link articles can be added separately later.</p>
+      <p id="news-error" class="error"></p>
+      <div class="event-form">
+        <div class="event-details">
+          <label>Source name<input id="news-name" placeholder="Example: Local News"></label>
+          <label>Feed URL<input id="news-url" type="url" placeholder="https://example.com/feed.xml"></label>
+          <div class="event-dates">
+            <label>Category<input id="news-category" placeholder="Local"></label>
+            <label>Refresh interval (minutes)<input id="news-refresh" type="number" min="5" max="1440" value="30"></label>
+          </div>
+          <div class="admin-actions">
+            <label><input id="news-enabled" type="checkbox" checked> Enabled</label>
+            <button id="create-news-source">Add Feed</button>
+          </div>
+        </div>
+      </div>
+      <div class="admin-table-wrap">
+        <table class="admin-table">
+          <thead><tr><th>Name</th><th>Category</th><th>URL</th><th>Enabled</th><th>Refresh</th><th>Last status</th><th>Manage</th></tr></thead>
+          <tbody id="news-sources"></tbody>
+        </table>
+      </div>
+      <aside id="news-panel" class="admin-detail hidden">
+        <div class="section-title"><div><small>NEWS SOURCE</small><h2 id="news-detail-title">Feed</h2></div><button id="close-news-detail" class="secondary">Close</button></div>
+        <p id="news-detail-error" class="error"></p>
+        <label>Source name<input id="news-detail-name"></label>
+        <label>Feed URL<input id="news-detail-url" type="url"></label>
+        <label>Category<input id="news-detail-category"></label>
+        <label>Refresh interval (minutes)<input id="news-detail-refresh" type="number" min="5" max="1440"></label>
+        <label><input id="news-detail-enabled" type="checkbox"> Enabled</label>
+        <div id="news-detail-status" class="status"></div>
+        <div class="admin-actions">
+          <button id="save-news-source">Save Changes</button>
+          <button id="test-news-source" class="secondary">Test Feed</button>
+          <button id="delete-news-source" class="danger">Delete Feed</button>
+        </div>
+      </aside>
     </section>
 
     <section id="activity-section" class="card" style="margin-top:20px">
