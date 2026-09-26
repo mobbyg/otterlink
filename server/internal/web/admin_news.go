@@ -67,6 +67,28 @@ func (s *Server) adminNewsSourceDelete(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+func (s *Server) adminNewsSourceRefresh(w http.ResponseWriter, r *http.Request) {
+	admin, ok := s.requireAdmin(w, r)
+	if !ok { return }
+	id, err := strconv.ParseInt(r.PathValue("sourceID"), 10, 64)
+	if err != nil || id < 1 {
+		http.Error(w, "invalid news source id", http.StatusBadRequest)
+		return
+	}
+	inserted, err := s.News.FetchSource(context.Background(), id)
+	if errors.Is(err, sql.ErrNoRows) {
+		http.Error(w, "news source not found", http.StatusNotFound)
+		return
+	}
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadGateway)
+		return
+	}
+	_ = s.Accounts.LogAudit(admin, "admin.news_source_refresh", strconv.FormatInt(id, 10),
+		"success", "News feed refreshed manually", nil)
+	writeJSON(w, http.StatusOK, map[string]any{"ok": true, "inserted": inserted})
+}
+
 func (s *Server) adminNewsSourceTest(w http.ResponseWriter, r *http.Request) {
 	admin, ok := s.requireAdmin(w, r)
 	if !ok { return }
