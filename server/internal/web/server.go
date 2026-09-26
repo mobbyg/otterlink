@@ -81,7 +81,8 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /api/admin/news/sources", s.adminNewsSourceCreate)
 	mux.HandleFunc("PATCH /api/admin/news/sources/{sourceID}", s.adminNewsSourceUpdate)
 	mux.HandleFunc("DELETE /api/admin/news/sources/{sourceID}", s.adminNewsSourceDelete)
-	mux.HandleFunc("POST /api/admin/news/sources/{sourceID}/test", s.adminNewsSourceTest)
+	mux.HandleFunc("POST /api/admin/news/sources/{sourceID}/test", s.adminNewsSourceTest);
+	mux.HandleFunc("POST /api/admin/news/sources/{sourceID}/refresh", s.adminNewsSourceRefresh)
 	return mux
 }
 
