@@ -18,6 +18,7 @@ class OtterChatWidget final : public QWidget
 
 public:
     explicit OtterChatWidget(OtterLinkClient *client, QWidget *parent = nullptr);
+    void openChannel(qint64 channelId);
 
 private slots:
     void loadChannels();
