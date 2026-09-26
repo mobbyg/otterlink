@@ -193,6 +193,27 @@ void OtterNewsWidget::populateCategories(const QJsonArray &items)
     m_categoryCombo->setCurrentIndex(index);
 }
 
+void OtterNewsWidget::populateSources(const QJsonArray &sources)
+{
+    const qint64 current = m_sourceCombo->currentData().toLongLong();
+    QSignalBlocker blocker(m_sourceCombo);
+    m_sourceCombo->clear();
+    m_sourceCombo->addItem(QStringLiteral("All"), 0);
+    for (const QJsonValue &value : sources) {
+        const QJsonObject source = value.toObject();
+        const QString name = source.value(QStringLiteral("name")).toString().trimmed();
+        const qint64 id = source.value(QStringLiteral("id")).toVariant().toLongLong();
+        if (!name.isEmpty() && id > 0)
+            m_sourceCombo->addItem(name, id);
+    }
+    const int index = m_sourceCombo->findData(current);
+    m_sourceCombo->setCurrentIndex(index >= 0 ? index : 0);
+}
+
+void OtterNewsWidget::newsSourcesLoaded(const QJsonArray &sources)
+{
+    populateSources(sources);
+}
 void OtterNewsWidget::newsLoaded(const QJsonArray &items)
 {
     m_refreshButton->setEnabled(true);
@@ -217,7 +238,7 @@ void OtterNewsWidget::newsLoaded(const QJsonArray &items)
         showItem(m_headlines->item(0));
     } else {
         m_title->setText(QStringLiteral("No news available"));
-        m_meta->setText(QStringLiteral("There are no articles for this category."));
+        m_meta->setText(QStringLiteral("There are no articles for these filters."));
     }
 }
 
