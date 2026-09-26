@@ -78,6 +78,7 @@ void OtterChatWidget::loadChannels() { m_client->loadChatChannels(); }
 void OtterChatWidget::channelsLoaded(const QJsonArray &channels)
 {
     const qint64 previous = m_channelId;
+    const qint64 pending = m_pendingChannelId;
     m_channels.clear();
     m_channelCombo->blockSignals(true);
     m_channelCombo->clear();
@@ -88,13 +89,26 @@ void OtterChatWidget::channelsLoaded(const QJsonArray &channels)
         if (id < 1) continue;
         m_channels.insert(id, channel);
         m_channelCombo->addItem(channel.value(QStringLiteral("name")).toString(), id);
-        if (id == previous) select = m_channelCombo->count() - 1;
+        if (id == previous || id == pending) select = m_channelCombo->count() - 1;
     }
     if (select < 0 && m_channelCombo->count() > 0) select = 0;
     m_channelCombo->setCurrentIndex(select);
     m_channelCombo->blockSignals(false);
+    m_pendingChannelId = 0;
     if (select >= 0) channelChanged(select);
     else { m_channelId = 0; m_channelName.clear(); m_role.clear(); m_chatList->clear(); m_userList->clear(); m_chatList->addItem(QStringLiteral("No chat rooms exist yet. Use + to create one.")); }
+}
+
+void OtterChatWidget::openChannel(qint64 channelId)
+{
+    if (channelId < 1) return;
+    const int index = m_channelCombo->findData(channelId);
+    if (index >= 0) {
+        m_channelCombo->setCurrentIndex(index);
+        return;
+    }
+    m_pendingChannelId = channelId;
+    loadChannels();
 }
 
 void OtterChatWidget::channelChanged(int index)
