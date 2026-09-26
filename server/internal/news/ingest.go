@@ -315,7 +315,7 @@ func sanitizeArticleAttributes(node *htmlpkg.Node, base string) {
 	node.Attr = attrs
 }
 
-var youtubeIframePattern = regexp.MustCompile("(?is)<iframe[^>]+src=[\\\"']([^\\\"']+)[\\\"'][^>]*>.*?</iframe>")
+var youtubeIframePattern = regexp.MustCompile(`(?is)<iframe[^>]+src=["']([^"']+)["'][^>]*>.*?</iframe>`)
 
 func replaceYouTubeEmbeds(value string) string {
 	return youtubeIframePattern.ReplaceAllStringFunc(value, func(match string) string {
