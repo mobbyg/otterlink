@@ -11,5 +11,7 @@
         <file>images/new_mail.png</file>
         <file>images/news.png</file>
         <file>images/no_mail.png</file>
+        <file>images/search.png</file>
+        <file>images/web.png</file>
     </qresource>
 </RCC>
