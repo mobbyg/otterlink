@@ -56,3 +56,21 @@ func TestSourceDue(t *testing.T) {
 	source.LastFetchedAt = ""
 	if !sourceDue(source, now) { t.Fatal("never-fetched source should be due") }
 }
+
+func TestSanitizeArticleHTML(t *testing.T) {
+	input := "<div><p>Hello <strong>world</strong>.</p><script>alert('bad')</script><p><img src=\"/images/story.jpg\" onerror=\"bad\"></p><iframe src=\"https://www.youtube.com/embed/abc123\"></iframe></div>"
+	got := sanitizeArticleHTML(input, "https://example.com/feed/")
+	if strings.Contains(got, "<script") || strings.Contains(got, "onerror") || strings.Contains(got, "<iframe") { t.Fatalf("unsafe markup survived: %s", got) }
+	if !strings.Contains(got, "src=\"https://example.com/images/story.jpg\"") { t.Fatalf("image URL was not normalized: %s", got) }
+	if !strings.Contains(got, "https://www.youtube.com/watch?v=abc123") { t.Fatalf("YouTube link was not preserved: %s", got) }
+	if !strings.Contains(got, "Hello") || !strings.Contains(got, "<strong>world</strong>") { t.Fatalf("article content was not preserved: %s", got) }
+}
+
+func TestNormalizeYouTubeURL(t *testing.T) {
+	tests := map[string]string{
+		"https://www.youtube.com/watch?v=abc123": "https://www.youtube.com/watch?v=abc123",
+		"https://www.youtube.com/embed/abc123": "https://www.youtube.com/watch?v=abc123",
+		"https://youtu.be/abc123": "https://www.youtube.com/watch?v=abc123",
+	}
+	for input, want := range tests { if got := normalizeYouTubeURL(input); got != want { t.Fatalf("normalizeYouTubeURL(%q) = %q, want %q", input, got, want) } }
+}
