@@ -199,6 +199,10 @@ MainWindow::MainWindow(QWidget *parent)
             [this](const QJsonObject &screen, const QImage &image) {
                 m_homePage->setServerScreen(screen, image);
             });
+    connect(m_client, &OtterLinkClient::homeAssetLoaded, m_homePage,
+            [this](qint64 assetId, const QImage &image) {
+                m_homePage->setServerAsset(assetId, image);
+            });
 
     auto *fileMenu = menuBar()->addMenu(QStringLiteral("File"));
     auto *awayAction = fileMenu->addAction(QStringLiteral("Away / AFK"));
