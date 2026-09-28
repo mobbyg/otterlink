@@ -4,6 +4,7 @@
 #include <QJsonObject>
 #include <QPixmap>
 #include <QWidget>
+#include <QHash>
 
 class QJsonArray;
 class QScrollArea;
@@ -18,6 +19,7 @@ public:
 
     void setServerScreen(const QJsonObject &screen);
     void setServerScreen(const QJsonObject &screen, const QImage &background);
+    void setServerAsset(qint64 assetId, const QImage &image);
 
 signals:
     void serviceRequested(const QString &service);
@@ -36,6 +38,7 @@ private:
     void applyBackground(const QPixmap &background);
     void buildOverlay(const QJsonArray &elements);
     void layoutOverlay();
+    void addImageElement(qint64 assetId, const QImage &image, const QJsonObject &item);
 
     QScrollArea *m_scrollArea = nullptr;
     QWidget *m_page = nullptr;
@@ -43,4 +46,5 @@ private:
     QPixmap m_background;
     bool m_templateMode = false;
     QWidget *m_overlay = nullptr;
+    QHash<qint64, QImage> m_loadedAssets;
 };
