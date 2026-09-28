@@ -581,7 +581,6 @@ void MainWindow::showDashboard(const QString &displayName)
         QStringLiteral("Connected as <b>%1</b>").arg(displayName.toHtmlEscaped()));
     setLoggedIn(true);
     m_client->loadDashboard();
-    m_client->loadHomeScreen();
     m_refreshTimer.start();
 
     // Start with the desktop itself as the home state. Home remains available from the bar.
@@ -610,6 +609,11 @@ void MainWindow::dashboardLoaded(const QStringList &buddies, const QStringList &
         QStringLiteral("%1 %2 currently online")
             .arg(onlineUsers.size())
             .arg(onlineUsers.size() == 1 ? QStringLiteral("user") : QStringLiteral("users")));
+
+    // Wait until the initial dashboard queries have completed before asking the
+    // single-connection SQLite server for the server-managed Home screen.
+    // This keeps the initial login burst from contending for the database.
+    m_client->loadHomeScreen();
 }
 
 void MainWindow::rebuildBuddyTree(const QStringList &buddies, const QStringList &onlineUsers)
