@@ -13,6 +13,7 @@ import (
 	"github.com/mobbyg/otterlink/server/internal/content"
 	"github.com/mobbyg/otterlink/server/internal/dm"
 	"github.com/mobbyg/otterlink/server/internal/events"
+	"github.com/mobbyg/otterlink/server/internal/news"
 	"github.com/mobbyg/otterlink/server/internal/keywords"
 	"github.com/mobbyg/otterlink/server/internal/presence"
 )
@@ -27,6 +28,7 @@ type Server struct {
 	Chat     *chat.Hub
 	DM       dm.Service
 	Events   events.Service
+	News     news.Service
 	Keywords keywords.Service
 	Content  content.Service
 	Assets   assets.Service
@@ -48,6 +50,8 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /api/messages/read", s.messageRead)
 	mux.HandleFunc("GET /api/messages/unread", s.messageUnread)
 	mux.HandleFunc("GET /api/events", s.eventList)
+	mux.HandleFunc("GET /api/news", s.newsList)
+	mux.HandleFunc("GET /api/news/sources", s.newsSources)
 	mux.HandleFunc("GET /api/content/home", s.contentHome)
 	mux.HandleFunc("GET /api/content/screens/{screenID}", s.contentScreen)
 	mux.HandleFunc("GET /api/content/assets/{assetID}", s.contentAsset)
@@ -94,6 +98,12 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /api/admin/events", s.adminEventCreate)
 	mux.HandleFunc("PATCH /api/admin/events/{eventID}", s.adminEventUpdate)
 	mux.HandleFunc("DELETE /api/admin/events/{eventID}", s.adminEventDelete)
+	mux.HandleFunc("GET /api/admin/news/sources", s.adminNewsSources)
+	mux.HandleFunc("POST /api/admin/news/sources", s.adminNewsSourceCreate)
+	mux.HandleFunc("PATCH /api/admin/news/sources/{sourceID}", s.adminNewsSourceUpdate)
+	mux.HandleFunc("DELETE /api/admin/news/sources/{sourceID}", s.adminNewsSourceDelete)
+	mux.HandleFunc("POST /api/admin/news/sources/{sourceID}/test", s.adminNewsSourceTest);
+	mux.HandleFunc("POST /api/admin/news/sources/{sourceID}/refresh", s.adminNewsSourceRefresh)
 	return mux
 }
 
