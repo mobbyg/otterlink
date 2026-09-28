@@ -52,10 +52,20 @@
           <label>Structured content JSON<textarea id="screen-content" rows="24" spellcheck="false"></textarea></label>
           <div class="admin-actions">
             <button id="save-screen">Save Screen</button>
+            <button id="preview-screen" class="secondary">Preview</button>
             <button id="delete-screen" class="danger">Delete Screen</button>
           </div>
           <p class="status">Scheduling is evaluated by the server. A published screen with no dates is permanent.</p>
           </div>
+        </div>
+      </div>
+      </div>
+      <div id="screen-preview" class="screen-preview hidden" role="dialog" aria-modal="true" aria-labelledby="screen-preview-title">
+        <div class="screen-preview-backdrop"></div>
+        <div class="screen-preview-dialog">
+          <div class="section-title"><div><small>CLIENT PREVIEW</small><h2 id="screen-preview-title">Screen Preview</h2></div><button id="close-preview" class="secondary">Close</button></div>
+          <p class="status">Read-only approximation of the Qt6 Home presentation. Nothing is edited or saved here.</p>
+          <div class="screen-preview-frame"><div id="screen-preview-canvas" class="screen-preview-canvas"></div></div>
         </div>
       </div>
     </section>
