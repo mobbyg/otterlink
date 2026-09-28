@@ -432,7 +432,7 @@ Events are currently limited to dates no more than two years ahead.
 
 Authenticated clients can retrieve the currently active Home screen with GET /api/content/home. The server evaluates publication and start/end scheduling. A published screen with no dates is permanent; clients do not implement scheduling rules themselves.
 
-A screen response contains metadata plus structured JSON content. The current Qt6 renderer understands hero, announcements, services, and footer blocks. The content format is intentionally structured rather than arbitrary HTML, CSS, or JavaScript. Unknown fields may be ignored by clients.
+A screen response contains metadata plus structured JSON content. The current Qt6 renderer understands hero, announcements, services, footer, and an optional background asset. The content format is intentionally structured rather than arbitrary HTML, CSS, or JavaScript. Unknown fields may be ignored by clients.
 
 Individual published or future screens can be retrieved with GET /api/content/screens/{screenID}. Draft/unpublished screens are not exposed through client content endpoints.
 
@@ -450,7 +450,7 @@ The PUT body contains slug, title, published, optional start_at/end_at RFC3339 v
 
 Screen version increments when an existing screen is saved. The version is intended to provide a stable cache/version signal as asset delivery and conditional HTTP caching are added.
 
-The current editor is the foundational screen-management slice. The server asset layer now provides persistent image storage and cacheable asset delivery; the visual asset picker/editor will be added on top of this API.
+The current editor is the foundational screen-management slice. The server asset layer provides persistent image storage and cacheable asset delivery, and screen JSON can reference an uploaded asset as its background.
 
 ## Content assets
 
@@ -470,7 +470,18 @@ Admin endpoints:
 
 Uploads use multipart/form-data with the file field named asset. The server stores the binary asset outside the database and keeps only metadata in SQLite. The storage directory defaults to data/assets and can be changed with OTTERLINK_ASSET_ROOT.
 
-Asset IDs and hashes are stable references for the content system. The next editor slice will allow screen JSON to reference these assets and will add administrator-facing upload/selection controls.
+Asset IDs and hashes are stable references for the content system. A screen can reference an uploaded image as a background with content such as:
+
+```json
+{
+  "background": {
+    "asset": 12,
+    "fit": "cover"
+  }
+}
+```
+
+The `asset` value is the asset ID returned by the admin asset endpoint. Supported `fit` values currently include `cover` and `contain`. The Qt6 client and admin Preview both render the referenced background behind the structured screen content.
 
 ## Administration API
 
