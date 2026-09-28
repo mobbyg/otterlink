@@ -7,6 +7,7 @@
 #include <QHash>
 
 class QJsonArray;
+class QLabel;
 class QPushButton;
 class QScrollArea;
 class QVBoxLayout;
@@ -45,6 +46,7 @@ private:
     QScrollArea *m_scrollArea = nullptr;
     QWidget *m_page = nullptr;
     QVBoxLayout *m_layout = nullptr;
+    QLabel *m_backgroundLayer = nullptr;
     QPixmap m_background;
     bool m_templateMode = false;
     QWidget *m_overlay = nullptr;
