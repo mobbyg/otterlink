@@ -93,6 +93,7 @@ void OtterHomePage::setServerScreen(const QJsonObject &screen, const QImage &bac
         return;
 
     m_background = background.isNull() ? QPixmap() : QPixmap::fromImage(background);
+    m_templateMode = !content.value(QStringLiteral("elements")).toArray().isEmpty();
 
     // The screen title is server-managed metadata. Keep the JSON content as the
     // source for the rest of the page, but let the screen title control the
@@ -118,8 +119,10 @@ void OtterHomePage::applyBackground(const QPixmap &background)
     if (targetSize.isEmpty())
         return;
 
-    const QPixmap scaled = background.scaled(targetSize, Qt::KeepAspectRatioByExpanding,
-                                             Qt::SmoothTransformation);
+    const Qt::AspectRatioMode mode = m_templateMode
+        ? Qt::KeepAspectRatio
+        : Qt::KeepAspectRatioByExpanding;
+    const QPixmap scaled = background.scaled(targetSize, mode, Qt::SmoothTransformation);
     QPalette palette = m_page->palette();
     palette.setBrush(QPalette::Window, QBrush(scaled));
     m_page->setAutoFillBackground(true);
