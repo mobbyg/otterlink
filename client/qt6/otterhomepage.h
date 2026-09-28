@@ -5,6 +5,7 @@
 #include <QPixmap>
 #include <QWidget>
 
+class QJsonArray;
 class QScrollArea;
 class QVBoxLayout;
 
