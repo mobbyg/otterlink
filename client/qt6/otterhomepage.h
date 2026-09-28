@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QImage>
 #include <QJsonObject>
 #include <QPixmap>
 #include <QWidget>
@@ -19,6 +20,9 @@ public:
 
 signals:
     void serviceRequested(const QString &service);
+
+protected:
+    void resizeEvent(QResizeEvent *event) override;
 
 private:
     void buildFallback();
