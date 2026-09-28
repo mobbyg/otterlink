@@ -134,6 +134,101 @@ async function deleteScreen(screen) {
 
 function showAssetError(message) { $('asset-error').textContent = message || ''; }
 
+function previewScreen() {
+  showError('');
+  let content;
+  try {
+    content = JSON.parse($('screen-content').value);
+  } catch (error) {
+    showError('Content must be valid JSON before it can be previewed.');
+    return;
+  }
+  $('screen-preview-title').textContent = $('screen-title').value.trim() || 'Screen Preview';
+  renderPreview(content);
+  $('screen-preview').classList.remove('hidden');
+}
+
+function renderPreview(content) {
+  const canvas = $('screen-preview-canvas');
+  canvas.innerHTML = '';
+  const hero = content.hero || {};
+  const heroEl = document.createElement('section');
+  heroEl.className = 'preview-hero';
+  if (hero.icon) {
+    const icon = document.createElement('div');
+    icon.className = 'preview-hero-icon';
+    icon.textContent = hero.icon;
+    heroEl.appendChild(icon);
+  }
+  const heroText = document.createElement('div');
+  const title = document.createElement('h3');
+  title.textContent = hero.title || 'Welcome to Otter Link';
+  const body = document.createElement('p');
+  body.textContent = hero.body || '';
+  heroText.append(title, body);
+  heroEl.appendChild(heroText);
+  canvas.appendChild(heroEl);
+
+  const announcements = Array.isArray(content.announcements) ? content.announcements : [];
+  if (announcements.length) {
+    const section = document.createElement('section');
+    section.className = 'preview-section';
+    const heading = document.createElement('h4');
+    heading.textContent = "What's New";
+    section.appendChild(heading);
+    for (const item of announcements) {
+      const card = document.createElement('div');
+      card.className = 'preview-announcement';
+      const text = document.createElement('div');
+      const title = document.createElement('strong');
+      title.textContent = item.title || '';
+      const body = document.createElement('p');
+      body.textContent = item.body || '';
+      text.append(title, body);
+      card.appendChild(text);
+      if (item.action_label) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.textContent = item.action_label;
+        button.disabled = true;
+        card.appendChild(button);
+      }
+      section.appendChild(card);
+    }
+    canvas.appendChild(section);
+  }
+
+  const services = Array.isArray(content.services) ? content.services : [];
+  if (services.length) {
+    const section = document.createElement('section');
+    section.className = 'preview-section';
+    const heading = document.createElement('h4');
+    heading.textContent = 'Explore Otter Link';
+    section.appendChild(heading);
+    const grid = document.createElement('div');
+    grid.className = 'preview-services';
+    for (const item of services) {
+      const tile = document.createElement('div');
+      tile.className = 'preview-service';
+      const title = document.createElement('strong');
+      title.textContent = (item.icon ? item.icon + '  ' : '') + (item.title || '');
+      const description = document.createElement('p');
+      description.textContent = item.description || '';
+      tile.append(title, description);
+      grid.appendChild(tile);
+    }
+    section.appendChild(grid);
+    canvas.appendChild(section);
+  }
+
+  if (content.footer) {
+    const footer = document.createElement('div');
+    footer.className = 'preview-footer';
+    footer.textContent = content.footer;
+    canvas.appendChild(footer);
+  }
+}
+
 function formatBytes(size) {
   const value = Number(size) || 0;
   if (value < 1024) return value + ' B';
@@ -217,9 +312,13 @@ function closeEditor() {
 $('close-screen').addEventListener('click', closeEditor);
 $('screen-panel').querySelector('.screen-modal-backdrop').addEventListener('click', closeEditor);
 document.addEventListener('keydown', (event) => {
-  if (event.key === 'Escape' && !$('screen-panel').classList.contains('hidden')) closeEditor();
+  if (event.key === 'Escape' && !$('screen-preview').classList.contains('hidden')) $('screen-preview').classList.add('hidden');
+  else if (event.key === 'Escape' && !$('screen-panel').classList.contains('hidden')) closeEditor();
 });
 $('save-screen').addEventListener('click', saveScreen);
+$('preview-screen').addEventListener('click', previewScreen);
+$('close-preview').addEventListener('click', () => $('screen-preview').classList.add('hidden'));
+$('screen-preview').querySelector('.screen-preview-backdrop').addEventListener('click', () => $('screen-preview').classList.add('hidden'));
 $('delete-screen').addEventListener('click', () => {
   if (selectedId) deleteScreen({ id: selectedId, title: $('screen-title').value });
 });
