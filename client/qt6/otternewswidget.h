@@ -7,6 +7,7 @@ class QNetworkAccessManager;
 
 class QComboBox;
 class QLabel;
+class QTextBrowser;
 class QListWidget;
 class QListWidgetItem;
 class QPushButton;
@@ -31,7 +32,7 @@ private:
     void populateCategories(const QJsonArray &items);
     void populateSources(const QJsonArray &sources);
     void clearArticle();
-    void loadArticleImage(const QString &url);
+    void loadArticleImages(const QString &html, const QString &articleUrl);
 
     OtterLinkClient *m_client = nullptr;
     QComboBox *m_categoryCombo = nullptr;
@@ -40,8 +41,7 @@ private:
     QListWidget *m_headlines = nullptr;
     QLabel *m_title = nullptr;
     QLabel *m_meta = nullptr;
-    QLabel *m_image = nullptr;
-    QLabel *m_summary = nullptr;
+    QTextBrowser *m_article = nullptr;
     QPushButton *m_originalButton = nullptr;
     QString m_selectedUrl;
     QString m_selectedImageUrl;
