@@ -21,6 +21,7 @@ public:
 
     void setServerScreen(const QJsonObject &screen);
     void setServerScreen(const QJsonObject &screen, const QImage &background);
+    void setServerBackground(const QImage &background);
     void setServerAsset(qint64 assetId, const QImage &image);
 
 signals:
@@ -50,6 +51,7 @@ private:
     QPixmap m_background;
     QString m_backgroundFit = QStringLiteral("cover");
     bool m_templateMode = false;
+    QJsonObject m_serverScreen;
     QWidget *m_overlay = nullptr;
     QHash<qint64, QImage> m_loadedAssets;
 };
