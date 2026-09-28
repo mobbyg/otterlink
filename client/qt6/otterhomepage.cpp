@@ -381,8 +381,15 @@ void OtterHomePage::buildOverlay(const QJsonArray &elements)
             auto *button = new QPushButton(text, m_overlay);
             const qint64 assetId = item.value(QStringLiteral("asset")).toInteger();
             button->setProperty("overlay_asset", assetId);
-            if (assetId > 0 && m_loadedAssets.contains(assetId))
+            if (assetId > 0 && m_loadedAssets.contains(assetId)) {
                 applyButtonAsset(button, m_loadedAssets.value(assetId));
+            } else {
+                const QString background = item.value(QStringLiteral("background")).toString(QStringLiteral("#efa00b"));
+                const QString foreground = item.value(QStringLiteral("color")).toString(QStringLiteral("#591f0a"));
+                button->setStyleSheet(QStringLiteral(
+                    "QPushButton { background: %1; color: %2; border: 1px solid rgba(255,255,255,0.35); border-radius: 8px; padding: 4px; }")
+                    .arg(background, foreground));
+            }
             const QString service = destinationService(item);
             if (!service.isEmpty()) {
                 connect(button, &QPushButton::clicked, this, [this, service]() {
