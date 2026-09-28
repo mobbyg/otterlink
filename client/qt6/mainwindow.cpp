@@ -449,26 +449,12 @@ void MainWindow::openServiceWindow(const QString &service, const QString &title,
     m_nextWindowOffset = (m_nextWindowOffset + 28) % 140;
 
     if (service == QStringLiteral("home")) {
-        // Home is a fixed service window. Its contents are authored at
-        // 1280x720 and the Home page scales that logical canvas to fit the
-        // available desktop area. The user cannot resize the Home window.
-        const int desktopWidth = qMax(1, m_desktop->width() - 40);
-        const int desktopHeight = qMax(1, m_desktop->height() - 40);
-        const int titleBarHeight = [&]() {
-            auto *titleBar = window->findChild<QFrame *>(
-                QStringLiteral("serviceWindowTitleBar"));
-            return titleBar ? titleBar->sizeHint().height() : 30;
-        }();
-
-        const int contentWidth = qMin(1280, desktopWidth);
-        const int contentHeight = qMin(720, qMax(1, desktopHeight - titleBarHeight - 8));
-        const double scale = qMin(
-            static_cast<double>(contentWidth) / 1280.0,
-            static_cast<double>(contentHeight) / 720.0);
-
-        const int homeContentWidth = qMax(1, qRound(1280.0 * scale));
-        const int homeContentHeight = qMax(1, qRound(720.0 * scale));
-        window->setFixedSize(homeContentWidth + 4, homeContentHeight + titleBarHeight + 8);
+        // Home is a fixed 1280x720 service. Keep the authored canvas at its
+        // native size; the page itself owns that fixed coordinate system.
+        auto *titleBar = window->findChild<QFrame *>(
+            QStringLiteral("serviceWindowTitleBar"));
+        const int titleBarHeight = titleBar ? titleBar->sizeHint().height() : 30;
+        window->setFixedSize(1284, 720 + titleBarHeight + 4);
     } else {
         const int preferredWidth = service == QStringLiteral("events") ? 635 : 620;
         const int width = qMin(preferredWidth, qMax(360, m_desktop->width() - 70));
