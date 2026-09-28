@@ -97,6 +97,40 @@ void OtterLinkClient::login(const QString &username, const QString &password)
     });
 }
 
+void OtterLinkClient::loadNews(int limit, const QString &category, qint64 sourceId)
+{
+    QString path = QStringLiteral("/api/news?limit=%1").arg(limit);
+    if (!category.trimmed().isEmpty())
+        path += QStringLiteral("&category=") + QString::fromUtf8(QUrl::toPercentEncoding(category.trimmed()));
+    if (sourceId > 0)
+        path += QStringLiteral("&source_id=%1").arg(sourceId);
+
+    auto *reply = m_network.get(request(path));
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+        if (reply->error() != QNetworkReply::NoError) {
+            emit errorOccurred(serverErrorMessage(reply, reply->errorString()));
+        } else {
+            const QJsonObject obj = QJsonDocument::fromJson(reply->readAll()).object();
+            emit newsLoaded(obj.value(QStringLiteral("items")).toArray());
+        }
+        reply->deleteLater();
+    });
+}
+
+void OtterLinkClient::loadNewsSources()
+{
+    auto *reply = m_network.get(request(QStringLiteral("/api/news/sources")));
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+        if (reply->error() != QNetworkReply::NoError) {
+            emit errorOccurred(serverErrorMessage(reply, reply->errorString()));
+        } else {
+            const QJsonObject obj = QJsonDocument::fromJson(reply->readAll()).object();
+            emit newsSourcesLoaded(obj.value(QStringLiteral("sources")).toArray());
+        }
+        reply->deleteLater();
+    });
+}
+
 void OtterLinkClient::loadDashboard()
 {
     if (m_token.isEmpty())
