@@ -144,6 +144,7 @@ CREATE TABLE IF NOT EXISTS news_items (
     url TEXT NOT NULL,
     guid TEXT NOT NULL,
     image_url TEXT NOT NULL DEFAULT '',
+    article_html TEXT NOT NULL DEFAULT '',
     created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(source_id, guid)
 );
@@ -209,6 +210,7 @@ func Initialize(db *sql.DB) error {
 	if err := rows.Err(); err != nil { return fmt.Errorf("read users schema rows: %w", err) }
 	if !hasRole { if _, err := db.Exec(`ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'user'`); err != nil { return fmt.Errorf("add users role column: %w", err) } }
 
+	if err := addColumnIfMissing(db, "news_items", "article_html", `ALTER TABLE news_items ADD COLUMN article_html TEXT NOT NULL DEFAULT ''`); err != nil { return err }
 	if err := addColumnIfMissing(db, "chat_channels", "creator_username", `ALTER TABLE chat_channels ADD COLUMN creator_username TEXT NOT NULL DEFAULT ''`); err != nil { return err }
 	if err := addColumnIfMissing(db, "chat_channels", "original_mod_username", `ALTER TABLE chat_channels ADD COLUMN original_mod_username TEXT`); err != nil { return err }
 	if _, err := db.Exec(`UPDATE chat_channels SET creator_username = COALESCE((SELECT username FROM users WHERE users.id = chat_channels.creator_user_id), '') WHERE creator_username = ''`); err != nil { return fmt.Errorf("backfill chat creator usernames: %w", err) }
