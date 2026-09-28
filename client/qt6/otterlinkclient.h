@@ -41,6 +41,7 @@ public:
     void updateEvent(qint64 eventId, const QJsonObject &event);
     void deleteEvent(qint64 eventId);
     void resolveKeyword(const QString &keyword);
+    void loadHomeScreen();
     void logout();
 
 signals:
@@ -58,6 +59,7 @@ signals:
     void eventChanged(const QJsonObject &event);
     void eventDeleted(qint64 eventId);
     void keywordResolved(const QJsonObject &keyword);
+    void homeScreenLoaded(const QJsonObject &screen);
     void chatMessageSent();
     void chatChannelsLoaded(const QJsonArray &channels);
     void chatChannelLoaded(const QJsonObject &channel, const QJsonArray &members,
