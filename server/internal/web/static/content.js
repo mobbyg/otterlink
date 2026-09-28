@@ -142,7 +142,14 @@ $('new-screen').addEventListener('click', () => {
   $('screen-panel').classList.remove('hidden');
   $('screen-slug').focus();
 });
-$('close-screen').addEventListener('click', () => $('screen-panel').classList.add('hidden'));
+function closeEditor() {
+  $('screen-panel').classList.add('hidden');
+}
+$('close-screen').addEventListener('click', closeEditor);
+$('screen-panel').querySelector('.screen-modal-backdrop').addEventListener('click', closeEditor);
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && !$('screen-panel').classList.contains('hidden')) closeEditor();
+});
 $('save-screen').addEventListener('click', saveScreen);
 $('delete-screen').addEventListener('click', () => {
   if (selectedId) deleteScreen({ id: selectedId, title: $('screen-title').value });
