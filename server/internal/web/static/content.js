@@ -258,7 +258,7 @@ function renderPreviewElements(elements, canvas) {
         const image = document.createElement('img');
         image.alt = item.alt || item.text || '';
         image.draggable = false;
-        image.src = '/api/content/assets/' + assetID;
+        loadPreviewAssetImage(assetID, image);
         image.style.width = '100%';
         image.style.height = '100%';
         image.style.objectFit = item.fit === 'cover' ? 'cover' : 'contain';
@@ -291,6 +291,21 @@ function renderPreviewElements(elements, canvas) {
       element.style.whiteSpace = 'pre-wrap';
     }
     canvas.appendChild(element);
+  }
+}
+
+async function loadPreviewAssetImage(assetID, image) {
+  try {
+    const response = await fetch('/api/content/assets/' + assetID, {
+      headers: token ? { Authorization: 'Bearer ' + token } : {}
+    });
+    if (!response.ok) throw new Error('Unable to load asset');
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    image.addEventListener('load', () => URL.revokeObjectURL(url), { once: true });
+    image.src = url;
+  } catch (error) {
+    image.alt = image.alt || 'Unable to load image asset ' + assetID;
   }
 }
 
