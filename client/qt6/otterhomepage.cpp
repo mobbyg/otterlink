@@ -19,6 +19,11 @@
 #include <QPixmap>
 
 namespace {
+constexpr int kHomeCanvasWidth = 1280;
+constexpr int kHomeCanvasHeight = 720;
+}
+
+namespace {
 
 QLabel *makeLabel(const QString &text, QWidget *parent, int pointSize = -1, bool bold = false)
 {
@@ -54,14 +59,19 @@ OtterHomePage::OtterHomePage(QWidget *parent)
     outerLayout->setSpacing(0);
 
     m_scrollArea = new QScrollArea(this);
-    m_scrollArea->setWidgetResizable(true);
+    // Home is a fixed 1280x720 publication canvas for now. A future user
+    // resolution setting will select the target canvas and scaling policy.
+    m_scrollArea->setWidgetResizable(false);
     m_scrollArea->setFrameShape(QFrame::NoFrame);
-    m_scrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    m_scrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+    m_scrollArea->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+    m_scrollArea->setAlignment(Qt::AlignCenter);
     m_scrollArea->setObjectName(QStringLiteral("homeScrollArea"));
     outerLayout->addWidget(m_scrollArea);
 
     m_page = new QWidget;
     m_page->setObjectName(QStringLiteral("homeContent"));
+    m_page->setFixedSize(kHomeCanvasWidth, kHomeCanvasHeight);
 
     m_backgroundLayer = new QLabel(m_page);
     m_backgroundLayer->setObjectName(QStringLiteral("homeBackgroundLayer"));
@@ -70,8 +80,8 @@ OtterHomePage::OtterHomePage(QWidget *parent)
     m_backgroundLayer->lower();
 
     m_layout = new QVBoxLayout(m_page);
-    m_layout->setContentsMargins(16, 16, 16, 16);
-    m_layout->setSpacing(12);
+    m_layout->setContentsMargins(0, 0, 0, 0);
+    m_layout->setSpacing(0);
     m_scrollArea->setWidget(m_page);
 
     buildFallback();
@@ -172,7 +182,7 @@ void OtterHomePage::applyBackground(const QPixmap &background)
     if (!m_page || !m_backgroundLayer)
         return;
 
-    const QSize targetSize = m_page->size();
+    const QSize targetSize(kHomeCanvasWidth, kHomeCanvasHeight);
     if (targetSize.isEmpty())
         return;
 
@@ -195,7 +205,6 @@ void OtterHomePage::resizeEvent(QResizeEvent *event)
 {
     QWidget::resizeEvent(event);
     applyBackground(m_background);
-    layoutOverlay();
 }
 
 void OtterHomePage::buildFallback()
@@ -379,9 +388,10 @@ void OtterHomePage::buildOverlay(const QJsonArray &elements)
     m_overlay = new QWidget(m_page);
     m_overlay->setObjectName(QStringLiteral("homeOverlay"));
     m_overlay->setAttribute(Qt::WA_TranslucentBackground);
-    m_overlay->setMinimumSize(640, 360);
+    // Elements are positioned against a fixed 1280x720 canvas. Do not let
+    // the service window resize this coordinate system.
+    m_overlay->setFixedSize(kHomeCanvasWidth, kHomeCanvasHeight);
     m_overlay->setProperty("overlay_elements", elements);
-    m_overlay->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     m_layout->addWidget(m_overlay, 1);
 
     for (const QJsonValue &value : elements) {
@@ -506,8 +516,8 @@ void OtterHomePage::layoutOverlay()
     if (!m_overlay)
         return;
 
-    const int width = m_overlay->width();
-    const int height = m_overlay->height();
+    const int width = kHomeCanvasWidth;
+    const int height = kHomeCanvasHeight;
     for (QWidget *widget : m_overlay->findChildren<QWidget *>(QString(), Qt::FindDirectChildrenOnly)) {
         const double x = qBound(0.0, widget->property("overlay_x").toDouble(), 1.0);
         const double y = qBound(0.0, widget->property("overlay_y").toDouble(), 1.0);
