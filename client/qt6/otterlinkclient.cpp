@@ -6,6 +6,7 @@
 #include <QNetworkReply>
 #include <QNetworkRequest>
 #include <QUrl>
+#include <QImageReader>
 
 #include <functional>
 #include <memory>
@@ -351,9 +352,38 @@ void OtterLinkClient::loadHomeScreen()
 
     auto *reply = m_network.get(request(QStringLiteral("/api/content/home")));
     connect(reply, &QNetworkReply::finished, this, [this, reply]() {
-        if (reply->error() == QNetworkReply::NoError) {
-            emit homeScreenLoaded(QJsonDocument::fromJson(reply->readAll()).object());
+        if (reply->error() != QNetworkReply::NoError) {
+            reply->deleteLater();
+            return;
         }
+
+        const QJsonObject screen = QJsonDocument::fromJson(reply->readAll()).object();
+        const QJsonObject content = screen.value(QStringLiteral("content")).toObject();
+        const QJsonObject background = content.value(QStringLiteral("background")).toObject();
+        const qint64 assetID = background.value(QStringLiteral("asset")).toInteger();
+
+        if (assetID < 1) {
+            emit homeScreenLoaded(screen);
+            reply->deleteLater();
+            return;
+        }
+
+        auto *assetReply = m_network.get(
+            request(QStringLiteral("/api/content/assets/%1").arg(assetID)));
+        connect(assetReply, &QNetworkReply::finished, this, [this, assetReply, screen]() {
+            if (assetReply->error() == QNetworkReply::NoError) {
+                QImage image;
+                image.loadFromData(assetReply->readAll());
+                if (!image.isNull()) {
+                    emit homeBackgroundLoaded(screen, image);
+                    assetReply->deleteLater();
+                    return;
+                }
+            }
+
+            emit homeScreenLoaded(screen);
+            assetReply->deleteLater();
+        });
         reply->deleteLater();
     });
 }
