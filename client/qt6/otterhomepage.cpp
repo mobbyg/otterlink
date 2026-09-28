@@ -79,9 +79,19 @@ void OtterHomePage::clearPage()
 
 void OtterHomePage::setServerScreen(const QJsonObject &screen)
 {
-    const QJsonObject content = screen.value(QStringLiteral("content")).toObject();
+    QJsonObject content = screen.value(QStringLiteral("content")).toObject();
     if (content.isEmpty())
         return;
+
+    // The screen title is server-managed metadata. Keep the JSON content as the
+    // source for the rest of the page, but let the screen title control the
+    // visible Home heading when one is supplied.
+    const QString screenTitle = screen.value(QStringLiteral("title")).toString().trimmed();
+    if (!screenTitle.isEmpty()) {
+        QJsonObject hero = content.value(QStringLiteral("hero")).toObject();
+        hero.insert(QStringLiteral("title"), screenTitle);
+        content.insert(QStringLiteral("hero"), hero);
+    }
 
     clearPage();
     buildFromContent(content);
