@@ -99,11 +99,17 @@ void OtterHomePage::setServerAsset(qint64 assetId, const QImage &image)
     const QJsonArray elements = m_overlay->property("overlay_elements").toJsonArray();
     for (const QJsonValue &value : elements) {
         const QJsonObject item = value.toObject();
-        if (item.value(QStringLiteral("type")).toString().compare(
-                QStringLiteral("image"), Qt::CaseInsensitive) != 0)
+        const QString type = item.value(QStringLiteral("type")).toString().trimmed().toLower();
+        if (item.value(QStringLiteral("asset")).toInteger() != assetId)
             continue;
-        if (item.value(QStringLiteral("asset")).toInteger() == assetId)
+        if (type == QStringLiteral("image")) {
             addImageElement(assetId, image, item);
+        } else if (type == QStringLiteral("button")) {
+            for (QPushButton *button : m_overlay->findChildren<QPushButton *>()) {
+                if (button->property("overlay_asset").toLongLong() == assetId)
+                    applyButtonAsset(button, image);
+            }
+        }
     }
     layoutOverlay();
 }
@@ -352,6 +358,10 @@ void OtterHomePage::buildOverlay(const QJsonArray &elements)
 
         if (type == QStringLiteral("button")) {
             auto *button = new QPushButton(text, m_overlay);
+            const qint64 assetId = item.value(QStringLiteral("asset")).toInteger();
+            button->setProperty("overlay_asset", assetId);
+            if (assetId > 0 && m_loadedAssets.contains(assetId))
+                applyButtonAsset(button, m_loadedAssets.value(assetId));
             const QString service = destinationService(item);
             if (!service.isEmpty()) {
                 connect(button, &QPushButton::clicked, this, [this, service]() {
@@ -384,6 +394,19 @@ void OtterHomePage::buildOverlay(const QJsonArray &elements)
     }
 
     layoutOverlay();
+}
+
+void OtterHomePage::applyButtonAsset(QPushButton *button, const QImage &image)
+{
+    if (!button || image.isNull())
+        return;
+
+    button->setText(QString());
+    button->setIcon(QIcon(QPixmap::fromImage(image)));
+    button->setFlat(true);
+    button->setStyleSheet(QStringLiteral("QPushButton { border: none; padding: 0px; background: transparent; }"));
+    button->setProperty("overlay_graphical_button", true);
+    button->setIconSize(button->size());
 }
 
 void OtterHomePage::addImageElement(qint64 assetId, const QImage &image, const QJsonObject &item)
@@ -440,6 +463,9 @@ void OtterHomePage::layoutOverlay()
                 if (auto *label = qobject_cast<QLabel *>(widget))
                     label->setPixmap(pixmap);
             }
+        } else if (widget->property("overlay_graphical_button").toBool()) {
+            if (auto *button = qobject_cast<QPushButton *>(widget))
+                button->setIconSize(QSize(widgetWidth, widgetHeight));
         }
     }
 }
