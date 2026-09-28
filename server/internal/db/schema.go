@@ -119,6 +119,37 @@ CREATE TABLE IF NOT EXISTS events (
 CREATE INDEX IF NOT EXISTS idx_events_start_at ON events(start_at);
 CREATE INDEX IF NOT EXISTS idx_events_target ON events(target_type, target_id);
 
+CREATE TABLE IF NOT EXISTS news_sources (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    url TEXT NOT NULL UNIQUE,
+    category TEXT NOT NULL,
+    enabled INTEGER NOT NULL DEFAULT 1 CHECK (enabled IN (0,1)),
+    refresh_interval_minutes INTEGER NOT NULL DEFAULT 30,
+    last_fetched_at TEXT,
+    last_success_at TEXT,
+    last_error TEXT NOT NULL DEFAULT '',
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_news_sources_enabled ON news_sources(enabled);
+
+CREATE TABLE IF NOT EXISTS news_items (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    source_id INTEGER NOT NULL REFERENCES news_sources(id) ON DELETE CASCADE,
+    title TEXT NOT NULL,
+    author TEXT NOT NULL DEFAULT '',
+    published_at TEXT,
+    summary TEXT NOT NULL DEFAULT '',
+    url TEXT NOT NULL,
+    guid TEXT NOT NULL,
+    image_url TEXT NOT NULL DEFAULT '',
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(source_id, guid)
+);
+CREATE INDEX IF NOT EXISTS idx_news_items_source_published ON news_items(source_id, published_at DESC, id DESC);
+CREATE INDEX IF NOT EXISTS idx_news_items_published ON news_items(published_at DESC, id DESC);
+
 CREATE TABLE IF NOT EXISTS service_keywords (
     keyword TEXT PRIMARY KEY COLLATE NOCASE,
     display_name TEXT NOT NULL,
