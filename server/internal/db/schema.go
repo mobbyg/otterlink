@@ -133,6 +133,22 @@ CREATE TABLE IF NOT EXISTS service_keyword_targets (
     label TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_service_keyword_targets_keyword ON service_keyword_targets(keyword);
+
+CREATE TABLE IF NOT EXISTS content_screens (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    slug TEXT NOT NULL UNIQUE COLLATE NOCASE,
+    title TEXT NOT NULL,
+    published INTEGER NOT NULL DEFAULT 0 CHECK (published IN (0,1)),
+    start_at TEXT,
+    end_at TEXT,
+    priority INTEGER NOT NULL DEFAULT 0,
+    version INTEGER NOT NULL DEFAULT 1,
+    content_json TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_content_screens_slug_schedule
+    ON content_screens(slug, published, start_at, end_at, priority);
 `
 
 func Initialize(db *sql.DB) error {
