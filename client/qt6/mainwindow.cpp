@@ -187,6 +187,7 @@ MainWindow::MainWindow(QWidget *parent)
         m_connectionTimer.stop();
         m_connectionFinishTimer.stop();
         m_pendingBuddyGroups.clear();
+        m_homeScreenRequested = false;
         closeAllServiceWindows();
         setLoggedIn(false);
     });
@@ -621,10 +622,13 @@ void MainWindow::dashboardLoaded(const QStringList &buddies, const QStringList &
             .arg(onlineUsers.size())
             .arg(onlineUsers.size() == 1 ? QStringLiteral("user") : QStringLiteral("users")));
 
-    // Wait until the initial dashboard queries have completed before asking the
-    // single-connection SQLite server for the server-managed Home screen.
-    // This keeps the initial login burst from contending for the database.
-    m_client->loadHomeScreen();
+    // The dashboard is refreshed periodically. Only the initial dashboard load
+    // should fetch the server-managed Home screen; reloading it on every refresh
+    // causes the Home window to visibly blink.
+    if (!m_homeScreenRequested) {
+        m_homeScreenRequested = true;
+        m_client->loadHomeScreen();
+    }
 }
 
 void MainWindow::rebuildBuddyTree(const QStringList &buddies, const QStringList &onlineUsers)
