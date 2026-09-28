@@ -372,8 +372,8 @@ void OtterLinkClient::loadHomeScreen()
 
         for (const QJsonValue &value : content.value(QStringLiteral("elements")).toArray()) {
             const QJsonObject item = value.toObject();
-            if (item.value(QStringLiteral("type")).toString().trimmed().compare(
-                    QStringLiteral("image"), Qt::CaseInsensitive) == 0) {
+            const QString type = item.value(QStringLiteral("type")).toString().trimmed().toLower();
+            if (type == QStringLiteral("image") || type == QStringLiteral("button")) {
                 const qint64 assetID = item.value(QStringLiteral("asset")).toInteger();
                 if (assetID > 0)
                     imageIDs.insert(assetID);
