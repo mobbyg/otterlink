@@ -450,7 +450,27 @@ The PUT body contains slug, title, published, optional start_at/end_at RFC3339 v
 
 Screen version increments when an existing screen is saved. The version is intended to provide a stable cache/version signal as asset delivery and conditional HTTP caching are added.
 
-The current editor is the foundational screen-management slice. Visual asset upload, image hotspots, and richer destination editing are intentionally separate follow-on work.
+The current editor is the foundational screen-management slice. The server asset layer now provides persistent image storage and cacheable asset delivery; the visual asset picker/editor will be added on top of this API.
+
+## Content assets
+
+Authenticated clients can retrieve an image asset with:
+
+- GET /api/content/assets/{assetID}
+
+The response includes the stored image bytes and an ETag derived from the asset SHA-256 hash. Assets are cacheable for one year and clients may use If-None-Match to receive HTTP 304 Not Modified when unchanged.
+
+Supported upload types are PNG, JPEG, GIF, and WebP. The maximum upload size is 10 MB.
+
+Admin endpoints:
+
+- GET /api/admin/content/assets
+- POST /api/admin/content/assets
+- DELETE /api/admin/content/assets/{assetID}
+
+Uploads use multipart/form-data with the file field named asset. The server stores the binary asset outside the database and keeps only metadata in SQLite. The storage directory defaults to data/assets and can be changed with OTTERLINK_ASSET_ROOT.
+
+Asset IDs and hashes are stable references for the content system. The next editor slice will allow screen JSON to reference these assets and will add administrator-facing upload/selection controls.
 
 ## Administration API
 
