@@ -395,6 +395,8 @@ void OtterHomePage::buildOverlay(const QJsonArray &elements)
             auto *label = new QLabel(text, m_overlay);
             label->setWordWrap(true);
             label->setAlignment(Qt::AlignLeft | Qt::AlignTop);
+            label->setAttribute(Qt::WA_TranslucentBackground);
+            label->setStyleSheet(QStringLiteral("QLabel { background: transparent; }"));
             widget = label;
         } else if (type == QStringLiteral("image")) {
             const qint64 assetId = item.value(QStringLiteral("asset")).toInteger();
