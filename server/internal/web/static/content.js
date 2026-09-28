@@ -5,6 +5,7 @@ let assets = [];
 let editorContent = null;
 let editorSelectedIndex = -1;
 let editorDrag = null;
+let editorButtonColor = '#efa00b';
 
 async function request(path, options = {}) {
   const headers = {
@@ -18,6 +19,15 @@ async function request(path, options = {}) {
 }
 
 function showError(message) { $('content-error').textContent = message || ''; }
+
+function formatBytes(bytes) {
+  const value = Number(bytes);
+  if (!Number.isFinite(value) || value < 0) return '—';
+  if (value < 1024) return value + ' B';
+  if (value < 1024 * 1024) return (value / 1024).toFixed(1) + ' KB';
+  if (value < 1024 * 1024 * 1024) return (value / (1024 * 1024)).toFixed(1) + ' MB';
+  return (value / (1024 * 1024 * 1024)).toFixed(1) + ' GB';
+}
 
 function formatSchedule(screen) {
   if (!screen.start_at && !screen.end_at) return 'Permanent';
@@ -585,6 +595,11 @@ function updateInspector() {
   $('editor-asset').disabled = type === 'text';
   $('editor-fit').disabled = type === 'text';
   $('editor-service').disabled = type !== 'button';
+  $('editor-button-background').value = item.background || '#efa00b';
+  $('editor-button-color').value = item.color || '#591f0a';
+  const graphical = Number(item.asset || 0) > 0;
+  $('editor-button-background').disabled = type !== 'button' || graphical;
+  $('editor-button-color').disabled = type !== 'button' || graphical;
 }
 
 function updateSelectedProperty(property, value) {
@@ -739,6 +754,8 @@ $('editor-width').addEventListener('change', (event) => updateSelectedProperty('
 $('editor-height').addEventListener('change', (event) => updateSelectedProperty('height', event.target.value));
 $('editor-fit').addEventListener('change', (event) => updateSelectedProperty('fit', event.target.value === 'cover' ? 'cover' : 'contain'));
 $('editor-service').addEventListener('change', (event) => updateSelectedService(event.target.value));
+$('editor-button-background').addEventListener('input', (event) => updateSelectedProperty('background', event.target.value));
+$('editor-button-color').addEventListener('input', (event) => updateSelectedProperty('color', event.target.value));
 $('visual-editor-canvas').addEventListener('pointermove', handleEditorPointerMove);
 $('visual-editor-canvas').addEventListener('pointerup', endEditorDrag);
 $('visual-editor-canvas').addEventListener('pointercancel', endEditorDrag);
