@@ -61,6 +61,13 @@ OtterHomePage::OtterHomePage(QWidget *parent)
 
     m_page = new QWidget;
     m_page->setObjectName(QStringLiteral("homeContent"));
+
+    m_backgroundLayer = new QLabel(m_page);
+    m_backgroundLayer->setObjectName(QStringLiteral("homeBackgroundLayer"));
+    m_backgroundLayer->setAlignment(Qt::AlignCenter);
+    m_backgroundLayer->setAttribute(Qt::WA_TransparentForMouseEvents);
+    m_backgroundLayer->lower();
+
     m_layout = new QVBoxLayout(m_page);
     m_layout->setContentsMargins(16, 16, 16, 16);
     m_layout->setSpacing(12);
@@ -72,6 +79,8 @@ OtterHomePage::OtterHomePage(QWidget *parent)
 void OtterHomePage::clearPage()
 {
     m_overlay = nullptr;
+    if (m_backgroundLayer)
+        m_backgroundLayer->lower();
     if (!m_layout)
         return;
 
@@ -121,6 +130,8 @@ void OtterHomePage::setServerScreen(const QJsonObject &screen, const QImage &bac
         return;
 
     m_background = background.isNull() ? QPixmap() : QPixmap::fromImage(background);
+    if (m_backgroundLayer)
+        m_backgroundLayer->setPixmap(m_background);
     m_templateMode = !content.value(QStringLiteral("elements")).toArray().isEmpty();
 
     // The screen title is server-managed metadata. Keep the JSON content as the
@@ -140,21 +151,25 @@ void OtterHomePage::setServerScreen(const QJsonObject &screen, const QImage &bac
 
 void OtterHomePage::applyBackground(const QPixmap &background)
 {
-    if (background.isNull() || !m_page)
+    if (!m_page || !m_backgroundLayer)
         return;
 
-    const QSize targetSize = m_page->size().expandedTo(size());
+    const QSize targetSize = m_page->size();
     if (targetSize.isEmpty())
         return;
+
+    m_backgroundLayer->setGeometry(m_page->rect());
+    if (background.isNull()) {
+        m_backgroundLayer->clear();
+        return;
+    }
 
     const Qt::AspectRatioMode mode = m_templateMode
         ? Qt::KeepAspectRatio
         : Qt::KeepAspectRatioByExpanding;
     const QPixmap scaled = background.scaled(targetSize, mode, Qt::SmoothTransformation);
-    QPalette palette = m_page->palette();
-    palette.setBrush(QPalette::Window, QBrush(scaled));
-    m_page->setAutoFillBackground(true);
-    m_page->setPalette(palette);
+    m_backgroundLayer->setPixmap(scaled);
+    m_backgroundLayer->lower();
 }
 
 void OtterHomePage::resizeEvent(QResizeEvent *event)
