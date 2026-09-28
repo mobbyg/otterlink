@@ -12,6 +12,7 @@
 #include <QLabel>
 #include <QPushButton>
 #include <QScrollArea>
+#include <QVariant>
 #include <QSizePolicy>
 #include <QVBoxLayout>
 
@@ -69,6 +70,7 @@ OtterHomePage::OtterHomePage(QWidget *parent)
 
 void OtterHomePage::clearPage()
 {
+    m_overlay = nullptr;
     if (!m_layout)
         return;
 
@@ -128,6 +130,7 @@ void OtterHomePage::resizeEvent(QResizeEvent *event)
 {
     QWidget::resizeEvent(event);
     applyBackground(m_background);
+    layoutOverlay();
 }
 
 void OtterHomePage::buildFallback()
@@ -172,6 +175,12 @@ void OtterHomePage::buildFallback()
 
 void OtterHomePage::buildFromContent(const QJsonObject &content)
 {
+    const QJsonArray elements = content.value(QStringLiteral("elements")).toArray();
+    if (!elements.isEmpty()) {
+        buildOverlay(elements);
+        return;
+    }
+
     const QJsonObject heroData = content.value(QStringLiteral("hero")).toObject();
     auto *hero = new QFrame(m_page);
     hero->setObjectName(QStringLiteral("homeHero"));
@@ -298,4 +307,67 @@ void OtterHomePage::addServiceTile(const QString &title, const QString &descript
     const int row = index / 2;
     const int column = index % 2;
     grid->addWidget(tile, row, column);
+}
+
+void OtterHomePage::buildOverlay(const QJsonArray &elements)
+{
+    m_overlay = new QWidget(m_page);
+    m_overlay->setObjectName(QStringLiteral("homeOverlay"));
+    m_overlay->setAttribute(Qt::WA_TranslucentBackground);
+    m_overlay->setMinimumSize(640, 360);
+    m_overlay->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    m_layout->addWidget(m_overlay, 1);
+
+    for (const QJsonValue &value : elements) {
+        const QJsonObject item = value.toObject();
+        const QString type = item.value(QStringLiteral("type")).toString().trimmed().toLower();
+        const QString text = item.value(QStringLiteral("text")).toString();
+        QWidget *widget = nullptr;
+
+        if (type == QStringLiteral("button")) {
+            auto *button = new QPushButton(text, m_overlay);
+            const QString service = destinationService(item);
+            if (!service.isEmpty()) {
+                connect(button, &QPushButton::clicked, this, [this, service]() {
+                    emit serviceRequested(service);
+                });
+            } else {
+                button->setEnabled(false);
+            }
+            widget = button;
+        } else if (type == QStringLiteral("text")) {
+            auto *label = new QLabel(text, m_overlay);
+            label->setWordWrap(true);
+            label->setAlignment(Qt::AlignLeft | Qt::AlignTop);
+            widget = label;
+        }
+
+        if (!widget)
+            continue;
+
+        widget->setProperty("overlay_x", item.value(QStringLiteral("x")).toDouble(0.0));
+        widget->setProperty("overlay_y", item.value(QStringLiteral("y")).toDouble(0.0));
+        widget->setProperty("overlay_width", item.value(QStringLiteral("width")).toDouble(type == QStringLiteral("button") ? 0.22 : 0.30));
+        widget->setProperty("overlay_height", item.value(QStringLiteral("height")).toDouble(type == QStringLiteral("button") ? 0.09 : 0.12));
+        widget->show();
+    }
+
+    layoutOverlay();
+}
+
+void OtterHomePage::layoutOverlay()
+{
+    if (!m_overlay)
+        return;
+
+    const int width = m_overlay->width();
+    const int height = m_overlay->height();
+    for (QWidget *widget : m_overlay->findChildren<QWidget *>(QString(), Qt::FindDirectChildrenOnly)) {
+        const double x = qBound(0.0, widget->property("overlay_x").toDouble(), 1.0);
+        const double y = qBound(0.0, widget->property("overlay_y").toDouble(), 1.0);
+        const double w = qBound(0.01, widget->property("overlay_width").toDouble(), 1.0);
+        const double h = qBound(0.01, widget->property("overlay_height").toDouble(), 1.0);
+        widget->setGeometry(qRound(x * width), qRound(y * height),
+                            qMax(1, qRound(w * width)), qMax(1, qRound(h * height)));
+    }
 }
