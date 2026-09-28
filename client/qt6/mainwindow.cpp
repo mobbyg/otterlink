@@ -7,6 +7,7 @@
 #include "otterpeoplewidget.h"
 #include "otterdmwidget.h"
 #include "ottereventswidget.h"
+#include "otternewswidget.h"
 #include "ui_mainwindow.h"
 
 #include <QComboBox>
@@ -394,6 +395,9 @@ void MainWindow::navigateService()
     } else if (button == ui->eventsButton) {
         auto *page = new OtterEventsWidget(m_client, m_desktop);
         openServiceWindow(QStringLiteral("events"), QStringLiteral("Events"), page);
+    } else if (button == ui->newsButton) {
+        auto *page = new OtterNewsWidget(m_client, m_desktop);
+        openServiceWindow(QStringLiteral("news"), QStringLiteral("News"), page);
     } else {
         QString title;
         if (button == ui->mailButton)
@@ -528,6 +532,8 @@ void MainWindow::updateServiceButtonStates(OtterServiceWindow *activeWindow)
         activeButton = ui->peopleButton;
     else if (activeService == QStringLiteral("chat"))
         activeButton = ui->chatButton;
+    else if (activeService == QStringLiteral("news"))
+        activeButton = ui->newsButton;
 
     setActiveServiceButton(activeButton, {
         ui->homeButton, ui->peopleButton, ui->mailButton, ui->chatButton,
