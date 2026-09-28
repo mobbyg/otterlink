@@ -149,6 +149,17 @@ CREATE TABLE IF NOT EXISTS content_screens (
 );
 CREATE INDEX IF NOT EXISTS idx_content_screens_slug_schedule
     ON content_screens(slug, published, start_at, end_at, priority);
+
+CREATE TABLE IF NOT EXISTS content_assets (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    mime TEXT NOT NULL,
+    size INTEGER NOT NULL,
+    sha256 TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_content_assets_sha256 ON content_assets(sha256);
 `
 
 func Initialize(db *sql.DB) error {
