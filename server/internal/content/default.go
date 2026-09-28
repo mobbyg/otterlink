@@ -18,9 +18,7 @@ func EnsureDefaultHome(db *sql.DB) error {
 		"hero": map[string]any{
 			"title": "Welcome to Otter Link",
 			"body": "Your online world for modern and retro computers. See what's new, meet other Otters, and explore the services available to you.",
-			"icon": "/\\_/\\
-( o.o )
- > ^ <",
+			"icon": "/\\\\_/\\\\\n( o.o )\\n > ^ <",
 		},
 		"announcements": []any{
 			map[string]any{
