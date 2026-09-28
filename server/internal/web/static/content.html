@@ -90,12 +90,15 @@
                   <button id="add-image" type="button">+ Image</button>
                   <button id="add-button" type="button">+ Button</button>
                 </div>
-                <label>Background
-                  <select id="editor-background-asset"></select>
-                </label>
-                <label>Background fit
-                  <select id="editor-background-fit"><option value="cover">Cover</option><option value="contain">Contain</option></select>
-                </label>
+                <section class="editor-background-controls">
+                  <div class="editor-section-label">CANVAS BACKGROUND</div>
+                  <label>Artwork
+                    <select id="editor-background-asset"></select>
+                  </label>
+                  <label>Background fit
+                    <select id="editor-background-fit"><option value="cover">Cover</option><option value="contain">Contain</option></select>
+                  </label>
+                </section>
                 <div class="editor-divider"></div>
                 <div id="editor-no-selection" class="status">Select an element to edit it.</div>
                 <div id="editor-properties" class="hidden">
