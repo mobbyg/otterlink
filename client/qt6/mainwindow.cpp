@@ -192,6 +192,7 @@ MainWindow::MainWindow(QWidget *parent)
     });
     connect(m_client, &OtterLinkClient::errorOccurred, this, &MainWindow::showError);
     connect(m_client, &OtterLinkClient::keywordResolved, this, &MainWindow::keywordResolved);
+    connect(m_client, &OtterLinkClient::homeScreenLoaded, m_homePage, &OtterHomePage::setServerScreen);
 
     auto *fileMenu = menuBar()->addMenu(QStringLiteral("File"));
     auto *awayAction = fileMenu->addAction(QStringLiteral("Away / AFK"));
@@ -570,6 +571,7 @@ void MainWindow::showDashboard(const QString &displayName)
         QStringLiteral("Connected as <b>%1</b>").arg(displayName.toHtmlEscaped()));
     setLoggedIn(true);
     m_client->loadDashboard();
+    m_client->loadHomeScreen();
     m_refreshTimer.start();
 
     // Start with the desktop itself as the home state. Home remains available from the bar.
