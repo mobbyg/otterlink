@@ -134,7 +134,7 @@ async function deleteScreen(screen) {
 
 function showAssetError(message) { $('asset-error').textContent = message || ''; }
 
-function previewScreen() {
+async function previewScreen() {
   showError('');
   let content;
   try {
@@ -151,6 +151,14 @@ function previewScreen() {
 function renderPreview(content) {
   const canvas = $('screen-preview-canvas');
   canvas.innerHTML = '';
+  canvas.style.backgroundImage = '';
+  canvas.style.backgroundSize = '';
+  canvas.style.backgroundPosition = '';
+  const background = content.background || {};
+  const assetID = Number(background.asset || 0);
+  if (assetID > 0) {
+    loadPreviewBackground(assetID, canvas, background.fit || 'cover');
+  }
   const hero = content.hero || {};
   const heroEl = document.createElement('section');
   heroEl.className = 'preview-hero';
@@ -226,6 +234,23 @@ function renderPreview(content) {
     footer.className = 'preview-footer';
     footer.textContent = content.footer;
     canvas.appendChild(footer);
+  }
+}
+
+async function loadPreviewBackground(assetID, canvas, fit) {
+  try {
+    const response = await fetch('/api/content/assets/' + assetID, {
+      headers: token ? { Authorization: 'Bearer ' + token } : {}
+    });
+    if (!response.ok) throw new Error('Unable to load background asset');
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    canvas.style.backgroundImage = 'url("' + url + '")';
+    canvas.style.backgroundSize = fit === 'contain' ? 'contain' : 'cover';
+    canvas.style.backgroundPosition = 'center';
+    canvas.style.backgroundRepeat = 'no-repeat';
+  } catch (error) {
+    showError(error.message || String(error));
   }
 }
 
