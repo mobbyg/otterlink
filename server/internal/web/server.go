@@ -9,6 +9,7 @@ import (
 	"github.com/mobbyg/otterlink/server/internal/accounts"
 	"github.com/mobbyg/otterlink/server/internal/buddies"
 	"github.com/mobbyg/otterlink/server/internal/chat"
+	"github.com/mobbyg/otterlink/server/internal/content"
 	"github.com/mobbyg/otterlink/server/internal/dm"
 	"github.com/mobbyg/otterlink/server/internal/events"
 	"github.com/mobbyg/otterlink/server/internal/keywords"
@@ -26,12 +27,14 @@ type Server struct {
 	DM       dm.Service
 	Events   events.Service
 	Keywords keywords.Service
+	Content  content.Service
 }
 
 func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /", s.index)
 	mux.HandleFunc("GET /admin", s.adminIndex)
+	mux.HandleFunc("GET /admin/content", s.adminContentIndex)
 	mux.HandleFunc("GET /static/", s.static)
 	mux.HandleFunc("GET /api/presence", s.presenceList)
 	mux.HandleFunc("POST /api/presence/away", s.presenceAway)
@@ -43,6 +46,8 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /api/messages/read", s.messageRead)
 	mux.HandleFunc("GET /api/messages/unread", s.messageUnread)
 	mux.HandleFunc("GET /api/events", s.eventList)
+	mux.HandleFunc("GET /api/content/home", s.contentHome)
+	mux.HandleFunc("GET /api/content/screens/{screenID}", s.contentScreen)
 	mux.HandleFunc("GET /api/keywords/{keyword}", s.keywordResolve)
 	mux.HandleFunc("POST /api/events", s.eventCreate)
 	mux.HandleFunc("PATCH /api/events/{eventID}", s.eventUpdate)
@@ -74,6 +79,9 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("DELETE /api/admin/chat/channels/{channelID}", s.adminChatChannelDelete)
 	mux.HandleFunc("POST /api/admin/chat/channels/{channelID}/users/{username}/role", s.adminChatChannelRole)
 	mux.HandleFunc("GET /api/admin/events", s.adminEvents)
+	mux.HandleFunc("GET /api/admin/content/screens", s.adminContentScreens)
+	mux.HandleFunc("PUT /api/admin/content/screens", s.adminContentSave)
+	mux.HandleFunc("DELETE /api/admin/content/screens/{screenID}", s.adminContentDelete)
 	mux.HandleFunc("GET /api/admin/keywords", s.adminKeywords)
 	mux.HandleFunc("PUT /api/admin/keywords/{keyword}", s.adminKeywordUpsert)
 	mux.HandleFunc("DELETE /api/admin/keywords/{keyword}", s.adminKeywordDelete)
