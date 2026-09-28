@@ -97,6 +97,15 @@ void OtterHomePage::setServerScreen(const QJsonObject &screen)
     setServerScreen(screen, QImage());
 }
 
+void OtterHomePage::setServerBackground(const QImage &background)
+{
+    if (background.isNull())
+        return;
+
+    m_background = QPixmap::fromImage(background);
+    applyBackground(m_background);
+}
+
 void OtterHomePage::setServerAsset(qint64 assetId, const QImage &image)
 {
     if (assetId < 1 || image.isNull())
@@ -130,6 +139,7 @@ void OtterHomePage::setServerScreen(const QJsonObject &screen, const QImage &bac
     if (content.isEmpty())
         return;
 
+    m_serverScreen = screen;
     m_background = background.isNull() ? QPixmap() : QPixmap::fromImage(background);
     const QJsonObject backgroundData = content.value(QStringLiteral("background")).toObject();
     m_backgroundFit = backgroundData.value(QStringLiteral("fit")).toString(QStringLiteral("cover")).trimmed().toLower();
@@ -149,6 +159,9 @@ void OtterHomePage::setServerScreen(const QJsonObject &screen, const QImage &bac
         content.insert(QStringLiteral("hero"), hero);
     }
 
+    // Build the server-managed layout only when the screen itself changes.
+    // The background arrives separately and must not cause the overlay widgets
+    // to be destroyed and recreated on top of one another.
     clearPage();
     buildFromContent(content);
     applyBackground(m_background);
@@ -402,6 +415,8 @@ void OtterHomePage::buildOverlay(const QJsonArray &elements)
         } else if (type == QStringLiteral("text")) {
             auto *label = new QLabel(text, m_overlay);
             label->setWordWrap(true);
+            label->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Ignored);
+            label->setTextInteractionFlags(Qt::NoTextInteraction);
             label->setAttribute(Qt::WA_TranslucentBackground);
             label->setStyleSheet(QStringLiteral("QLabel { background: transparent; }"));
 
@@ -501,6 +516,9 @@ void OtterHomePage::layoutOverlay()
         const int widgetWidth = qMax(1, qRound(w * width));
         const int widgetHeight = qMax(1, qRound(h * height));
         widget->setGeometry(qRound(x * width), qRound(y * height), widgetWidth, widgetHeight);
+        // Overlay children are deliberately clipped to their stored bounding box.
+        // The editor owns the position/size; the client must not let text or
+        // graphical assets paint outside that rectangle.
 
         if (auto *label = qobject_cast<QLabel *>(widget); label && widget->property("overlay_font_size").isValid()) {
             QFont font = label->font();
