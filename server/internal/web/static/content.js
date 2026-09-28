@@ -490,6 +490,12 @@ function renderVisualEditor() {
       visual.textContent = item.text || 'Text';
       visual.style.whiteSpace = 'pre-wrap';
       visual.style.overflow = 'hidden';
+      visual.style.color = item.color || '#ffffff';
+      visual.style.fontSize = Math.max(8, Math.min(200, Number(item.font_size) || 32)) + 'px';
+      visual.style.fontWeight = String(item.weight || 700);
+      visual.style.textAlign = item.align || 'left';
+      visual.style.lineHeight = '1.1';
+      visual.style.padding = '6px';
     } else {
       const assetID = Number(item.asset || 0);
       if (assetID > 0) {
@@ -516,6 +522,14 @@ function renderVisualEditor() {
       event.stopPropagation();
       selectEditorElement(index);
     });
+    if (index === editorSelectedIndex) {
+      const handle = document.createElement('div');
+      handle.className = 'editor-resize-handle';
+      handle.title = 'Drag to resize';
+      handle.setAttribute('aria-label', 'Resize element');
+      handle.addEventListener('pointerdown', (event) => beginEditorResize(event, index));
+      wrapper.appendChild(handle);
+    }
     canvas.appendChild(wrapper);
   });
 
@@ -750,6 +764,10 @@ $('editor-background-fit').addEventListener('change', (event) => {
   renderVisualEditor();
 });
 $('editor-text').addEventListener('input', (event) => updateSelectedProperty('text', event.target.value));
+$('editor-font-size').addEventListener('change', (event) => updateSelectedProperty('font_size', Math.max(8, Math.min(200, Number(event.target.value) || 32))));
+$('editor-text-color').addEventListener('input', (event) => updateSelectedProperty('color', event.target.value));
+$('editor-text-align').addEventListener('change', (event) => updateSelectedProperty('align', event.target.value));
+$('editor-font-weight').addEventListener('change', (event) => updateSelectedProperty('weight', Number(event.target.value || 700)));
 $('editor-asset').addEventListener('change', (event) => updateSelectedProperty('asset', Number(event.target.value || 0)));
 $('editor-x').addEventListener('change', (event) => updateSelectedProperty('x', event.target.value));
 $('editor-y').addEventListener('change', (event) => updateSelectedProperty('y', event.target.value));
