@@ -128,3 +128,59 @@ footer { text-align:center; color:#78909e; font-size:.75rem; padding:24px; }
   .visual-editor-dialog { width:calc(100% - 16px); }
   .editor-canvas { min-width:560px; }
 }
+
+.editor-background-controls {
+  padding: 12px;
+  border: 1px solid var(--golden-orange);
+  border-radius: 9px;
+  background: #132631;
+}
+.editor-section-label {
+  color: var(--golden-orange);
+  font-size: .72rem;
+  font-weight: 800;
+  letter-spacing: .1em;
+  margin-bottom: 8px;
+}
+.editor-canvas-help {
+  margin: 0 0 10px;
+  color: var(--text-muted);
+  font-size: .78rem;
+}
+.editor-asset-preview {
+  min-height: 84px;
+  margin-top: 8px;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  background: #101c24;
+  color: var(--text-muted);
+  font-size: .76rem;
+}
+.editor-asset-thumb {
+  display: block;
+  width: 120px;
+  height: 64px;
+  object-fit: contain;
+  flex: 0 0 120px;
+  background: #0c151c;
+  border-radius: 5px;
+}
+.editor-resize-handle {
+  position: absolute;
+  right: -1px;
+  bottom: -1px;
+  width: 14px;
+  height: 14px;
+  border-radius: 3px 0 0 0;
+  background: var(--golden-orange);
+  border: 2px solid #11202a;
+  cursor: nwse-resize;
+  z-index: 8;
+}
+.editor-element.selected {
+  overflow: visible;
+}
