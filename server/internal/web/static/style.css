@@ -97,3 +97,6 @@ footer { text-align:center; color:#78909e; font-size:.75rem; padding:24px; }
 .preview-service { min-width:0; padding:10px; border:1px solid var(--card-border); border-radius:8px; background:#11202a; }
 .preview-footer { margin-top:14px; text-align:center; color:var(--text-muted); font-size:.8rem; }
 @media (max-width:700px) { .screen-preview-dialog { width:calc(100% - 16px); max-height:calc(100vh - 16px); margin:8px auto; padding:16px; } .screen-preview-canvas { padding:12px; } .preview-hero { flex-direction:column; align-items:stretch; } .preview-hero-icon { flex-basis:auto; } .preview-services { grid-template-columns:1fr; } }
+
+.screen-preview-canvas.template-preview { aspect-ratio:16 / 9; padding:0; background-color:#0c151c; }
+.screen-preview-canvas.template-preview > button { border:1px solid var(--card-border); border-radius:8px; }
