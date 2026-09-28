@@ -33,7 +33,9 @@
           </table>
         </div>
 
-        <aside id="screen-panel" class="admin-detail hidden">
+        <div id="screen-panel" class="screen-modal hidden" role="dialog" aria-modal="true" aria-labelledby="screen-detail-title">
+          <div class="screen-modal-backdrop"></div>
+          <div class="screen-modal-dialog">
           <div class="section-title">
             <div><small>SCREEN</small><h2 id="screen-detail-title">New Screen</h2></div>
             <button id="close-screen" class="secondary">Close</button>
@@ -52,7 +54,8 @@
             <button id="delete-screen" class="danger">Delete Screen</button>
           </div>
           <p class="status">Scheduling is evaluated by the server. A published screen with no dates is permanent.</p>
-        </aside>
+          </div>
+        </div>
       </div>
     </section>
     <footer>Otter Link content • development UI</footer>
