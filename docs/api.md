@@ -428,6 +428,30 @@ Returns HTTP `204 No Content`.
 
 Events are currently limited to dates no more than two years ahead.
 
+## Content screens
+
+Authenticated clients can retrieve the currently active Home screen with GET /api/content/home. The server evaluates publication and start/end scheduling. A published screen with no dates is permanent; clients do not implement scheduling rules themselves.
+
+A screen response contains metadata plus structured JSON content. The current Qt6 renderer understands hero, announcements, services, and footer blocks. The content format is intentionally structured rather than arbitrary HTML, CSS, or JavaScript. Unknown fields may be ignored by clients.
+
+Individual published or future screens can be retrieved with GET /api/content/screens/{screenID}. Draft/unpublished screens are not exposed through client content endpoints.
+
+### Content administration
+
+The dedicated content editor is available at /admin/content.
+
+Admin endpoints:
+
+- GET /api/admin/content/screens
+- PUT /api/admin/content/screens
+- DELETE /api/admin/content/screens/{screenID}
+
+The PUT body contains slug, title, published, optional start_at/end_at RFC3339 values, priority, and a structured content JSON object.
+
+Screen version increments when an existing screen is saved. The version is intended to provide a stable cache/version signal as asset delivery and conditional HTTP caching are added.
+
+The current editor is the foundational screen-management slice. Visual asset upload, image hotspots, and richer destination editing are intentionally separate follow-on work.
+
 ## Administration API
 
 Administration endpoints require an authenticated account with the `admin` role. The Qt client does not expose these functions.
