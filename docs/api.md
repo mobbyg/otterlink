@@ -487,7 +487,7 @@ The `asset` value is the asset ID returned by the admin asset endpoint. Supporte
 
 A screen may provide an `elements` array when the background artwork is intended to act as a graphical template. Element positions and sizes use normalized values from `0.0` to `1.0`, measured from the top-left of the screen. This keeps a design independent of the client window's pixel dimensions.
 
-The first overlay slice supports `text` and `button` elements. Buttons can use the existing service destination format and emit the corresponding client service action when clicked.
+The overlay supports `text`, `button`, and `image` elements. Buttons can use the existing service destination format and emit the corresponding client service action when clicked. Image elements reference uploaded assets by ID and support `contain` (default) or `cover` fitting.
 
 Example for a 1280×720 artwork:
 
