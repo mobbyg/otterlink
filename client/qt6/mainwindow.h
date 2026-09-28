@@ -74,5 +74,6 @@ private:
     int m_connectionStage = 0;
     int m_nextWindowOffset = 0;
     bool m_connectionReady = false;
+    bool m_homeScreenRequested = false;
     QString m_connectionDisplayName;
 };
