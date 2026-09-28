@@ -1,6 +1,8 @@
 #include "otterhomepage.h"
 
 #include <QFont>
+#include <QPalette>
+#include <QResizeEvent>
 #include <QFrame>
 #include <QGridLayout>
 #include <QGroupBox>
@@ -79,9 +81,16 @@ void OtterHomePage::clearPage()
 
 void OtterHomePage::setServerScreen(const QJsonObject &screen)
 {
+    setServerScreen(screen, QImage());
+}
+
+void OtterHomePage::setServerScreen(const QJsonObject &screen, const QImage &background)
+{
     QJsonObject content = screen.value(QStringLiteral("content")).toObject();
     if (content.isEmpty())
         return;
+
+    m_background = background.isNull() ? QPixmap() : QPixmap::fromImage(background);
 
     // The screen title is server-managed metadata. Keep the JSON content as the
     // source for the rest of the page, but let the screen title control the
@@ -95,6 +104,30 @@ void OtterHomePage::setServerScreen(const QJsonObject &screen)
 
     clearPage();
     buildFromContent(content);
+    applyBackground(m_background);
+}
+
+void OtterHomePage::applyBackground(const QPixmap &background)
+{
+    if (background.isNull() || !m_page)
+        return;
+
+    const QSize targetSize = m_page->size().expandedTo(size());
+    if (targetSize.isEmpty())
+        return;
+
+    const QPixmap scaled = background.scaled(targetSize, Qt::KeepAspectRatioByExpanding,
+                                             Qt::SmoothTransformation);
+    QPalette palette = m_page->palette();
+    palette.setBrush(QPalette::Window, QBrush(scaled));
+    m_page->setAutoFillBackground(true);
+    m_page->setPalette(palette);
+}
+
+void OtterHomePage::resizeEvent(QResizeEvent *event)
+{
+    QWidget::resizeEvent(event);
+    applyBackground(m_background);
 }
 
 void OtterHomePage::buildFallback()
