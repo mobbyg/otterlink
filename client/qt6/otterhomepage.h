@@ -7,6 +7,7 @@
 #include <QHash>
 
 class QJsonArray;
+class QPushButton;
 class QScrollArea;
 class QVBoxLayout;
 
@@ -39,6 +40,7 @@ private:
     void buildOverlay(const QJsonArray &elements);
     void layoutOverlay();
     void addImageElement(qint64 assetId, const QImage &image, const QJsonObject &item);
+    void applyButtonAsset(QPushButton *button, const QImage &image);
 
     QScrollArea *m_scrollArea = nullptr;
     QWidget *m_page = nullptr;
