@@ -41,5 +41,6 @@ private:
     QWidget *m_page = nullptr;
     QVBoxLayout *m_layout = nullptr;
     QPixmap m_background;
+    bool m_templateMode = false;
     QWidget *m_overlay = nullptr;
 };
