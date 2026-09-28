@@ -118,6 +118,21 @@ CREATE TABLE IF NOT EXISTS events (
 );
 CREATE INDEX IF NOT EXISTS idx_events_start_at ON events(start_at);
 CREATE INDEX IF NOT EXISTS idx_events_target ON events(target_type, target_id);
+
+CREATE TABLE IF NOT EXISTS service_keywords (
+    keyword TEXT PRIMARY KEY COLLATE NOCASE,
+    display_name TEXT NOT NULL,
+    description TEXT NOT NULL DEFAULT ''
+);
+
+CREATE TABLE IF NOT EXISTS service_keyword_targets (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    keyword TEXT NOT NULL REFERENCES service_keywords(keyword) ON DELETE CASCADE,
+    target_type TEXT NOT NULL CHECK (target_type IN ('chat', 'bulletin', 'event')),
+    target_id INTEGER NOT NULL,
+    label TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_service_keyword_targets_keyword ON service_keyword_targets(keyword);
 `
 
 func Initialize(db *sql.DB) error {

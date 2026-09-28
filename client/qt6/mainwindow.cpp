@@ -2,6 +2,8 @@
 #include "otterhomepage.h"
 #include "otterlinkclient.h"
 #include "otterservicewindow.h"
+#include "otterkeywordwidget.h"
+#include "otterchatwidget.h"
 #include "otterpeoplewidget.h"
 #include "otterdmwidget.h"
 #include "ottereventswidget.h"
@@ -17,6 +19,7 @@
 #include <QLabel>
 #include <QLineEdit>
 #include <QMessageBox>
+#include <QInputDialog>
 #include <QMenu>
 #include <QMenuBar>
 #include <QAction>
@@ -188,6 +191,7 @@ MainWindow::MainWindow(QWidget *parent)
         setLoggedIn(false);
     });
     connect(m_client, &OtterLinkClient::errorOccurred, this, &MainWindow::showError);
+    connect(m_client, &OtterLinkClient::keywordResolved, this, &MainWindow::keywordResolved);
 
     auto *fileMenu = menuBar()->addMenu(QStringLiteral("File"));
     auto *awayAction = fileMenu->addAction(QStringLiteral("Away / AFK"));
@@ -205,7 +209,10 @@ MainWindow::MainWindow(QWidget *parent)
         }
     });
     menuBar()->addMenu(QStringLiteral("Edit"));
-    menuBar()->addMenu(QStringLiteral("Service"));
+    auto *serviceMenu = menuBar()->addMenu(QStringLiteral("Service"));
+    auto *keywordAction = serviceMenu->addAction(QStringLiteral("Enter Keyword..."));
+    keywordAction->setShortcut(QKeySequence(QStringLiteral("Ctrl+K")));
+    connect(keywordAction, &QAction::triggered, this, &MainWindow::enterKeyword);
     menuBar()->addMenu(QStringLiteral("Help"));
 
 }
@@ -318,6 +325,41 @@ void MainWindow::removeBuddy()
         == QMessageBox::Yes) {
         m_buddyGroups.remove(username);
         m_client->removeBuddy(username);
+    }
+}
+
+
+void MainWindow::enterKeyword()
+{
+    bool ok = false;
+    const QString keyword = QInputDialog::getText(this, QStringLiteral("Enter Keyword"),
+                                                   QStringLiteral("Keyword:"), QLineEdit::Normal,
+                                                   QString(), &ok).trimmed();
+    if (ok && !keyword.isEmpty())
+        m_client->resolveKeyword(keyword);
+}
+
+void MainWindow::keywordResolved(const QJsonObject &keyword)
+{
+    const QString key = keyword.value(QStringLiteral("keyword")).toString().trimmed().toUpper();
+    if (key.isEmpty()) return;
+    auto *page = new OtterKeywordWidget(keyword, m_desktop);
+    const QString serviceKey = QStringLiteral("keyword:%1").arg(key.toLower());
+    auto *window = page;
+    connect(page, &OtterKeywordWidget::serviceRequested, this, &MainWindow::openKeywordTarget);
+    openServiceWindow(serviceKey, keyword.value(QStringLiteral("display_name")).toString(key), window);
+}
+
+void MainWindow::openKeywordTarget(const QString &type, qint64 id)
+{
+    if (type == QStringLiteral("chat")) {
+        ui->chatButton->click();
+        auto *chat = findChild<OtterChatWidget *>();
+        if (chat) chat->openChannel(id);
+    } else if (type == QStringLiteral("event")) {
+        ui->eventsButton->click();
+    } else if (type == QStringLiteral("bulletin")) {
+        ui->boardsButton->click();
     }
 }
 

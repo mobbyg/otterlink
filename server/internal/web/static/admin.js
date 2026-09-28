@@ -15,6 +15,134 @@ async function request(path, options = {}) {
 }
 
 
+let selectedKeyword = '';
+
+function showKeywordError(message) { $('keyword-error').textContent = message || ''; }
+
+async function refreshKeywordTargets() {
+  try {
+    const channels = await request('/api/admin/chat/channels');
+    const chat = $('keyword-chat');
+    const currentChat = chat.value;
+    chat.innerHTML = '<option value="">None</option>';
+    for (const channel of channels.channels || []) {
+      const option = document.createElement('option');
+      option.value = channel.id;
+      option.textContent = channel.name;
+      chat.appendChild(option);
+    }
+    if ([...chat.options].some(o => o.value === currentChat)) chat.value = currentChat;
+  } catch (error) { showKeywordError(error.message || String(error)); }
+
+  try {
+    const now = new Date();
+    const result = await request(`/api/admin/events?year=${now.getFullYear()}&month=${now.getMonth()+1}`);
+    const event = $('keyword-event');
+    const currentEvent = event.value;
+    event.innerHTML = '<option value="">None</option>';
+    for (const item of result.events || []) {
+      const option = document.createElement('option');
+      option.value = item.id;
+      option.textContent = `${item.title} — ${formatDate(item.start_at)}`;
+      event.appendChild(option);
+    }
+    if ([...event.options].some(o => o.value === currentEvent)) event.value = currentEvent;
+  } catch (error) { showKeywordError(error.message || String(error)); }
+}
+
+function keywordTargets(keyword) {
+  return (keyword.targets || []).map(target => `${target.type}: ${target.label}`).join(', ') || 'None';
+}
+
+function renderKeywordRow(keyword) {
+  const row = document.createElement('tr');
+  row.innerHTML = `<td>${escapeHTML(keyword.keyword)}</td><td>${escapeHTML(keyword.display_name)}</td><td>${escapeHTML(keyword.description || '')}</td><td>${escapeHTML(keywordTargets(keyword))}</td><td><button class="secondary keyword-edit">Edit</button> <button class="danger keyword-delete">Delete</button></td>`;
+  row.querySelector('.keyword-edit').addEventListener('click', () => editKeyword(keyword));
+  row.querySelector('.keyword-delete').addEventListener('click', () => deleteKeyword(keyword));
+  return row;
+}
+
+async function refreshKeywords() {
+  showKeywordError('');
+  try {
+    const result = await request('/api/admin/keywords');
+    const body = $('keywords'); body.innerHTML = '';
+    for (const keyword of result.keywords || []) body.appendChild(renderKeywordRow(keyword));
+  } catch (error) { showKeywordError(error.message || String(error)); }
+}
+
+function clearKeywordForm() {
+  selectedKeyword = '';
+  $('keyword-name').value = '';
+  $('keyword-display-name').value = '';
+  $('keyword-description').value = '';
+  $('keyword-chat').value = '';
+  $('keyword-event').value = '';
+  $('keyword-name').disabled = false;
+  showKeywordError('');
+}
+
+function editKeyword(keyword) {
+  selectedKeyword = keyword.keyword;
+  $('keyword-name').value = keyword.keyword;
+  $('keyword-name').disabled = true;
+  $('keyword-display-name').value = keyword.display_name || '';
+  $('keyword-description').value = keyword.description || '';
+  $('keyword-chat').value = '';
+  $('keyword-event').value = '';
+  for (const target of keyword.targets || []) {
+    if (target.type === 'chat') $('keyword-chat').value = String(target.id);
+    if (target.type === 'event') $('keyword-event').value = String(target.id);
+  }
+  showKeywordError('');
+  $('keywords-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+async function saveKeyword() {
+  const keyword = $('keyword-name').value.trim();
+  const displayName = $('keyword-display-name').value.trim();
+  const description = $('keyword-description').value.trim();
+  const targets = [];
+  if ($('keyword-chat').value) {
+    const option = $('keyword-chat').selectedOptions[0];
+    targets.push({ type: 'chat', id: Number($('keyword-chat').value), label: option.textContent });
+  }
+  if ($('keyword-event').value) {
+    const option = $('keyword-event').selectedOptions[0];
+    targets.push({ type: 'event', id: Number($('keyword-event').value), label: option.textContent });
+  }
+  if (!keyword || !displayName) {
+    showKeywordError('Keyword and display name are required.');
+    return;
+  }
+  if (!targets.length) {
+    showKeywordError('Select at least one existing service.');
+    return;
+  }
+  showKeywordError('');
+  try {
+    await request(`/api/admin/keywords/${encodeURIComponent(keyword)}`, {
+      method: 'PUT',
+      body: JSON.stringify({ display_name: displayName, description, targets })
+    });
+    clearKeywordForm();
+    await refreshKeywords();
+    await refreshKeywordTargets();
+    await refreshAudit();
+  } catch (error) { showKeywordError(error.message || String(error)); }
+}
+
+async function deleteKeyword(keyword) {
+  if (!window.confirm(`Delete service keyword '${keyword.keyword}'?`)) return;
+  showKeywordError('');
+  try {
+    await request(`/api/admin/keywords/${encodeURIComponent(keyword.keyword)}`, { method: 'DELETE' });
+    if (selectedKeyword === keyword.keyword) clearKeywordForm();
+    await refreshKeywords();
+    await refreshAudit();
+  } catch (error) { showKeywordError(error.message || String(error)); }
+}
+
 function showEventError(message) { $('event-error').textContent = message || ''; }
 function localEventValue(value) { if (!value) return ''; return new Date(value).toISOString(); }
 function eventWhen(event) {
@@ -249,3 +377,9 @@ refreshChannels();
 refreshAudit();
 
 refreshEvents();
+
+$('refresh-keywords').addEventListener('click', async () => { await refreshKeywordTargets(); await refreshKeywords(); });
+$('save-keyword').addEventListener('click', saveKeyword);
+$('clear-keyword').addEventListener('click', clearKeywordForm);
+refreshKeywordTargets();
+refreshKeywords();

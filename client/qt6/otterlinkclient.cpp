@@ -344,6 +344,20 @@ void OtterLinkClient::removeBuddy(const QString &username)
     });
 }
 
+void OtterLinkClient::resolveKeyword(const QString &keyword)
+{
+    const QString encoded = QString::fromUtf8(QUrl::toPercentEncoding(keyword.trimmed()));
+    auto *reply = m_network.get(request(QStringLiteral("/api/keywords/") + encoded));
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+        if (reply->error() != QNetworkReply::NoError) {
+            emit errorOccurred(serverErrorMessage(reply, reply->errorString()));
+        } else {
+            emit keywordResolved(QJsonDocument::fromJson(reply->readAll()).object());
+        }
+        reply->deleteLater();
+    });
+}
+
 void OtterLinkClient::logout()
 {
     if (m_token.isEmpty()) {

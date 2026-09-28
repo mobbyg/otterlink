@@ -30,6 +30,8 @@ qt_add_executable(otterlink
     ottereventswidget.h
     otterservicewindow.cpp
     otterservicewindow.h
+    otterkeywordwidget.cpp
+    otterkeywordwidget.h
     resources/otterlink.qrc
 )
 

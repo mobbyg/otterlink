@@ -16,6 +16,7 @@
       <a href="#users-section">User Accounts</a>
       <a href="#channels-section">Permanent Channels</a>
       <a href="#events-section">Server Events</a>
+      <a href="#keywords-section">Service Keywords</a>
       <a href="#activity-section">Admin Activity</a>
     </nav>
 
@@ -99,6 +100,40 @@
       </div>
       <div class="admin-table-wrap">
         <table class="admin-table"><thead><tr><th>When</th><th>Title</th><th>Description</th><th>Owner</th><th>Manage</th></tr></thead><tbody id="events"></tbody></table>
+      </div>
+    </section>
+
+    <section id="keywords-section" class="card" style="margin-top:20px">
+      <div class="section-title">
+        <div><small>SERVICES</small><h1>Service Keywords</h1></div>
+        <button id="refresh-keywords" class="secondary">Refresh</button>
+      </div>
+      <p class="status">Create shortcuts that open existing Chat communities or Events. Bulletin targets are reserved for later integration.</p>
+      <p id="keyword-error" class="error"></p>
+      <div class="admin-layout">
+        <div>
+          <div class="event-form">
+            <div class="event-details">
+              <label>Keyword<input id="keyword-name" maxlength="32" placeholder="RETRO"></label>
+              <label>Display name<input id="keyword-display-name" maxlength="80" placeholder="Retro"></label>
+              <label>Description<input id="keyword-description" maxlength="500" placeholder="Short description"></label>
+            </div>
+            <div class="event-details">
+              <label>Chat community<select id="keyword-chat"><option value="">None</option></select></label>
+              <label>Event<select id="keyword-event"><option value="">None</option></select></label>
+              <div class="admin-actions">
+                <button id="save-keyword">Save Keyword</button>
+                <button id="clear-keyword" class="secondary">Clear</button>
+              </div>
+            </div>
+          </div>
+          <div class="admin-table-wrap">
+            <table class="admin-table">
+              <thead><tr><th>Keyword</th><th>Display name</th><th>Description</th><th>Services</th><th>Manage</th></tr></thead>
+              <tbody id="keywords"></tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </section>
 
