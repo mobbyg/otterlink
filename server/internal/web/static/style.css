@@ -79,3 +79,21 @@ footer { text-align:center; color:#78909e; font-size:.75rem; padding:24px; }
 .admin-nav a:hover { filter:brightness(1.08); }
 .admin-nav a:focus { outline:2px solid var(--golden-orange); outline-offset:2px; }
 @media (max-width:700px) { .admin-nav { flex-direction:column; } .admin-nav a { flex-basis:auto; } }
+
+.screen-preview { position:fixed; inset:0; z-index:1100; }
+.screen-preview-backdrop { position:absolute; inset:0; background:#0009; }
+.screen-preview-dialog { position:relative; width:min(1100px, calc(100% - 32px)); max-height:calc(100vh - 32px); margin:16px auto; overflow:auto; border:1px solid var(--card-border); border-radius:14px; padding:20px; background:#11202a; box-shadow:0 20px 60px #0009; }
+.screen-preview-frame { display:flex; justify-content:center; padding:16px; background:#0c151c; border:1px solid var(--card-border); border-radius:10px; overflow:auto; }
+.screen-preview-canvas { width:min(900px, 100%); aspect-ratio:4 / 3; overflow:auto; padding:22px; border:1px solid #3b5667; border-radius:8px; background:#16232d; color:var(--text-main); }
+.preview-hero { display:flex; gap:18px; align-items:center; padding:18px; border:1px solid var(--card-border); border-radius:10px; background:#11202a; }
+.preview-hero-icon { flex:0 0 120px; white-space:pre; text-align:center; font:700 18px/1.05 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+.preview-hero h3 { margin:0 0 6px; font-size:1.25rem; }
+.preview-hero p, .preview-announcement p, .preview-service p { margin:3px 0 0; color:var(--text-muted); }
+.preview-section { margin-top:14px; }
+.preview-section h4 { margin:0 0 8px; font-size:.9rem; }
+.preview-announcement { display:flex; justify-content:space-between; gap:12px; padding:10px; margin-top:7px; border:1px solid var(--card-border); border-radius:8px; background:#11202a; }
+.preview-announcement button { flex:none; align-self:center; opacity:.7; }
+.preview-services { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+.preview-service { min-width:0; padding:10px; border:1px solid var(--card-border); border-radius:8px; background:#11202a; }
+.preview-footer { margin-top:14px; text-align:center; color:var(--text-muted); font-size:.8rem; }
+@media (max-width:700px) { .screen-preview-dialog { width:calc(100% - 16px); max-height:calc(100vh - 16px); margin:8px auto; padding:16px; } .screen-preview-canvas { padding:12px; } .preview-hero { flex-direction:column; align-items:stretch; } .preview-hero-icon { flex-basis:auto; } .preview-services { grid-template-columns:1fr; } }
