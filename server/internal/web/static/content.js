@@ -763,6 +763,7 @@ $('visual-editor-canvas').addEventListener('pointermove', handleEditorPointerMov
 $('visual-editor-canvas').addEventListener('pointerup', endEditorDrag);
 $('visual-editor-canvas').addEventListener('pointercancel', endEditorDrag);
 $('visual-editor-canvas').addEventListener('click', () => selectEditorElement(-1));
+$('upload-asset').addEventListener('click', uploadAsset);
 
 $('delete-screen').addEventListener('click', () => {
   if (selectedId) deleteScreen({ id: selectedId, title: $('screen-title').value });
