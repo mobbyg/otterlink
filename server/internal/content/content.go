@@ -153,7 +153,7 @@ func (s Service) Save(req SaveRequest) (Screen, error) {
 		req.EndAt = &value
 	}
 
-	result, err := s.DB.Exec(`INSERT INTO content_screens
+	_, err := s.DB.Exec(`INSERT INTO content_screens
 		(slug, title, published, start_at, end_at, priority, version, content_json)
 		VALUES (?, ?, ?, NULLIF(?, ''), NULLIF(?, ''), ?, 1, ?)
 		ON CONFLICT(slug) DO UPDATE SET
@@ -171,16 +171,12 @@ func (s Service) Save(req SaveRequest) (Screen, error) {
 		return Screen{}, fmt.Errorf("save screen: %w", err)
 	}
 
-	id, err := result.LastInsertId()
-	if err != nil {
-		return Screen{}, err
-	}
-	if id == 0 {
-		var existingID int64
-		if err := s.DB.QueryRow(`SELECT id FROM content_screens WHERE slug=?`, slug).Scan(&existingID); err != nil {
-			return Screen{}, err
-		}
-		id = existingID
+	// LastInsertId is not reliable for an upsert that took the UPDATE path.
+	// Resolve the screen by its unique slug so both insert and update return
+	// the actual row that was saved.
+	var id int64
+	if err := s.DB.QueryRow(`SELECT id FROM content_screens WHERE slug=?`, slug).Scan(&id); err != nil {
+		return Screen{}, fmt.Errorf("find saved screen: %w", err)
 	}
 	return s.Get(id)
 }
