@@ -130,6 +130,10 @@ void OtterHomePage::setServerScreen(const QJsonObject &screen, const QImage &bac
         return;
 
     m_background = background.isNull() ? QPixmap() : QPixmap::fromImage(background);
+    const QJsonObject backgroundData = content.value(QStringLiteral("background")).toObject();
+    m_backgroundFit = backgroundData.value(QStringLiteral("fit")).toString(QStringLiteral("cover")).trimmed().toLower();
+    if (m_backgroundFit != QStringLiteral("contain") && m_backgroundFit != QStringLiteral("cover"))
+        m_backgroundFit = QStringLiteral("cover");
     if (m_backgroundLayer)
         m_backgroundLayer->setPixmap(m_background);
     m_templateMode = !content.value(QStringLiteral("elements")).toArray().isEmpty();
@@ -164,9 +168,10 @@ void OtterHomePage::applyBackground(const QPixmap &background)
         return;
     }
 
-    const Qt::AspectRatioMode mode = m_templateMode
-        ? Qt::KeepAspectRatio
-        : Qt::KeepAspectRatioByExpanding;
+    const Qt::AspectRatioMode mode =
+        m_backgroundFit == QStringLiteral("contain")
+            ? Qt::KeepAspectRatio
+            : Qt::KeepAspectRatioByExpanding;
     const QPixmap scaled = background.scaled(targetSize, mode, Qt::SmoothTransformation);
     m_backgroundLayer->setPixmap(scaled);
     m_backgroundLayer->lower();
