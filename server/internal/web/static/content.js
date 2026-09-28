@@ -156,8 +156,16 @@ function renderPreview(content) {
   canvas.style.backgroundPosition = '';
   const background = content.background || {};
   const assetID = Number(background.asset || 0);
+  const elements = Array.isArray(content.elements) ? content.elements : [];
+  canvas.classList.toggle('template-preview', elements.length > 0);
+  canvas.style.position = 'relative';
+  canvas.style.padding = elements.length > 0 ? '0' : '';
   if (assetID > 0) {
     loadPreviewBackground(assetID, canvas, background.fit || 'cover');
+  }
+  if (elements.length > 0) {
+    renderPreviewElements(elements, canvas);
+    return;
   }
   const hero = content.hero || {};
   const heroEl = document.createElement('section');
@@ -234,6 +242,30 @@ function renderPreview(content) {
     footer.className = 'preview-footer';
     footer.textContent = content.footer;
     canvas.appendChild(footer);
+  }
+}
+
+function renderPreviewElements(elements, canvas) {
+  for (const item of elements) {
+    const type = String(item.type || '').toLowerCase();
+    if (type !== 'text' && type !== 'button') continue;
+    const element = document.createElement(type === 'button' ? 'button' : 'div');
+    if (type === 'button') {
+      element.type = 'button';
+      element.disabled = true;
+    }
+    element.textContent = item.text || '';
+    element.style.position = 'absolute';
+    element.style.left = (Math.max(0, Math.min(1, Number(item.x) || 0)) * 100) + '%';
+    element.style.top = (Math.max(0, Math.min(1, Number(item.y) || 0)) * 100) + '%';
+    element.style.width = (Math.max(0.01, Math.min(1, Number(item.width) || (type === 'button' ? 0.22 : 0.30))) * 100) + '%';
+    element.style.height = (Math.max(0.01, Math.min(1, Number(item.height) || (type === 'button' ? 0.09 : 0.12))) * 100) + '%';
+    if (type === 'text') {
+      element.style.padding = '10px';
+      element.style.overflow = 'hidden';
+      element.style.whiteSpace = 'pre-wrap';
+    }
+    canvas.appendChild(element);
   }
 }
 
