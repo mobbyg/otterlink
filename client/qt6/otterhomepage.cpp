@@ -15,6 +15,7 @@
 #include <QVariant>
 #include <QSizePolicy>
 #include <QVBoxLayout>
+#include <QPixmap>
 
 namespace {
 
@@ -84,6 +85,27 @@ void OtterHomePage::clearPage()
 void OtterHomePage::setServerScreen(const QJsonObject &screen)
 {
     setServerScreen(screen, QImage());
+}
+
+void OtterHomePage::setServerAsset(qint64 assetId, const QImage &image)
+{
+    if (assetId < 1 || image.isNull())
+        return;
+
+    m_loadedAssets.insert(assetId, image);
+    if (!m_overlay)
+        return;
+
+    const QJsonArray elements = m_overlay->property("overlay_elements").toJsonArray();
+    for (const QJsonValue &value : elements) {
+        const QJsonObject item = value.toObject();
+        if (item.value(QStringLiteral("type")).toString().compare(
+                QStringLiteral("image"), Qt::CaseInsensitive) != 0)
+            continue;
+        if (item.value(QStringLiteral("asset")).toInteger() == assetId)
+            addImageElement(assetId, image, item);
+    }
+    layoutOverlay();
 }
 
 void OtterHomePage::setServerScreen(const QJsonObject &screen, const QImage &background)
@@ -318,6 +340,7 @@ void OtterHomePage::buildOverlay(const QJsonArray &elements)
     m_overlay->setObjectName(QStringLiteral("homeOverlay"));
     m_overlay->setAttribute(Qt::WA_TranslucentBackground);
     m_overlay->setMinimumSize(640, 360);
+    m_overlay->setProperty("overlay_elements", elements);
     m_overlay->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     m_layout->addWidget(m_overlay, 1);
 
@@ -343,6 +366,11 @@ void OtterHomePage::buildOverlay(const QJsonArray &elements)
             label->setWordWrap(true);
             label->setAlignment(Qt::AlignLeft | Qt::AlignTop);
             widget = label;
+        } else if (type == QStringLiteral("image")) {
+            const qint64 assetId = item.value(QStringLiteral("asset")).toInteger();
+            if (assetId > 0 && m_loadedAssets.contains(assetId))
+                addImageElement(assetId, m_loadedAssets.value(assetId), item);
+            continue;
         }
 
         if (!widget)
@@ -358,6 +386,32 @@ void OtterHomePage::buildOverlay(const QJsonArray &elements)
     layoutOverlay();
 }
 
+void OtterHomePage::addImageElement(qint64 assetId, const QImage &image, const QJsonObject &item)
+{
+    if (!m_overlay || assetId < 1 || image.isNull())
+        return;
+
+    const QString key = QStringLiteral("overlay_image_%1_%2_%3")
+                            .arg(assetId)
+                            .arg(item.value(QStringLiteral("x")).toDouble())
+                            .arg(item.value(QStringLiteral("y")).toDouble());
+    if (m_overlay->findChild<QLabel *>(key))
+        return;
+
+    auto *label = new QLabel(m_overlay);
+    label->setObjectName(key);
+    label->setAlignment(Qt::AlignCenter);
+    label->setAttribute(Qt::WA_TranslucentBackground);
+    label->setProperty("overlay_x", item.value(QStringLiteral("x")).toDouble(0.0));
+    label->setProperty("overlay_y", item.value(QStringLiteral("y")).toDouble(0.0));
+    label->setProperty("overlay_width", item.value(QStringLiteral("width")).toDouble(0.20));
+    label->setProperty("overlay_height", item.value(QStringLiteral("height")).toDouble(0.20));
+    label->setProperty("overlay_image", true);
+    label->setProperty("overlay_fit", item.value(QStringLiteral("fit")).toString(QStringLiteral("contain")));
+    label->setProperty("overlay_source_image", QVariant::fromValue(image));
+    label->show();
+}
+
 void OtterHomePage::layoutOverlay()
 {
     if (!m_overlay)
@@ -370,7 +424,22 @@ void OtterHomePage::layoutOverlay()
         const double y = qBound(0.0, widget->property("overlay_y").toDouble(), 1.0);
         const double w = qBound(0.01, widget->property("overlay_width").toDouble(), 1.0);
         const double h = qBound(0.01, widget->property("overlay_height").toDouble(), 1.0);
-        widget->setGeometry(qRound(x * width), qRound(y * height),
-                            qMax(1, qRound(w * width)), qMax(1, qRound(h * height)));
+        const int widgetWidth = qMax(1, qRound(w * width));
+        const int widgetHeight = qMax(1, qRound(h * height));
+        widget->setGeometry(qRound(x * width), qRound(y * height), widgetWidth, widgetHeight);
+
+        if (widget->property("overlay_image").toBool()) {
+            const QImage image = widget->property("overlay_source_image").value<QImage>();
+            if (!image.isNull()) {
+                const Qt::AspectRatioMode mode =
+                    widget->property("overlay_fit").toString() == QStringLiteral("cover")
+                        ? Qt::KeepAspectRatioByExpanding
+                        : Qt::KeepAspectRatio;
+                const QPixmap pixmap = QPixmap::fromImage(
+                    image.scaled(QSize(widgetWidth, widgetHeight), mode, Qt::SmoothTransformation));
+                if (auto *label = qobject_cast<QLabel *>(widget))
+                    label->setPixmap(pixmap);
+            }
+        }
     }
 }
