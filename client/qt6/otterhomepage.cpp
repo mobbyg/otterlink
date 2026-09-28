@@ -1,6 +1,7 @@
 #include "otterhomepage.h"
 
 #include <QFont>
+#include <QColor>
 #include <QPalette>
 #include <QResizeEvent>
 #include <QFrame>
@@ -394,9 +395,25 @@ void OtterHomePage::buildOverlay(const QJsonArray &elements)
         } else if (type == QStringLiteral("text")) {
             auto *label = new QLabel(text, m_overlay);
             label->setWordWrap(true);
-            label->setAlignment(Qt::AlignLeft | Qt::AlignTop);
             label->setAttribute(Qt::WA_TranslucentBackground);
             label->setStyleSheet(QStringLiteral("QLabel { background: transparent; }"));
+
+            Qt::Alignment alignment = Qt::AlignLeft | Qt::AlignTop;
+            const QString align = item.value(QStringLiteral("align")).toString().trimmed().toLower();
+            if (align == QStringLiteral("center"))
+                alignment = Qt::AlignHCenter | Qt::AlignTop;
+            else if (align == QStringLiteral("right"))
+                alignment = Qt::AlignRight | Qt::AlignTop;
+            label->setAlignment(alignment);
+
+            QFont font = label->font();
+            font.setPixelSize(qBound(8, item.value(QStringLiteral("font_size")).toInt(32), 200));
+            font.setWeight(qBound(1, item.value(QStringLiteral("weight")).toInt(700), 1000));
+            label->setFont(font);
+
+            const QColor textColor(item.value(QStringLiteral("color")).toString(QStringLiteral("#ffffff")));
+            label->setStyleSheet(QStringLiteral("QLabel { background: transparent; color: %1; }")
+                                      .arg(textColor.isValid() ? textColor.name() : QStringLiteral("#ffffff")));
             widget = label;
         } else if (type == QStringLiteral("image")) {
             const qint64 assetId = item.value(QStringLiteral("asset")).toInteger();
@@ -410,8 +427,13 @@ void OtterHomePage::buildOverlay(const QJsonArray &elements)
 
         widget->setProperty("overlay_x", item.value(QStringLiteral("x")).toDouble(0.0));
         widget->setProperty("overlay_y", item.value(QStringLiteral("y")).toDouble(0.0));
-        widget->setProperty("overlay_width", item.value(QStringLiteral("width")).toDouble(type == QStringLiteral("button") ? 0.22 : 0.30));
-        widget->setProperty("overlay_height", item.value(QStringLiteral("height")).toDouble(type == QStringLiteral("button") ? 0.09 : 0.12));
+        widget->setProperty("overlay_width", item.value(QStringLiteral("width")).toDouble(
+            type == QStringLiteral("button") ? 0.30 : type == QStringLiteral("text") ? 0.34 : 0.24));
+        widget->setProperty("overlay_height", item.value(QStringLiteral("height")).toDouble(
+            type == QStringLiteral("button") ? 0.11 : type == QStringLiteral("text") ? 0.10 : 0.24));
+        if (type == QStringLiteral("text")) {
+            widget->setProperty("overlay_font_size", item.value(QStringLiteral("font_size")).toDouble(32.0));
+        }
         widget->show();
     }
 
@@ -472,6 +494,13 @@ void OtterHomePage::layoutOverlay()
         const int widgetWidth = qMax(1, qRound(w * width));
         const int widgetHeight = qMax(1, qRound(h * height));
         widget->setGeometry(qRound(x * width), qRound(y * height), widgetWidth, widgetHeight);
+
+        if (auto *label = qobject_cast<QLabel *>(widget); label && widget->property("overlay_font_size").isValid()) {
+            QFont font = label->font();
+            const int scaledSize = qMax(8, qRound(widget->property("overlay_font_size").toDouble() * width / 1280.0));
+            font.setPixelSize(scaledSize);
+            label->setFont(font);
+        }
 
         if (widget->property("overlay_image").toBool()) {
             const QImage image = widget->property("overlay_source_image").value<QImage>();
