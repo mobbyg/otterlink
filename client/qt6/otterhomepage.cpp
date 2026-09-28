@@ -59,9 +59,7 @@ OtterHomePage::OtterHomePage(QWidget *parent)
     outerLayout->setSpacing(0);
 
     m_scrollArea = new QScrollArea(this);
-    // The Home publication is authored on a 1280x720 logical canvas. The
-    // service window chooses the available display size and this page scales
-    // that logical canvas to fit without changing the stored coordinates.
+    // Home is a fixed 1280x720 publication canvas.
     m_scrollArea->setWidgetResizable(false);
     m_scrollArea->setFrameShape(QFrame::NoFrame);
     m_scrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
@@ -183,7 +181,7 @@ void OtterHomePage::applyBackground(const QPixmap &background)
     if (!m_page || !m_backgroundLayer)
         return;
 
-    const QSize targetSize = m_page->size();
+    const QSize targetSize(kHomeCanvasWidth, kHomeCanvasHeight);
     if (targetSize.isEmpty())
         return;
 
@@ -205,27 +203,6 @@ void OtterHomePage::applyBackground(const QPixmap &background)
 void OtterHomePage::resizeEvent(QResizeEvent *event)
 {
     QWidget::resizeEvent(event);
-
-    if (!m_scrollArea || !m_page)
-        return;
-
-    const QSize viewport = m_scrollArea->viewport()->size();
-    if (viewport.width() < 1 || viewport.height() < 1)
-        return;
-
-    // Preserve the 1280x720 publication aspect ratio while scaling the
-    // authored canvas to the actual Home service viewport.
-    const double scale = qMin(
-        static_cast<double>(viewport.width()) / kHomeCanvasWidth,
-        static_cast<double>(viewport.height()) / kHomeCanvasHeight);
-
-    const QSize scaledSize(
-        qMax(1, qRound(kHomeCanvasWidth * scale)),
-        qMax(1, qRound(kHomeCanvasHeight * scale)));
-
-    if (m_page->size() != scaledSize)
-        m_page->setFixedSize(scaledSize);
-
     applyBackground(m_background);
     layoutOverlay();
 }
@@ -413,7 +390,7 @@ void OtterHomePage::buildOverlay(const QJsonArray &elements)
     m_overlay->setAttribute(Qt::WA_TranslucentBackground);
     // Elements are positioned against a fixed 1280x720 canvas. Do not let
     // the service window resize this coordinate system.
-    m_overlay->setFixedSize(m_page->size());
+    m_overlay->setFixedSize(kHomeCanvasWidth, kHomeCanvasHeight);
     m_overlay->setProperty("overlay_elements", elements);
     m_layout->addWidget(m_overlay, 1);
 
@@ -539,8 +516,8 @@ void OtterHomePage::layoutOverlay()
     if (!m_overlay)
         return;
 
-    const int width = m_page->width();
-    const int height = m_page->height();
+    const int width = kHomeCanvasWidth;
+    const int height = kHomeCanvasHeight;
     for (QWidget *widget : m_overlay->findChildren<QWidget *>(QString(), Qt::FindDirectChildrenOnly)) {
         const double x = qBound(0.0, widget->property("overlay_x").toDouble(), 1.0);
         const double y = qBound(0.0, widget->property("overlay_y").toDouble(), 1.0);
@@ -555,8 +532,7 @@ void OtterHomePage::layoutOverlay()
 
         if (auto *label = qobject_cast<QLabel *>(widget); label && widget->property("overlay_font_size").isValid()) {
             QFont font = label->font();
-            const int scaledSize = qMax(8, qRound(widget->property("overlay_font_size").toDouble()
-                                                        * width / kHomeCanvasWidth));
+            const int scaledSize = qMax(8, qRound(widget->property("overlay_font_size").toDouble() * width / 1280.0));
             font.setPixelSize(scaledSize);
             label->setFont(font);
         }
