@@ -50,14 +50,20 @@ button.secondary, .button.secondary { background:var(--ocean-deep); color:#fff; 
 .admin-badge { display:inline-block; padding:3px 8px; border-radius:999px; background:#153f68; color:#c8e5f7; font-size:.78rem; }
 .presence-dot { display:inline-block; width:8px; height:8px; border-radius:50%; background:#697681; margin-right:7px; }
 .presence-dot.online { background:#69bd7b; }
-.admin-layout { display:grid; grid-template-columns:minmax(0, 1fr) 340px; gap:20px; align-items:start; }
-.admin-detail { border:1px solid var(--card-border); border-radius:10px; padding:16px; background:#11202a; position:sticky; top:20px; }
+.admin-layout { display:block; }
+.screen-modal { position:fixed; inset:0; z-index:1000; }
+.screen-modal-backdrop { position:absolute; inset:0; background:#0009; }
+.screen-modal-dialog { position:relative; width:min(1000px, calc(100% - 32px)); max-height:calc(100vh - 32px); margin:16px auto; overflow:auto; border:1px solid var(--card-border); border-radius:14px; padding:20px; background:#11202a; box-shadow:0 20px 60px #0009; }
+.screen-modal-dialog h2 { margin:4px 0 0; }
+.screen-modal-dialog textarea { width:100%; min-height:360px; max-height:55vh; margin-top:6px; padding:11px 12px; border:1px solid #3b5667; border-radius:9px; background:#0c151c; color:#fff; outline:none; resize:vertical; font:13px/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; tab-size:2; }
+.screen-modal-dialog textarea:focus { border-color:var(--golden-orange); box-shadow:0 0 0 2px #efa00b33; }
+.screen-modal-dialog input[type="checkbox"] { width:auto; margin:0 7px 0 0; vertical-align:middle; }
 .admin-detail h2 { margin:4px 0 0; }
 .admin-actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:18px; }
 .warning { margin:14px 0 0; color:#f0b49f; font-size:.8rem; }
 footer { text-align:center; color:#78909e; font-size:.75rem; padding:24px; }
 .admin-page .shell { width:min(1400px, calc(100% - 48px)); }
-@media (max-width:900px) { .admin-page .shell { width:min(1100px, calc(100% - 32px)); } .admin-layout { grid-template-columns:1fr; } .admin-detail { position:static; } }
+@media (max-width:700px) { .screen-modal-dialog { width:calc(100% - 16px); max-height:calc(100vh - 16px); margin:8px auto; padding:16px; } .screen-modal-dialog textarea { min-height:300px; max-height:50vh; } }
 @media (max-width:700px) { .auth-grid,.dashboard { grid-template-columns:1fr; } .auth-grid { margin:30px auto; } .chat-card { min-height:450px; } }
 
 .event-form { display:grid; grid-template-columns:minmax(0, 1fr) minmax(0, 1fr); gap:20px; align-items:start; margin-top:4px; }
