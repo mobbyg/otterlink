@@ -3,6 +3,7 @@
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QNetworkAccessManager>
+#include <QImage>
 #include <QNetworkReply>
 #include <QSet>
 #include <QString>
@@ -60,6 +61,7 @@ signals:
     void eventDeleted(qint64 eventId);
     void keywordResolved(const QJsonObject &keyword);
     void homeScreenLoaded(const QJsonObject &screen);
+    void homeBackgroundLoaded(const QJsonObject &screen, const QImage &image);
     void chatMessageSent();
     void chatChannelsLoaded(const QJsonArray &channels);
     void chatChannelLoaded(const QJsonObject &channel, const QJsonArray &members,
