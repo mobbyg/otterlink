@@ -415,7 +415,7 @@ void OtterHomePage::buildOverlay(const QJsonArray &elements)
 
             QFont font = label->font();
             font.setPixelSize(qBound(8, item.value(QStringLiteral("font_size")).toInt(32), 200));
-            font.setWeight(qBound(1, item.value(QStringLiteral("weight")).toInt(700), 1000));
+            font.setWeight(static_cast<QFont::Weight>(qBound(1, item.value(QStringLiteral("weight")).toInt(700), 1000)));
             label->setFont(font);
 
             const QColor textColor(item.value(QStringLiteral("color")).toString(QStringLiteral("#ffffff")));
