@@ -193,6 +193,10 @@ MainWindow::MainWindow(QWidget *parent)
     connect(m_client, &OtterLinkClient::errorOccurred, this, &MainWindow::showError);
     connect(m_client, &OtterLinkClient::keywordResolved, this, &MainWindow::keywordResolved);
     connect(m_client, &OtterLinkClient::homeScreenLoaded, m_homePage, &OtterHomePage::setServerScreen);
+    connect(m_client, &OtterLinkClient::homeBackgroundLoaded, m_homePage,
+            [this](const QJsonObject &screen, const QImage &image) {
+                m_homePage->setServerScreen(screen, image);
+            });
 
     auto *fileMenu = menuBar()->addMenu(QStringLiteral("File"));
     auto *awayAction = fileMenu->addAction(QStringLiteral("Away / AFK"));
