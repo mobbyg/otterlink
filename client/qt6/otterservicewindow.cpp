@@ -76,7 +76,7 @@ private:
 } // namespace
 
 OtterServiceWindow::OtterServiceWindow(const QString &title, QWidget *content, QWidget *parent)
-    : QFrame(parent), m_content(content), m_resizable(title == QStringLiteral("Community Chat") || title == QStringLiteral("Welcome to Otter Link")) || title == QStringLiteral("News")
+    : QFrame(parent), m_content(content), m_resizable(title == QStringLiteral("Community Chat") || title == QStringLiteral("Welcome to Otter Link") || title == QStringLiteral("News"))
 {
     setObjectName(QStringLiteral("serviceWindow"));
     setFrameShape(QFrame::StyledPanel);
