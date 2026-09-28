@@ -1,6 +1,10 @@
 const token = localStorage.getItem('otterlink-token') || '';
 const $ = (id) => document.getElementById(id);
 let selectedId = 0;
+let assets = [];
+let editorContent = null;
+let editorSelectedIndex = -1;
+let editorDrag = null;
 
 async function request(path, options = {}) {
   const headers = {
@@ -40,6 +44,15 @@ async function refreshScreens() {
   }
 }
 
+function defaultContent() {
+  return {
+    hero: { title: 'Welcome to Otter Link', body: 'Welcome to Otter Link.' },
+    announcements: [],
+    services: [],
+    footer: ''
+  };
+}
+
 function clearForm() {
   selectedId = 0;
   $('screen-detail-title').textContent = 'New Screen';
@@ -49,12 +62,7 @@ function clearForm() {
   $('screen-published').checked = true;
   $('screen-start').value = '';
   $('screen-end').value = '';
-  $('screen-content').value = JSON.stringify({
-    hero: { title: 'Welcome to Otter Link', body: 'Welcome to Otter Link.' },
-    announcements: [],
-    services: [],
-    footer: ''
-  }, null, 2);
+  $('screen-content').value = JSON.stringify(defaultContent(), null, 2);
   $('delete-screen').disabled = true;
 }
 
@@ -84,6 +92,16 @@ function toRFC3339(value) {
   if (!value) return null;
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? null : date.toISOString();
+}
+
+function parseEditorJSON() {
+  try {
+    const content = JSON.parse($('screen-content').value);
+    return content && typeof content === 'object' ? content : {};
+  } catch (error) {
+    showError('Content must be valid JSON before using the visual editor.');
+    return null;
+  }
 }
 
 async function saveScreen() {
@@ -131,18 +149,12 @@ async function deleteScreen(screen) {
   }
 }
 
-
 function showAssetError(message) { $('asset-error').textContent = message || ''; }
 
 async function previewScreen() {
   showError('');
-  let content;
-  try {
-    content = JSON.parse($('screen-content').value);
-  } catch (error) {
-    showError('Content must be valid JSON before it can be previewed.');
-    return;
-  }
+  let content = parseEditorJSON();
+  if (!content) return;
   $('screen-preview-title').textContent = $('screen-title').value.trim() || 'Screen Preview';
   renderPreview(content);
   $('screen-preview').classList.remove('hidden');
@@ -154,19 +166,19 @@ function renderPreview(content) {
   canvas.style.backgroundImage = '';
   canvas.style.backgroundSize = '';
   canvas.style.backgroundPosition = '';
+  canvas.style.backgroundRepeat = '';
   const background = content.background || {};
   const assetID = Number(background.asset || 0);
   const elements = Array.isArray(content.elements) ? content.elements : [];
   canvas.classList.toggle('template-preview', elements.length > 0);
   canvas.style.position = 'relative';
   canvas.style.padding = elements.length > 0 ? '0' : '';
-  if (assetID > 0) {
-    loadPreviewBackground(assetID, canvas, background.fit || 'cover');
-  }
+  if (assetID > 0) loadPreviewBackground(assetID, canvas, background.fit || 'cover');
   if (elements.length > 0) {
     renderPreviewElements(elements, canvas);
     return;
   }
+
   const hero = content.hero || {};
   const heroEl = document.createElement('section');
   heroEl.className = 'preview-hero';
@@ -245,6 +257,18 @@ function renderPreview(content) {
   }
 }
 
+function clamp01(value, fallback = 0) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return fallback;
+  return Math.max(0, Math.min(1, number));
+}
+
+function clampSize(value, fallback = 0.1) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return fallback;
+  return Math.max(0.01, Math.min(1, number));
+}
+
 function renderPreviewElements(elements, canvas) {
   for (const item of elements) {
     const type = String(item.type || '').toLowerCase();
@@ -275,20 +299,21 @@ function renderPreviewElements(elements, canvas) {
       if (assetID < 1) continue;
       element.alt = item.alt || '';
       element.draggable = false;
-      element.src = '/api/content/assets/' + assetID;
+      loadPreviewAssetImage(assetID, element);
       element.style.objectFit = item.fit === 'cover' ? 'cover' : 'contain';
     } else if (type !== 'button') {
       element.textContent = item.text || '';
     }
     element.style.position = 'absolute';
-    element.style.left = (Math.max(0, Math.min(1, Number(item.x) || 0)) * 100) + '%';
-    element.style.top = (Math.max(0, Math.min(1, Number(item.y) || 0)) * 100) + '%';
-    element.style.width = (Math.max(0.01, Math.min(1, Number(item.width) || (type === 'button' ? 0.22 : 0.30))) * 100) + '%';
-    element.style.height = (Math.max(0.01, Math.min(1, Number(item.height) || (type === 'button' ? 0.09 : 0.12))) * 100) + '%';
+    element.style.left = (clamp01(item.x) * 100) + '%';
+    element.style.top = (clamp01(item.y) * 100) + '%';
+    element.style.width = (clampSize(item.width, type === 'button' ? 0.22 : 0.30) * 100) + '%';
+    element.style.height = (clampSize(item.height, type === 'button' ? 0.09 : 0.12) * 100) + '%';
     if (type === 'text') {
       element.style.padding = '10px';
       element.style.overflow = 'hidden';
       element.style.whiteSpace = 'pre-wrap';
+      element.style.background = 'transparent';
     }
     canvas.appendChild(element);
   }
@@ -326,14 +351,272 @@ async function loadPreviewBackground(assetID, canvas, fit) {
   }
 }
 
-function formatBytes(size) {
-  const value = Number(size) || 0;
-  if (value < 1024) return value + ' B';
-  if (value < 1024 * 1024) return (value / 1024).toFixed(1) + ' KB';
-  return (value / (1024 * 1024)).toFixed(1) + ' MB';
+function assetLabel(asset) {
+  return `#${asset.id} — ${asset.name || asset.mime || 'Asset'}`;
 }
 
-function renderAssetRow(asset) {
+function populateAssetSelect(select, includeNone = true) {
+  select.innerHTML = '';
+  if (includeNone) {
+    const none = document.createElement('option');
+    none.value = '0';
+    none.textContent = 'None';
+    select.appendChild(none);
+  }
+  for (const asset of assets) {
+    const option = document.createElement('option');
+    option.value = String(asset.id);
+    option.textContent = assetLabel(asset);
+    select.appendChild(option);
+  }
+}
+
+function normalizeEditorContent(content) {
+  const normalized = content && typeof content === 'object' ? JSON.parse(JSON.stringify(content)) : {};
+  if (!normalized.background || typeof normalized.background !== 'object') normalized.background = {};
+  if (!Array.isArray(normalized.elements)) normalized.elements = [];
+  return normalized;
+}
+
+function startGraphicalLayout() {
+  const content = parseEditorJSON();
+  if (!content) return;
+  if (!Array.isArray(content.elements)) content.elements = [];
+  if (!content.background || typeof content.background !== 'object') {
+    content.background = { asset: 0, fit: 'cover' };
+  }
+  $('screen-content').value = JSON.stringify(content, null, 2);
+  openVisualEditor();
+}
+
+function openVisualEditor() {
+  const content = parseEditorJSON();
+  if (!content) return;
+  editorContent = normalizeEditorContent(content);
+  editorSelectedIndex = -1;
+  populateAssetSelect($('editor-background-asset'));
+  populateAssetSelect($('editor-asset'));
+  const background = editorContent.background || {};
+  $('editor-background-asset').value = String(Number(background.asset || 0));
+  if (!$('editor-background-asset').value) $('editor-background-asset').value = '0';
+  $('editor-background-fit').value = background.fit === 'contain' ? 'contain' : 'cover';
+  $('visual-editor-panel').classList.remove('hidden');
+  renderVisualEditor();
+}
+
+function closeVisualEditor(apply) {
+  if (apply) applyVisualEditor();
+  editorContent = null;
+  editorSelectedIndex = -1;
+  editorDrag = null;
+  $('visual-editor-panel').classList.add('hidden');
+}
+
+function applyVisualEditor() {
+  if (!editorContent) return;
+  $('screen-content').value = JSON.stringify(editorContent, null, 2);
+}
+
+function selectEditorElement(index) {
+  if (!editorContent || !Array.isArray(editorContent.elements)) return;
+  if (index < 0 || index >= editorContent.elements.length) {
+    editorSelectedIndex = -1;
+  } else {
+    editorSelectedIndex = index;
+  }
+  renderVisualEditor();
+}
+
+function elementDefaults(type) {
+  const defaults = {
+    text: { type: 'text', text: 'New text', x: 0.5, y: 0.2, width: 0.3, height: 0.1 },
+    image: { type: 'image', asset: Number(assets[0]?.id || 0), x: 0.5, y: 0.2, width: 0.2, height: 0.2, fit: 'contain' },
+    button: { type: 'button', asset: Number(assets[0]?.id || 0), text: '', x: 0.5, y: 0.4, width: 0.22, height: 0.09, fit: 'contain', destination: { type: 'service', service: 'chat' } }
+  };
+  return JSON.parse(JSON.stringify(defaults[type]));
+}
+
+function addEditorElement(type) {
+  if (!editorContent) return;
+  if (!Array.isArray(editorContent.elements)) editorContent.elements = [];
+  editorContent.elements.push(elementDefaults(type));
+  editorSelectedIndex = editorContent.elements.length - 1;
+  renderVisualEditor();
+}
+
+function renderVisualEditor() {
+  if (!editorContent) return;
+  const canvas = $('visual-editor-canvas');
+  canvas.innerHTML = '';
+  const background = editorContent.background || {};
+  const backgroundID = Number(background.asset || 0);
+  canvas.style.backgroundImage = '';
+  canvas.style.backgroundSize = background.fit === 'contain' ? 'contain' : 'cover';
+  canvas.style.backgroundPosition = 'center';
+  canvas.style.backgroundRepeat = 'no-repeat';
+  if (backgroundID > 0) loadEditorBackground(backgroundID, canvas);
+
+  const elements = Array.isArray(editorContent.elements) ? editorContent.elements : [];
+  elements.forEach((item, index) => {
+    const type = String(item.type || '').toLowerCase();
+    if (!['text', 'button', 'image'].includes(type)) return;
+    const wrapper = document.createElement('div');
+    wrapper.className = 'editor-element' + (index === editorSelectedIndex ? ' selected' : '');
+    wrapper.dataset.index = String(index);
+    wrapper.style.left = (clamp01(item.x) * 100) + '%';
+    wrapper.style.top = (clamp01(item.y) * 100) + '%';
+    wrapper.style.width = (clampSize(item.width, type === 'button' ? 0.22 : 0.30) * 100) + '%';
+    wrapper.style.height = (clampSize(item.height, type === 'button' ? 0.09 : 0.12) * 100) + '%';
+
+    const visual = document.createElement(type === 'button' ? 'button' : type === 'image' ? 'img' : 'div');
+    visual.type = type === 'button' ? 'button' : undefined;
+    visual.disabled = type === 'button';
+    visual.className = 'editor-element-visual';
+    if (type === 'text') {
+      visual.textContent = item.text || 'Text';
+      visual.style.whiteSpace = 'pre-wrap';
+      visual.style.overflow = 'hidden';
+    } else {
+      const assetID = Number(item.asset || 0);
+      if (assetID > 0) {
+        visual.alt = item.alt || '';
+        visual.draggable = false;
+        if (type === 'button') {
+          visual.style.width = '100%';
+          visual.style.height = '100%';
+          visual.style.objectFit = item.fit === 'cover' ? 'cover' : 'contain';
+          loadPreviewAssetImage(assetID, visual);
+        } else {
+          visual.style.width = '100%';
+          visual.style.height = '100%';
+          visual.style.objectFit = item.fit === 'cover' ? 'cover' : 'contain';
+          loadPreviewAssetImage(assetID, visual);
+        }
+      } else {
+        visual.textContent = type === 'button' ? 'Button' : 'Image';
+      }
+    }
+    wrapper.appendChild(visual);
+    wrapper.addEventListener('pointerdown', (event) => beginEditorDrag(event, index));
+    wrapper.addEventListener('click', (event) => {
+      event.stopPropagation();
+      selectEditorElement(index);
+    });
+    canvas.appendChild(wrapper);
+  });
+
+  updateInspector();
+}
+
+async function loadEditorBackground(assetID, canvas) {
+  try {
+    const response = await fetch('/api/content/assets/' + assetID, {
+      headers: token ? { Authorization: 'Bearer ' + token } : {}
+    });
+    if (!response.ok) return;
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    canvas.style.backgroundImage = 'url("' + url + '")';
+  } catch (error) {
+    // Keep the editor usable if an asset disappears.
+  }
+}
+
+function beginEditorDrag(event, index) {
+  if (!editorContent) return;
+  if (event.button !== undefined && event.button !== 0) return;
+  event.preventDefault();
+  event.stopPropagation();
+  editorSelectedIndex = index;
+  const item = editorContent.elements[index];
+  editorDrag = {
+    index,
+    startX: event.clientX,
+    startY: event.clientY,
+    x: clamp01(item.x),
+    y: clamp01(item.y)
+  };
+  event.currentTarget.setPointerCapture?.(event.pointerId);
+}
+
+function handleEditorPointerMove(event) {
+  if (!editorDrag || !editorContent) return;
+  const canvas = $('visual-editor-canvas');
+  const rect = canvas.getBoundingClientRect();
+  if (!rect.width || !rect.height) return;
+  const item = editorContent.elements[editorDrag.index];
+  const dx = (event.clientX - editorDrag.startX) / rect.width;
+  const dy = (event.clientY - editorDrag.startY) / rect.height;
+  item.x = Number(clamp01(editorDrag.x + dx).toFixed(4));
+  item.y = Number(clamp01(editorDrag.y + dy).toFixed(4));
+  renderVisualEditor();
+}
+
+function endEditorDrag() {
+  editorDrag = null;
+}
+
+function updateInspector() {
+  const properties = $('editor-properties');
+  const empty = $('editor-no-selection');
+  const index = editorSelectedIndex;
+  if (!editorContent || index < 0 || !editorContent.elements[index]) {
+    properties.classList.add('hidden');
+    empty.classList.remove('hidden');
+    return;
+  }
+
+  const item = editorContent.elements[index];
+  const type = String(item.type || '').toLowerCase();
+  empty.classList.add('hidden');
+  properties.classList.remove('hidden');
+  $('editor-type').value = type;
+  $('editor-text').value = item.text || '';
+  $('editor-asset').value = String(Number(item.asset || 0));
+  if (!$('editor-asset').value) $('editor-asset').value = '0';
+  $('editor-x').value = clamp01(item.x).toFixed(2);
+  $('editor-y').value = clamp01(item.y).toFixed(2);
+  $('editor-width').value = clampSize(item.width, type === 'button' ? 0.22 : 0.30).toFixed(2);
+  $('editor-height').value = clampSize(item.height, type === 'button' ? 0.09 : 0.12).toFixed(2);
+  $('editor-fit').value = item.fit === 'cover' ? 'cover' : 'contain';
+  const service = item.destination?.type === 'service' ? String(item.destination.service || '') : '';
+  $('editor-service').value = service;
+  $('editor-text').disabled = type === 'image';
+  $('editor-asset').disabled = type === 'text';
+  $('editor-fit').disabled = type === 'text';
+  $('editor-service').disabled = type !== 'button';
+}
+
+function updateSelectedProperty(property, value) {
+  if (!editorContent || editorSelectedIndex < 0) return;
+  const item = editorContent.elements[editorSelectedIndex];
+  if (!item) return;
+  if (property === 'x' || property === 'y') item[property] = Number(clamp01(value).toFixed(4));
+  else if (property === 'width' || property === 'height') item[property] = Number(clampSize(value, property === 'width' ? 0.3 : 0.1).toFixed(4));
+  else item[property] = value;
+  renderVisualEditor();
+}
+
+function updateSelectedService(value) {
+  if (!editorContent || editorSelectedIndex < 0) return;
+  const item = editorContent.elements[editorSelectedIndex];
+  if (!item) return;
+  if (!value) {
+    delete item.destination;
+  } else {
+    item.destination = { type: 'service', service: value };
+  }
+  renderVisualEditor();
+}
+
+function deleteSelectedElement() {
+  if (!editorContent || editorSelectedIndex < 0) return;
+  editorContent.elements.splice(editorSelectedIndex, 1);
+  editorSelectedIndex = Math.min(editorSelectedIndex, editorContent.elements.length - 1);
+  renderVisualEditor();
+}
+
+async function renderAssetRow(asset) {
   const row = document.createElement('tr');
   row.innerHTML = '<td>' + asset.id + '</td>' +
     '<td>' + escapeHTML(asset.name) + '</td>' +
@@ -349,9 +632,15 @@ async function refreshAssets() {
   showAssetError('');
   try {
     const result = await request('/api/admin/content/assets');
+    assets = result.assets || [];
     const body = $('assets');
     body.innerHTML = '';
-    for (const asset of result.assets || []) body.appendChild(renderAssetRow(asset));
+    for (const asset of assets) body.appendChild(await renderAssetRow(asset));
+    if (editorContent) {
+      populateAssetSelect($('editor-background-asset'));
+      populateAssetSelect($('editor-asset'));
+      renderVisualEditor();
+    }
   } catch (error) {
     showAssetError(error.message || String(error));
   }
@@ -406,21 +695,58 @@ $('new-screen').addEventListener('click', () => {
 });
 function closeEditor() {
   $('screen-panel').classList.add('hidden');
+  closeVisualEditor(false);
 }
 $('close-screen').addEventListener('click', closeEditor);
 $('screen-panel').querySelector('.screen-modal-backdrop').addEventListener('click', closeEditor);
 document.addEventListener('keydown', (event) => {
-  if (event.key === 'Escape' && !$('screen-preview').classList.contains('hidden')) $('screen-preview').classList.add('hidden');
-  else if (event.key === 'Escape' && !$('screen-panel').classList.contains('hidden')) closeEditor();
+  if (event.key !== 'Escape') return;
+  if (!$('visual-editor-panel').classList.contains('hidden')) closeVisualEditor(true);
+  else if (!$('screen-preview').classList.contains('hidden')) $('screen-preview').classList.add('hidden');
+  else if (!$('screen-panel').classList.contains('hidden')) closeEditor();
 });
 $('save-screen').addEventListener('click', saveScreen);
 $('preview-screen').addEventListener('click', previewScreen);
+$('visual-editor').addEventListener('click', openVisualEditor);
+$('graphical-layout').addEventListener('click', startGraphicalLayout);
 $('close-preview').addEventListener('click', () => $('screen-preview').classList.add('hidden'));
 $('screen-preview').querySelector('.screen-preview-backdrop').addEventListener('click', () => $('screen-preview').classList.add('hidden'));
+$('close-visual-editor').addEventListener('click', () => closeVisualEditor(true));
+$('close-visual-editor-bottom').addEventListener('click', () => closeVisualEditor(true));
+$('visual-editor-panel').querySelector('.screen-preview-backdrop').addEventListener('click', () => closeVisualEditor(true));
+$('apply-visual-editor').addEventListener('click', applyVisualEditor);
+$('add-text').addEventListener('click', () => addEditorElement('text'));
+$('add-image').addEventListener('click', () => addEditorElement('image'));
+$('add-button').addEventListener('click', () => addEditorElement('button'));
+$('delete-element').addEventListener('click', deleteSelectedElement);
+$('editor-background-asset').addEventListener('change', (event) => {
+  if (!editorContent) return;
+  editorContent.background = editorContent.background || {};
+  editorContent.background.asset = Number(event.target.value || 0);
+  renderVisualEditor();
+});
+$('editor-background-fit').addEventListener('change', (event) => {
+  if (!editorContent) return;
+  editorContent.background = editorContent.background || {};
+  editorContent.background.fit = event.target.value === 'contain' ? 'contain' : 'cover';
+  renderVisualEditor();
+});
+$('editor-text').addEventListener('input', (event) => updateSelectedProperty('text', event.target.value));
+$('editor-asset').addEventListener('change', (event) => updateSelectedProperty('asset', Number(event.target.value || 0)));
+$('editor-x').addEventListener('change', (event) => updateSelectedProperty('x', event.target.value));
+$('editor-y').addEventListener('change', (event) => updateSelectedProperty('y', event.target.value));
+$('editor-width').addEventListener('change', (event) => updateSelectedProperty('width', event.target.value));
+$('editor-height').addEventListener('change', (event) => updateSelectedProperty('height', event.target.value));
+$('editor-fit').addEventListener('change', (event) => updateSelectedProperty('fit', event.target.value === 'cover' ? 'cover' : 'contain'));
+$('editor-service').addEventListener('change', (event) => updateSelectedService(event.target.value));
+$('visual-editor-canvas').addEventListener('pointermove', handleEditorPointerMove);
+$('visual-editor-canvas').addEventListener('pointerup', endEditorDrag);
+$('visual-editor-canvas').addEventListener('pointercancel', endEditorDrag);
+$('visual-editor-canvas').addEventListener('click', () => selectEditorElement(-1));
+
 $('delete-screen').addEventListener('click', () => {
   if (selectedId) deleteScreen({ id: selectedId, title: $('screen-title').value });
 });
-refreshScreens();
 
-$('upload-asset').addEventListener('click', uploadAsset);
+refreshScreens();
 refreshAssets();
