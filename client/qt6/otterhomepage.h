@@ -48,6 +48,7 @@ private:
     QVBoxLayout *m_layout = nullptr;
     QLabel *m_backgroundLayer = nullptr;
     QPixmap m_background;
+    QString m_backgroundFit = QStringLiteral("cover");
     bool m_templateMode = false;
     QWidget *m_overlay = nullptr;
     QHash<qint64, QImage> m_loadedAssets;
