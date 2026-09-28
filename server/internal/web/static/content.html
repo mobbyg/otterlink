@@ -58,6 +58,24 @@
         </div>
       </div>
     </section>
+
+    <section id="assets-section" class="card">
+      <div class="section-title">
+        <div><small>CONTENT</small><h1>Images &amp; Assets</h1></div>
+      </div>
+      <p class="status">Upload reusable image assets for server-managed screens. PNG, JPEG, GIF, and WebP files up to 10 MB are supported.</p>
+      <div class="admin-actions">
+        <input id="asset-file" type="file" accept="image/png,image/jpeg,image/gif,image/webp">
+        <button id="upload-asset">Upload Asset</button>
+      </div>
+      <p id="asset-error" class="error"></p>
+      <div class="admin-table-wrap">
+        <table class="admin-table">
+          <thead><tr><th>Name</th><th>Type</th><th>Size</th><th>SHA-256</th><th>Manage</th></tr></thead>
+          <tbody id="assets"></tbody>
+        </table>
+      </div>
+    </section>
     <footer>Otter Link content • development UI</footer>
   </main>
   <script src="/static/content.js"></script>
