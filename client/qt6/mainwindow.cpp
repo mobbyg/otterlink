@@ -477,7 +477,6 @@ void MainWindow::openServiceWindow(const QString &service, const QString &title,
     }
 
     window->move(24 + offset, 20 + offset);
-    window->keepInsideDesktop();
 
     connect(window, &OtterServiceWindow::closeRequested,
             this, &MainWindow::closeServiceWindow);
