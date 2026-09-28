@@ -5,6 +5,7 @@ let assets = [];
 let editorContent = null;
 let editorSelectedIndex = -1;
 let editorDrag = null;
+let editorResize = null;
 let editorButtonColor = '#efa00b';
 
 async function request(path, options = {}) {
@@ -246,8 +247,7 @@ function renderPreview(content) {
     const grid = document.createElement('div');
     grid.className = 'preview-services';
     for (const item of services) {
-      const tile = document.createElement('div');
-      tile.className = 'preview-service';
+      const tile = document.createElement('div');      tile.className = 'preview-service';
       const title = document.createElement('strong');
       title.textContent = (item.icon ? item.icon + '  ' : '') + (item.title || '');
       const description = document.createElement('p');
@@ -376,8 +376,7 @@ function populateAssetSelect(select, includeNone = true) {
     none.value = '0';
     none.textContent = 'None';
     select.appendChild(none);
-  }
-  for (const asset of assets) {
+  }  for (const asset of assets) {
     const option = document.createElement('option');
     option.value = String(asset.id);
     option.textContent = assetLabel(asset);
@@ -443,7 +442,7 @@ function selectEditorElement(index) {
 
 function elementDefaults(type) {
   const defaults = {
-    text: { type: 'text', text: 'New text', x: 0.5, y: 0.2, width: 0.3, height: 0.1 },
+    text: { type: 'text', text: 'New text', x: 0.5, y: 0.2, width: 0.3, height: 0.1, font_size: 32, color: '#ffffff', align: 'left', weight: 700 },
     image: { type: 'image', asset: Number(assets[0]?.id || 0), x: 0.5, y: 0.2, width: 0.2, height: 0.2, fit: 'contain' },
     button: { type: 'button', asset: 0, text: 'Button', x: 0.5, y: 0.4, width: 0.22, height: 0.09, background: '#efa00b', color: '#591f0a', destination: { type: 'service', service: 'chat' } }
   };
@@ -482,14 +481,21 @@ function renderVisualEditor() {
     wrapper.style.width = (clampSize(item.width, type === 'button' ? 0.22 : 0.30) * 100) + '%';
     wrapper.style.height = (clampSize(item.height, type === 'button' ? 0.09 : 0.12) * 100) + '%';
 
-    const visual = document.createElement(type === 'button' ? 'button' : type === 'image' ? 'img' : 'div');
-    visual.type = type === 'button' ? 'button' : undefined;
-    visual.disabled = type === 'button';
+    let visual;
+    if (type === 'button') {
+      visual = document.createElement('button');
+      visual.type = 'button';
+      visual.disabled = true;
+    } else if (type === 'image') {
+      visual = document.createElement('img');
+    } else {
+      visual = document.createElement('div');
+    }
     visual.className = 'editor-element-visual';
     if (type === 'text') {
       visual.textContent = item.text || 'Text';
       visual.style.whiteSpace = 'pre-wrap';
-      visual.style.overflow = 'hidden';
+      visual.style.overflow = 'visible';
       visual.style.color = item.color || '#ffffff';
       visual.style.fontSize = Math.max(8, Math.min(200, Number(item.font_size) || 32)) + 'px';
       visual.style.fontWeight = String(item.weight || 700);
@@ -499,19 +505,16 @@ function renderVisualEditor() {
     } else {
       const assetID = Number(item.asset || 0);
       if (assetID > 0) {
-        visual.alt = item.alt || '';
-        visual.draggable = false;
-        if (type === 'button') {
-          visual.style.width = '100%';
-          visual.style.height = '100%';
-          visual.style.objectFit = item.fit === 'cover' ? 'cover' : 'contain';
-          loadPreviewAssetImage(assetID, visual);
-        } else {
-          visual.style.width = '100%';
-          visual.style.height = '100%';
-          visual.style.objectFit = item.fit === 'cover' ? 'cover' : 'contain';
-          loadPreviewAssetImage(assetID, visual);
-        }
+        const image = document.createElement('img');
+        image.alt = item.alt || item.text || '';
+        image.draggable = false;
+        image.style.width = '100%';
+        image.style.height = '100%';
+        image.style.objectFit = item.fit === 'cover' ? 'cover' : 'contain';
+        image.style.display = 'block';
+        image.style.pointerEvents = 'none';
+        loadPreviewAssetImage(assetID, image);
+        visual.appendChild(image);
       } else {
         visual.textContent = type === 'button' ? 'Button' : 'Image';
       }
@@ -568,10 +571,25 @@ function beginEditorDrag(event, index) {
 }
 
 function handleEditorPointerMove(event) {
-  if (!editorDrag || !editorContent) return;
+  if (!editorContent) return;
   const canvas = $('visual-editor-canvas');
   const rect = canvas.getBoundingClientRect();
   if (!rect.width || !rect.height) return;
+
+  if (editorResize) {
+    const item = editorContent.elements[editorResize.index];
+    if (!item) return;
+    const dw = (event.clientX - editorResize.startX) / rect.width;
+    const dh = (event.clientY - editorResize.startY) / rect.height;
+    const maxWidth = Math.max(0.01, 1 - editorResize.x);
+    const maxHeight = Math.max(0.01, 1 - editorResize.y);
+    item.width = Number(Math.min(maxWidth, Math.max(0.01, editorResize.width + dw)).toFixed(4));
+    item.height = Number(Math.min(maxHeight, Math.max(0.01, editorResize.height + dh)).toFixed(4));
+    renderVisualEditor();
+    return;
+  }
+
+  if (!editorDrag) return;
   const item = editorContent.elements[editorDrag.index];
   const dx = (event.clientX - editorDrag.startX) / rect.width;
   const dy = (event.clientY - editorDrag.startY) / rect.height;
@@ -583,6 +601,35 @@ function handleEditorPointerMove(event) {
 function endEditorDrag() {
   editorDrag = null;
 }
+
+function endEditorPointerInteraction() {
+  editorDrag = null;
+  editorResize = null;
+}
+
+function beginEditorResize(event, index) {
+  if (!editorContent || !editorContent.elements[index]) return;
+  event.preventDefault();
+  event.stopPropagation();
+  editorSelectedIndex = index;
+  const item = editorContent.elements[index];
+  editorResize = {
+    index,
+    startX: event.clientX,
+    startY: event.clientY,
+    width: clampSize(item.width, 0.3),
+    height: clampSize(item.height, 0.1),
+    x: clamp01(item.x),
+    y: clamp01(item.y)
+  };
+  event.currentTarget.setPointerCapture?.(event.pointerId);
+  renderVisualEditor();
+}
+
+function endEditorResize() {
+  editorResize = null;
+}
+
 
 function updateInspector() {
   const properties = $('editor-properties');
@@ -600,6 +647,10 @@ function updateInspector() {
   properties.classList.remove('hidden');
   $('editor-type').value = type;
   $('editor-text').value = item.text || '';
+  $('editor-font-size').value = Math.max(8, Math.min(200, Number(item.font_size) || 32));
+  $('editor-text-color').value = item.color || '#ffffff';
+  $('editor-text-align').value = item.align || 'left';
+  $('editor-font-weight').value = String(item.weight || 700);
   $('editor-asset').value = String(Number(item.asset || 0));
   if (!$('editor-asset').value) $('editor-asset').value = '0';
   $('editor-x').value = clamp01(item.x).toFixed(2);
@@ -610,6 +661,10 @@ function updateInspector() {
   const service = item.destination?.type === 'service' ? String(item.destination.service || '') : '';
   $('editor-service').value = service;
   $('editor-text').disabled = type === 'image';
+  $('editor-font-size').disabled = type !== 'text';
+  $('editor-text-color').disabled = type !== 'text';
+  $('editor-text-align').disabled = type !== 'text';
+  $('editor-font-weight').disabled = type !== 'text';
   $('editor-asset').disabled = type === 'text';
   $('editor-fit').disabled = type === 'text';
   $('editor-service').disabled = type !== 'button';
@@ -778,8 +833,8 @@ $('editor-service').addEventListener('change', (event) => updateSelectedService(
 $('editor-button-background').addEventListener('input', (event) => updateSelectedProperty('background', event.target.value));
 $('editor-button-color').addEventListener('input', (event) => updateSelectedProperty('color', event.target.value));
 $('visual-editor-canvas').addEventListener('pointermove', handleEditorPointerMove);
-$('visual-editor-canvas').addEventListener('pointerup', endEditorDrag);
-$('visual-editor-canvas').addEventListener('pointercancel', endEditorDrag);
+$('visual-editor-canvas').addEventListener('pointerup', endEditorPointerInteraction);
+$('visual-editor-canvas').addEventListener('pointercancel', endEditorPointerInteraction);
 $('visual-editor-canvas').addEventListener('click', () => selectEditorElement(-1));
 $('upload-asset').addEventListener('click', uploadAsset);
 
