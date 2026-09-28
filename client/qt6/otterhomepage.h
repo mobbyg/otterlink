@@ -33,9 +33,12 @@ private:
                         const QString &service, QWidget *parent);
     void clearPage();
     void applyBackground(const QPixmap &background);
+    void buildOverlay(const QJsonArray &elements);
+    void layoutOverlay();
 
     QScrollArea *m_scrollArea = nullptr;
     QWidget *m_page = nullptr;
     QVBoxLayout *m_layout = nullptr;
     QPixmap m_background;
+    QWidget *m_overlay = nullptr;
 };
