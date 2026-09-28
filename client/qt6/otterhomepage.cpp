@@ -87,7 +87,7 @@ void OtterHomePage::clearPage()
 
     while (QLayoutItem *item = m_layout->takeAt(0)) {
         if (QWidget *widget = item->widget())
-            widget->deleteLater();
+            delete widget;
         delete item;
     }
 }
