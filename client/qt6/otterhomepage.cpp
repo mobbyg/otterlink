@@ -112,7 +112,10 @@ void OtterHomePage::setServerBackground(const QImage &background)
         return;
 
     m_background = QPixmap::fromImage(background);
+    setUpdatesEnabled(false);
     applyBackground(m_background);
+    setUpdatesEnabled(true);
+    update();
 }
 
 void OtterHomePage::setServerAsset(qint64 assetId, const QImage &image)
@@ -139,7 +142,6 @@ void OtterHomePage::setServerAsset(qint64 assetId, const QImage &image)
             }
         }
     }
-    layoutOverlay();
 }
 
 void OtterHomePage::setServerScreen(const QJsonObject &screen, const QImage &background)
@@ -168,12 +170,15 @@ void OtterHomePage::setServerScreen(const QJsonObject &screen, const QImage &bac
         content.insert(QStringLiteral("hero"), hero);
     }
 
-    // Build the server-managed layout only when the screen itself changes.
-    // The background arrives separately and must not cause the overlay widgets
-    // to be destroyed and recreated on top of one another.
+    // Build the server-managed layout as one atomic visual update. This avoids
+    // exposing the intermediate empty/partially populated page while widgets
+    // are being replaced and assets are arriving.
+    setUpdatesEnabled(false);
     clearPage();
     buildFromContent(content);
     applyBackground(m_background);
+    setUpdatesEnabled(true);
+    update();
 }
 
 void OtterHomePage::applyBackground(const QPixmap &background)
