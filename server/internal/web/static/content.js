@@ -302,6 +302,10 @@ function renderPreviewElements(elements, canvas) {
         element.appendChild(image);
       } else {
         element.textContent = item.text || '';
+        element.style.background = item.background || '#efa00b';
+        element.style.color = item.color || '#591f0a';
+        element.style.border = '1px solid rgba(255,255,255,.35)';
+        element.style.borderRadius = '8px';
       }
     }
     if (type === 'image') {
@@ -441,7 +445,7 @@ function elementDefaults(type) {
   const defaults = {
     text: { type: 'text', text: 'New text', x: 0.5, y: 0.2, width: 0.3, height: 0.1 },
     image: { type: 'image', asset: Number(assets[0]?.id || 0), x: 0.5, y: 0.2, width: 0.2, height: 0.2, fit: 'contain' },
-    button: { type: 'button', asset: Number(assets[0]?.id || 0), text: '', x: 0.5, y: 0.4, width: 0.22, height: 0.09, fit: 'contain', destination: { type: 'service', service: 'chat' } }
+    button: { type: 'button', asset: 0, text: 'Button', x: 0.5, y: 0.4, width: 0.22, height: 0.09, background: '#efa00b', color: '#591f0a', destination: { type: 'service', service: 'chat' } }
   };
   return JSON.parse(JSON.stringify(defaults[type]));
 }
@@ -723,7 +727,6 @@ document.addEventListener('keydown', (event) => {
 $('save-screen').addEventListener('click', saveScreen);
 $('preview-screen').addEventListener('click', previewScreen);
 $('visual-editor').addEventListener('click', openVisualEditor);
-$('graphical-layout').addEventListener('click', startGraphicalLayout);
 $('close-preview').addEventListener('click', () => $('screen-preview').classList.add('hidden'));
 $('screen-preview').querySelector('.screen-preview-backdrop').addEventListener('click', () => $('screen-preview').classList.add('hidden'));
 $('close-visual-editor').addEventListener('click', () => closeVisualEditor(true));
