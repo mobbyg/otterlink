@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"net/http"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/mobbyg/otterlink/server/internal/content"
@@ -110,8 +109,3 @@ func (s *Server) adminContentDelete(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (s *Server) contentStaticHome(w http.ResponseWriter, _ *http.Request) {
-	http.Redirect(w, r.URL.Path, http.StatusTemporaryRedirect)
-}
-
-var _ = strings.TrimSpace
