@@ -86,6 +86,8 @@ MainWindow::MainWindow(QWidget *parent)
 
     resize(1000, 680);
     m_refreshTimer.setInterval(5000);
+    m_homeRefreshTimer.setInterval(15 * 60 * 1000);
+    connect(&m_homeRefreshTimer, &QTimer::timeout, m_client, &OtterLinkClient::loadHomeScreen);
     m_connectionTimer.setInterval(700);
 
     // The old service stack remains the source for the existing service widgets.
@@ -184,6 +186,7 @@ MainWindow::MainWindow(QWidget *parent)
             m_peopleWidget, &OtterPeopleWidget::setPresence);
     connect(m_client, &OtterLinkClient::loggedOut, this, [this]() {
         m_refreshTimer.stop();
+        m_homeRefreshTimer.stop();
         m_connectionTimer.stop();
         m_connectionFinishTimer.stop();
         m_pendingBuddyGroups.clear();
@@ -594,6 +597,7 @@ void MainWindow::showDashboard(const QString &displayName)
     setLoggedIn(true);
     m_client->loadDashboard();
     m_refreshTimer.start();
+    m_homeRefreshTimer.start();
 
     // Start with the desktop itself as the home state. Home remains available from the bar.
     updateServiceButtonStates();
