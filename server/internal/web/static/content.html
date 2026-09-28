@@ -23,7 +23,7 @@
         <div><small>CONTENT</small><h1>Screens</h1></div>
         <button id="new-screen">New Screen</button>
       </div>
-      <p class="status">Screen content is structured JSON, not arbitrary HTML/CSS/JavaScript. The client controls presentation.</p>
+      <p class="status">Server-managed screens use structured content. Use the visual editor to arrange graphical Home layouts, or edit JSON directly for advanced content.</p>
       <p id="content-error" class="error"></p>
 
       <div class="admin-layout">
@@ -37,33 +37,105 @@
         <div id="screen-panel" class="screen-modal hidden" role="dialog" aria-modal="true" aria-labelledby="screen-detail-title">
           <div class="screen-modal-backdrop"></div>
           <div class="screen-modal-dialog">
-          <div class="section-title">
-            <div><small>SCREEN</small><h2 id="screen-detail-title">New Screen</h2></div>
-            <button id="close-screen" class="secondary">Close</button>
-          </div>
-          <label>Slug<input id="screen-slug" maxlength="64" placeholder="home"></label>
-          <label>Title<input id="screen-title" maxlength="160" placeholder="Welcome to Otter Link"></label>
-          <label>Priority<input id="screen-priority" type="number" value="0"></label>
-          <label><input id="screen-published" type="checkbox" checked> Published</label>
-          <div class="event-dates">
-            <label>Start (optional)<input id="screen-start" type="datetime-local"></label>
-            <label>End (optional)<input id="screen-end" type="datetime-local"></label>
-          </div>
-          <label>Structured content JSON<textarea id="screen-content" rows="24" spellcheck="false"></textarea></label>
-          <div class="admin-actions">
-            <button id="save-screen">Save Screen</button>
-            <button id="preview-screen" class="secondary">Preview</button>
-            <button id="delete-screen" class="danger">Delete Screen</button>
-          </div>
-          <p class="status">Scheduling is evaluated by the server. A published screen with no dates is permanent.</p>
+            <div class="section-title">
+              <div><small>SCREEN</small><h2 id="screen-detail-title">New Screen</h2></div>
+              <button id="close-screen" class="secondary">Close</button>
+            </div>
+            <label>Slug<input id="screen-slug" maxlength="64" placeholder="home"></label>
+            <label>Title<input id="screen-title" maxlength="160" placeholder="Welcome to Otter Link"></label>
+            <label>Priority<input id="screen-priority" type="number" value="0"></label>
+            <label><input id="screen-published" type="checkbox" checked> Published</label>
+            <div class="event-dates">
+              <label>Start (optional)<input id="screen-start" type="datetime-local"></label>
+              <label>End (optional)<input id="screen-end" type="datetime-local"></label>
+            </div>
+            <div class="editor-mode-actions">
+              <button id="visual-editor" class="secondary">Visual Editor</button>
+              <button id="preview-screen" class="secondary">Preview</button>
+              <button id="graphical-layout" class="secondary">Start Graphical Layout</button>
+            </div>
+            <label>Structured content JSON<textarea id="screen-content" rows="24" spellcheck="false"></textarea></label>
+            <div class="admin-actions">
+              <button id="save-screen">Save Screen</button>
+              <button id="delete-screen" class="danger">Delete Screen</button>
+            </div>
+            <p class="status">Scheduling is evaluated by the server. A published screen with no dates is permanent.</p>
           </div>
         </div>
-      <div id="screen-preview" class="screen-preview hidden" role="dialog" aria-modal="true" aria-labelledby="screen-preview-title">
-        <div class="screen-preview-backdrop"></div>
-        <div class="screen-preview-dialog">
-          <div class="section-title"><div><small>CLIENT PREVIEW</small><h2 id="screen-preview-title">Screen Preview</h2></div><button id="close-preview" class="secondary">Close</button></div>
-          <p class="status">Read-only approximation of the Qt6 Home presentation. Background assets are rendered when referenced by the screen JSON.</p>
-          <div class="screen-preview-frame"><div id="screen-preview-canvas" class="screen-preview-canvas"></div></div>
+
+        <div id="screen-preview" class="screen-preview hidden" role="dialog" aria-modal="true" aria-labelledby="screen-preview-title">
+          <div class="screen-preview-backdrop"></div>
+          <div class="screen-preview-dialog">
+            <div class="section-title"><div><small>CLIENT PREVIEW</small><h2 id="screen-preview-title">Screen Preview</h2></div><button id="close-preview" class="secondary">Close</button></div>
+            <p class="status">Read-only approximation of the Qt6 Home presentation.</p>
+            <div class="screen-preview-frame"><div id="screen-preview-canvas" class="screen-preview-canvas"></div></div>
+          </div>
+        </div>
+
+        <div id="visual-editor-panel" class="screen-preview hidden" role="dialog" aria-modal="true" aria-labelledby="visual-editor-title">
+          <div class="screen-preview-backdrop"></div>
+          <div class="screen-preview-dialog visual-editor-dialog">
+            <div class="section-title">
+              <div><small>GRAPHICAL EDITOR</small><h2 id="visual-editor-title">Home Layout Editor</h2></div>
+              <button id="close-visual-editor" class="secondary">Close</button>
+            </div>
+            <p class="status">Drag an element on the canvas to position it. Use the inspector for exact size, artwork, and destination values.</p>
+            <div class="visual-editor-layout">
+              <div class="editor-canvas-wrap">
+                <div id="visual-editor-canvas" class="screen-preview-canvas template-preview editor-canvas" tabindex="0" aria-label="Graphical screen editor canvas"></div>
+              </div>
+              <aside class="editor-inspector">
+                <div class="editor-toolbar">
+                  <button id="add-text" type="button">+ Text</button>
+                  <button id="add-image" type="button">+ Image</button>
+                  <button id="add-button" type="button">+ Button</button>
+                </div>
+                <label>Background
+                  <select id="editor-background-asset"></select>
+                </label>
+                <label>Background fit
+                  <select id="editor-background-fit"><option value="cover">Cover</option><option value="contain">Contain</option></select>
+                </label>
+                <div class="editor-divider"></div>
+                <div id="editor-no-selection" class="status">Select an element to edit it.</div>
+                <div id="editor-properties" class="hidden">
+                  <label>Type<input id="editor-type" readonly></label>
+                  <label>Text / label<input id="editor-text" type="text"></label>
+                  <label>Asset
+                    <select id="editor-asset"></select>
+                  </label>
+                  <div class="editor-grid">
+                    <label>X<input id="editor-x" type="number" min="0" max="1" step="0.01"></label>
+                    <label>Y<input id="editor-y" type="number" min="0" max="1" step="0.01"></label>
+                    <label>Width<input id="editor-width" type="number" min="0.01" max="1" step="0.01"></label>
+                    <label>Height<input id="editor-height" type="number" min="0.01" max="1" step="0.01"></label>
+                  </div>
+                  <label>Image fit
+                    <select id="editor-fit"><option value="contain">Contain</option><option value="cover">Cover</option></select>
+                  </label>
+                  <label>Service destination
+                    <select id="editor-service">
+                      <option value="">None</option>
+                      <option value="chat">Chat</option>
+                      <option value="people">People</option>
+                      <option value="news">News</option>
+                      <option value="events">Events</option>
+                      <option value="boards">Boards</option>
+                      <option value="mail">Mail</option>
+                      <option value="games">Games</option>
+                    </select>
+                  </label>
+                  <button id="delete-element" type="button" class="danger">Delete Element</button>
+                </div>
+                <div class="editor-divider"></div>
+                <div class="editor-help">Coordinates are normalized from 0.00 to 1.00, so the same layout scales with the client window.</div>
+              </aside>
+            </div>
+            <div class="admin-actions">
+              <button id="apply-visual-editor">Apply to JSON</button>
+              <button id="close-visual-editor-bottom" class="secondary">Done</button>
+            </div>
+          </div>
         </div>
       </div>
     </section>
