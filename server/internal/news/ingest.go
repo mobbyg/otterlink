@@ -8,11 +8,15 @@ import (
 	"errors"
 	"fmt"
 	"html"
+	"bytes"
 	"io"
+	"regexp"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
+
+	htmlpkg "golang.org/x/net/html"
 )
 
 const (
@@ -32,6 +36,7 @@ type Item struct {
 	URL         string `json:"url"`
 	GUID        string `json:"guid"`
 	ImageURL    string `json:"image_url,omitempty"`
+	ArticleHTML string `json:"article_html,omitempty"`
 	CreatedAt   string `json:"created_at"`
 }
 
@@ -142,10 +147,10 @@ func (s Service) FetchSource(ctx context.Context, id int64) (int, error) {
 			item.GUID = stableGUID(item.URL, item.Title)
 		}
 		result, err := s.DB.Exec(`INSERT OR IGNORE INTO news_items
-			(source_id,title,author,published_at,summary,url,guid,image_url)
-			VALUES (?,?,?,?,?,?,?,?)`,
+			(source_id,title,author,published_at,summary,url,guid,image_url,article_html)
+			VALUES (?,?,?,?,?,?,?,?,?)`,
 			source.ID, item.Title, item.Author, nullableTime(item.PublishedAt),
-			item.Summary, item.URL, item.GUID, item.ImageURL)
+			item.Summary, item.URL, item.GUID, item.ImageURL, item.ArticleHTML)
 		if err != nil {
 			return inserted, fmt.Errorf("store news item: %w", err)
 		}
@@ -155,6 +160,10 @@ func (s Service) FetchSource(ctx context.Context, id int64) (int, error) {
 		if item.ImageURL != "" {
 			_, _ = s.DB.Exec(`UPDATE news_items SET image_url=? WHERE source_id=? AND guid=? AND (image_url IS NULL OR image_url='')`,
 				item.ImageURL, source.ID, item.GUID)
+		}
+		if item.ArticleHTML != "" {
+			_, _ = s.DB.Exec(`UPDATE news_items SET article_html=? WHERE source_id=? AND guid=? AND (article_html IS NULL OR article_html='')`,
+				item.ArticleHTML, source.ID, item.GUID)
 		}
 	}
 
@@ -181,7 +190,7 @@ func (s Service) ListItems(limit int, category string, sourceID int64) ([]Item, 
 	category = strings.TrimSpace(category)
 
 	query := `SELECT i.id,i.source_id,s.name,s.category,i.title,i.author,
-		COALESCE(i.published_at,''),i.summary,i.url,i.guid,i.image_url,i.created_at
+		COALESCE(i.published_at,''),i.summary,i.url,i.guid,i.image_url,COALESCE(i.article_html,''),i.created_at
 		FROM news_items i JOIN news_sources s ON s.id=i.source_id
 		WHERE s.enabled=1`
 	args := []any{}
@@ -207,12 +216,166 @@ func (s Service) ListItems(limit int, category string, sourceID int64) ([]Item, 
 		var item Item
 		if err := rows.Scan(&item.ID,&item.SourceID,&item.SourceName,&item.Category,
 			&item.Title,&item.Author,&item.PublishedAt,&item.Summary,&item.URL,&item.GUID,
-			&item.ImageURL,&item.CreatedAt); err != nil {
+			&item.ImageURL,&item.ArticleHTML,&item.CreatedAt); err != nil {
 			return nil, err
 		}
 		result = append(result, item)
 	}
 	return result, rows.Err()
+}
+
+
+func sanitizeArticleHTML(value, base string) string {
+	value = strings.TrimSpace(value)
+	if value == "" { return "" }
+	value = replaceYouTubeEmbeds(value)
+
+	// Parse as a document so the HTML5 parser can handle arbitrary feed markup
+	// correctly, then sanitize and render only the document body contents.
+	doc, err := htmlpkg.Parse(strings.NewReader(value))
+	if err != nil {
+		return ""
+	}
+	var body *htmlpkg.Node
+	var findBody func(*htmlpkg.Node)
+	findBody = func(node *htmlpkg.Node) {
+		if body != nil {
+			return
+		}
+		if node.Type == htmlpkg.ElementNode && strings.EqualFold(node.Data, "body") {
+			body = node
+			return
+		}
+		for child := node.FirstChild; child != nil; child = child.NextSibling {
+			findBody(child)
+		}
+	}
+	findBody(doc)
+	if body == nil {
+		return ""
+	}
+
+	sanitizeHTMLChildren(body, base)
+	var out bytes.Buffer
+	for child := body.FirstChild; child != nil; child = child.NextSibling {
+		if err := htmlpkg.Render(&out, child); err != nil {
+			return ""
+		}
+	}
+	return strings.TrimSpace(out.String())
+}
+
+var allowedArticleTags = map[string]bool{
+	"p": true, "br": true, "strong": true, "em": true, "b": true, "i": true,
+	"u": true, "h1": true, "h2": true, "h3": true, "h4": true,
+	"ul": true, "ol": true, "li": true, "blockquote": true, "a": true,
+	"img": true, "figure": true, "figcaption": true, "hr": true,
+	"div": true, "span": true,
+}
+
+var blockedArticleTags = map[string]bool{
+	"script": true, "style": true, "noscript": true, "iframe": true,
+	"object": true, "embed": true, "form": true, "canvas": true,
+}
+
+func sanitizeHTMLChildren(parent *htmlpkg.Node, base string) {
+	for child := parent.FirstChild; child != nil; {
+		next := child.NextSibling
+		if child.Type == htmlpkg.ElementNode {
+			tag := strings.ToLower(child.Data)
+			if blockedArticleTags[tag] {
+				parent.RemoveChild(child)
+				child = next
+				continue
+			}
+			if !allowedArticleTags[tag] {
+				// Move the children out before removing the wrapper. A node
+				// must be detached from its current parent before it can be
+				// attached elsewhere in the html.Node tree.
+				for grand := child.FirstChild; grand != nil; {
+					grandNext := grand.NextSibling
+					child.RemoveChild(grand)
+					parent.InsertBefore(grand, child)
+					grand = grandNext
+				}
+				parent.RemoveChild(child)
+				child = next
+				continue
+			}
+			sanitizeArticleAttributes(child, base)
+			if child.Parent != nil {
+				sanitizeHTMLChildren(child, base)
+			}
+		}
+		child = next
+	}
+}
+
+func sanitizeArticleAttributes(node *htmlpkg.Node, base string) {
+	attrs := make([]htmlpkg.Attribute, 0, 2)
+	for _, attr := range node.Attr {
+		switch strings.ToLower(attr.Key) {
+		case "src":
+			if strings.EqualFold(node.Data, "img") {
+				if value := normalizeURL(attr.Val, base); value != "" {
+					attrs = append(attrs, htmlpkg.Attribute{Key: "src", Val: value})
+				}
+			}
+		case "href":
+			if strings.EqualFold(node.Data, "a") {
+				if value := normalizeURL(attr.Val, base); value != "" {
+					attrs = append(attrs, htmlpkg.Attribute{Key: "href", Val: value})
+				}
+			}
+		case "alt":
+			if strings.EqualFold(node.Data, "img") {
+				attrs = append(attrs, htmlpkg.Attribute{Key: "alt", Val: attr.Val})
+			}
+		}
+	}
+	if strings.EqualFold(node.Data, "img") {
+		hasSource := false
+		for _, attr := range attrs {
+			if attr.Key == "src" { hasSource = true; break }
+		}
+		if !hasSource && node.Parent != nil {
+			node.Parent.RemoveChild(node)
+			return
+		}
+	}
+	node.Attr = attrs
+}
+
+var youtubeIframePattern = regexp.MustCompile(`(?is)<iframe[^>]+src=["']([^"']+)["'][^>]*>.*?</iframe>`)
+
+func replaceYouTubeEmbeds(value string) string {
+	return youtubeIframePattern.ReplaceAllStringFunc(value, func(match string) string {
+		parts := youtubeIframePattern.FindStringSubmatch(match)
+		if len(parts) != 2 { return "" }
+		videoURL := normalizeYouTubeURL(parts[1])
+		if videoURL == "" { return "" }
+		return "<p><a href=\"" + html.EscapeString(videoURL) + "\">▶ Watch on YouTube</a></p>"
+	})
+}
+
+func normalizeYouTubeURL(raw string) string {
+	u, err := url.Parse(strings.TrimSpace(html.UnescapeString(raw)))
+	if err != nil { return "" }
+	host := strings.ToLower(u.Hostname())
+	if host == "youtu.be" {
+		id := strings.Trim(strings.TrimSpace(u.Path), "/")
+		if id != "" { return "https://www.youtube.com/watch?v=" + url.QueryEscape(id) }
+	}
+	if host == "youtube.com" || host == "www.youtube.com" || host == "m.youtube.com" {
+		if strings.HasPrefix(u.Path, "/embed/") {
+			id := strings.Trim(strings.TrimPrefix(u.Path, "/embed/"), "/")
+			if id != "" { return "https://www.youtube.com/watch?v=" + url.QueryEscape(id) }
+		}
+		if id := u.Query().Get("v"); id != "" {
+			return "https://www.youtube.com/watch?v=" + url.QueryEscape(id)
+		}
+	}
+	return ""
 }
 
 func extractImageURL(value, base string) string {
@@ -259,11 +422,12 @@ func fetchItems(ctx context.Context, client *http.Client, rawURL string) ([]Item
 			if author == "" {
 				author = strings.TrimSpace(entry.Creator)
 			}
-			imageSource := entry.ContentEncoded
-			if imageSource == "" {
-				imageSource = entry.Description
+			articleSource := entry.ContentEncoded
+			if articleSource == "" {
+				articleSource = entry.Description
 			}
-			imageURL := extractImageURL(imageSource, rawURL)
+			articleHTML := sanitizeArticleHTML(articleSource, rawURL)
+			imageURL := extractImageURL(articleSource, rawURL)
 			for _, media := range entry.Thumbnail {
 				if media.URL != "" {
 					imageURL = media.URL
@@ -289,6 +453,7 @@ func fetchItems(ctx context.Context, client *http.Client, rawURL string) ([]Item
 				URL: normalizeURL(entry.Link, rawURL),
 				GUID: cleanText(entry.GUID),
 				ImageURL: normalizeURL(imageURL, rawURL),
+				ArticleHTML: articleHTML,
 			})
 		}
 		return items, nil
@@ -318,7 +483,14 @@ func fetchItems(ctx context.Context, client *http.Client, rawURL string) ([]Item
 		if summary == "" {
 			summary = entry.Content
 		}
-		imageURL := extractImageURL(summary, rawURL)
+		articleHTML := sanitizeArticleHTML(entry.Content, rawURL)
+		if articleHTML == "" {
+			articleHTML = sanitizeArticleHTML(summary, rawURL)
+		}
+		imageURL := extractImageURL(entry.Content, rawURL)
+		if imageURL == "" {
+			imageURL = extractImageURL(summary, rawURL)
+		}
 		items = append(items, Item{
 			Title: cleanText(entry.Title),
 			Author: cleanText(entry.Author.Name),
@@ -327,6 +499,7 @@ func fetchItems(ctx context.Context, client *http.Client, rawURL string) ([]Item
 			URL: normalizeURL(link, rawURL),
 			GUID: cleanText(entry.ID),
 			ImageURL: imageURL,
+			ArticleHTML: articleHTML,
 		})
 	}
 	return items, nil
