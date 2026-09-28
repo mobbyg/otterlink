@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QJsonObject>
+#include <QPixmap>
 #include <QWidget>
 
 class QScrollArea;
@@ -14,6 +15,7 @@ public:
     explicit OtterHomePage(QWidget *parent = nullptr);
 
     void setServerScreen(const QJsonObject &screen);
+    void setServerScreen(const QJsonObject &screen, const QImage &background);
 
 signals:
     void serviceRequested(const QString &service);
@@ -26,8 +28,10 @@ private:
     void addServiceTile(const QString &title, const QString &description, const QString &icon,
                         const QString &service, QWidget *parent);
     void clearPage();
+    void applyBackground(const QPixmap &background);
 
     QScrollArea *m_scrollArea = nullptr;
     QWidget *m_page = nullptr;
     QVBoxLayout *m_layout = nullptr;
+    QPixmap m_background;
 };
