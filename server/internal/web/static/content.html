@@ -100,9 +100,20 @@
                 <div id="editor-properties" class="hidden">
                   <label>Type<input id="editor-type" readonly></label>
                   <label>Text / label<input id="editor-text" type="text"></label>
+                  <div class="editor-grid">
+                    <label>Font size (px)<input id="editor-font-size" type="number" min="8" max="200" step="1"></label>
+                    <label>Text color<input id="editor-text-color" type="color" value="#ffffff"></label>
+                    <label>Text alignment
+                      <select id="editor-text-align"><option value="left">Left</option><option value="center">Center</option><option value="right">Right</option></select>
+                    </label>
+                    <label>Font weight
+                      <select id="editor-font-weight"><option value="400">Normal</option><option value="600">Semibold</option><option value="700">Bold</option><option value="800">Extra bold</option></select>
+                    </label>
+                  </div>
                   <label>Asset
                     <select id="editor-asset"></select>
                   </label>
+                  <div id="editor-asset-preview" class="editor-asset-preview">No asset selected</div>
                   <div class="editor-grid">
                     <label>X<input id="editor-x" type="number" min="0" max="1" step="0.01"></label>
                     <label>Y<input id="editor-y" type="number" min="0" max="1" step="0.01"></label>
