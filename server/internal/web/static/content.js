@@ -248,13 +248,22 @@ function renderPreview(content) {
 function renderPreviewElements(elements, canvas) {
   for (const item of elements) {
     const type = String(item.type || '').toLowerCase();
-    if (type !== 'text' && type !== 'button') continue;
-    const element = document.createElement(type === 'button' ? 'button' : 'div');
+    if (type !== 'text' && type !== 'button' && type !== 'image') continue;
+    const element = document.createElement(type === 'button' ? 'button' : type === 'image' ? 'img' : 'div');
     if (type === 'button') {
       element.type = 'button';
       element.disabled = true;
     }
-    element.textContent = item.text || '';
+    if (type === 'image') {
+      const assetID = Number(item.asset || 0);
+      if (assetID < 1) continue;
+      element.alt = item.alt || '';
+      element.draggable = false;
+      element.src = '/api/content/assets/' + assetID;
+      element.style.objectFit = item.fit === 'cover' ? 'cover' : 'contain';
+    } else {
+      element.textContent = item.text || '';
+    }
     element.style.position = 'absolute';
     element.style.left = (Math.max(0, Math.min(1, Number(item.x) || 0)) * 100) + '%';
     element.style.top = (Math.max(0, Math.min(1, Number(item.y) || 0)) * 100) + '%';
