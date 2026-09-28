@@ -131,6 +131,75 @@ async function deleteScreen(screen) {
   }
 }
 
+
+function showAssetError(message) { $('asset-error').textContent = message || ''; }
+
+function formatBytes(size) {
+  const value = Number(size) || 0;
+  if (value < 1024) return value + ' B';
+  if (value < 1024 * 1024) return (value / 1024).toFixed(1) + ' KB';
+  return (value / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
+function renderAssetRow(asset) {
+  const row = document.createElement('tr');
+  row.innerHTML = '<td>' + escapeHTML(asset.name) + '</td>' +
+    '<td>' + escapeHTML(asset.mime) + '</td>' +
+    '<td>' + formatBytes(asset.size) + '</td>' +
+    '<td><code>' + escapeHTML(asset.sha256.slice(0, 16)) + '…</code></td>' +
+    '<td><button class="danger delete-asset">Delete</button></td>';
+  row.querySelector('.delete-asset').addEventListener('click', () => deleteAsset(asset));
+  return row;
+}
+
+async function refreshAssets() {
+  showAssetError('');
+  try {
+    const result = await request('/api/admin/content/assets');
+    const body = $('assets');
+    body.innerHTML = '';
+    for (const asset of result.assets || []) body.appendChild(renderAssetRow(asset));
+  } catch (error) {
+    showAssetError(error.message || String(error));
+  }
+}
+
+async function uploadAsset() {
+  showAssetError('');
+  const input = $('asset-file');
+  const file = input.files && input.files[0];
+  if (!file) {
+    showAssetError('Choose an image first.');
+    return;
+  }
+
+  const form = new FormData();
+  form.append('asset', file, file.name);
+  try {
+    const response = await fetch('/api/admin/content/assets', {
+      method: 'POST',
+      headers: token ? { Authorization: 'Bearer ' + token } : {},
+      body: form
+    });
+    if (!response.ok) throw new Error((await response.text()) || 'Upload failed');
+    input.value = '';
+    await refreshAssets();
+  } catch (error) {
+    showAssetError(error.message || String(error));
+  }
+}
+
+async function deleteAsset(asset) {
+  if (!confirm('Delete asset "' + asset.name + '"?')) return;
+  showAssetError('');
+  try {
+    await request('/api/admin/content/assets/' + asset.id, { method: 'DELETE' });
+    await refreshAssets();
+  } catch (error) {
+    showAssetError(error.message || String(error));
+  }
+}
+
 function escapeHTML(value) {
   return String(value ?? '').replace(/[&<>"']/g, (char) => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
@@ -155,3 +224,6 @@ $('delete-screen').addEventListener('click', () => {
   if (selectedId) deleteScreen({ id: selectedId, title: $('screen-title').value });
 });
 refreshScreens();
+
+$('upload-asset').addEventListener('click', uploadAsset);
+refreshAssets();
