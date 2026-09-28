@@ -263,7 +263,8 @@ function formatBytes(size) {
 
 function renderAssetRow(asset) {
   const row = document.createElement('tr');
-  row.innerHTML = '<td>' + escapeHTML(asset.name) + '</td>' +
+  row.innerHTML = '<td>' + asset.id + '</td>' +
+    '<td>' + escapeHTML(asset.name) + '</td>' +
     '<td>' + escapeHTML(asset.mime) + '</td>' +
     '<td>' + formatBytes(asset.size) + '</td>' +
     '<td><code>' + escapeHTML(asset.sha256.slice(0, 16)) + '…</code></td>' +
