@@ -45,6 +45,10 @@ func (s *Server) contentScreen(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "unable to load screen", http.StatusInternalServerError)
 		return
 	}
+	if !screen.Published {
+		http.NotFound(w, r)
+		return
+	}
 	writeJSON(w, http.StatusOK, screen)
 }
 
