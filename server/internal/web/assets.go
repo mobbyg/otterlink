@@ -31,7 +31,7 @@ func (s *Server) contentAsset(w http.ResponseWriter, r *http.Request) {
 	}
 	defer file.Close()
 
-	etag := """ + asset.SHA256 + """
+	etag := `"` + asset.SHA256 + `"`
 	w.Header().Set("ETag", etag)
 	w.Header().Set("Cache-Control", "private, max-age=31536000, immutable")
 	w.Header().Set("Content-Type", asset.MIME)
