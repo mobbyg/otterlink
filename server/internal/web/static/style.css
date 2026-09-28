@@ -100,3 +100,5 @@ footer { text-align:center; color:#78909e; font-size:.75rem; padding:24px; }
 
 .screen-preview-canvas.template-preview { aspect-ratio:16 / 9; padding:0; background-color:#0c151c; background-size:contain; background-position:center; background-repeat:no-repeat; }
 .screen-preview-canvas.template-preview > button { border:1px solid var(--card-border); border-radius:8px; }
+
+.screen-preview-canvas.template-preview > img { display:block; }
