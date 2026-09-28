@@ -196,8 +196,8 @@ MainWindow::MainWindow(QWidget *parent)
             static_cast<void (OtterHomePage::*)(const QJsonObject &)>(
                 &OtterHomePage::setServerScreen));
     connect(m_client, &OtterLinkClient::homeBackgroundLoaded, m_homePage,
-            [this](const QJsonObject &screen, const QImage &image) {
-                m_homePage->setServerScreen(screen, image);
+            [this](const QJsonObject &, const QImage &image) {
+                m_homePage->setServerBackground(image);
             });
     connect(m_client, &OtterLinkClient::homeAssetLoaded, m_homePage,
             [this](qint64 assetId, const QImage &image) {
