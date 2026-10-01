@@ -7,6 +7,7 @@
 #include "otterpeoplewidget.h"
 #include "otterdmwidget.h"
 #include "ottereventswidget.h"
+#include "otternewswidget.h"
 #include "ui_mainwindow.h"
 
 #include <QComboBox>
@@ -86,6 +87,8 @@ MainWindow::MainWindow(QWidget *parent)
 
     resize(1000, 680);
     m_refreshTimer.setInterval(5000);
+    m_homeRefreshTimer.setInterval(15 * 60 * 1000);
+    connect(&m_homeRefreshTimer, &QTimer::timeout, m_client, &OtterLinkClient::loadHomeScreen);
     m_connectionTimer.setInterval(700);
 
     // The old service stack remains the source for the existing service widgets.
@@ -184,14 +187,27 @@ MainWindow::MainWindow(QWidget *parent)
             m_peopleWidget, &OtterPeopleWidget::setPresence);
     connect(m_client, &OtterLinkClient::loggedOut, this, [this]() {
         m_refreshTimer.stop();
+        m_homeRefreshTimer.stop();
         m_connectionTimer.stop();
         m_connectionFinishTimer.stop();
         m_pendingBuddyGroups.clear();
+        m_homeScreenRequested = false;
         closeAllServiceWindows();
         setLoggedIn(false);
     });
     connect(m_client, &OtterLinkClient::errorOccurred, this, &MainWindow::showError);
     connect(m_client, &OtterLinkClient::keywordResolved, this, &MainWindow::keywordResolved);
+    connect(m_client, &OtterLinkClient::homeScreenLoaded, m_homePage,
+            static_cast<void (OtterHomePage::*)(const QJsonObject &)>(
+                &OtterHomePage::setServerScreen));
+    connect(m_client, &OtterLinkClient::homeBackgroundLoaded, m_homePage,
+            [this](const QJsonObject &, const QImage &image) {
+                m_homePage->setServerBackground(image);
+            });
+    connect(m_client, &OtterLinkClient::homeAssetLoaded, m_homePage,
+            [this](qint64 assetId, const QImage &image) {
+                m_homePage->setServerAsset(assetId, image);
+            });
 
     auto *fileMenu = menuBar()->addMenu(QStringLiteral("File"));
     auto *awayAction = fileMenu->addAction(QStringLiteral("Away / AFK"));
@@ -379,6 +395,9 @@ void MainWindow::navigateService()
     } else if (button == ui->eventsButton) {
         auto *page = new OtterEventsWidget(m_client, m_desktop);
         openServiceWindow(QStringLiteral("events"), QStringLiteral("Events"), page);
+    } else if (button == ui->newsButton) {
+        auto *page = new OtterNewsWidget(m_client, m_desktop);
+        openServiceWindow(QStringLiteral("news"), QStringLiteral("News"), page);
     } else {
         QString title;
         if (button == ui->mailButton)
@@ -436,10 +455,21 @@ void MainWindow::openServiceWindow(const QString &service, const QString &title,
 
     const int offset = m_nextWindowOffset;
     m_nextWindowOffset = (m_nextWindowOffset + 28) % 140;
-    const int preferredWidth = service == QStringLiteral("events") ? 635 : 620;
-    const int width = qMin(preferredWidth, qMax(360, m_desktop->width() - 70));
-    const int height = qMin(440, qMax(250, m_desktop->height() - 70));
-    window->resize(width, height);
+
+    if (service == QStringLiteral("home")) {
+        // Home is a fixed 1280x720 service. Keep the authored canvas at its
+        // native size; the page itself owns that fixed coordinate system.
+        auto *titleBar = window->findChild<QFrame *>(
+            QStringLiteral("serviceWindowTitleBar"));
+        const int titleBarHeight = titleBar ? titleBar->sizeHint().height() : 30;
+        window->setFixedSize(1284, 720 + titleBarHeight + 4);
+    } else {
+        const int preferredWidth = service == QStringLiteral("events") ? 635 : 620;
+        const int width = qMin(preferredWidth, qMax(360, m_desktop->width() - 70));
+        const int height = qMin(440, qMax(250, m_desktop->height() - 70));
+        window->resize(width, height);
+    }
+
     window->move(24 + offset, 20 + offset);
 
     connect(window, &OtterServiceWindow::closeRequested,
@@ -502,6 +532,8 @@ void MainWindow::updateServiceButtonStates(OtterServiceWindow *activeWindow)
         activeButton = ui->peopleButton;
     else if (activeService == QStringLiteral("chat"))
         activeButton = ui->chatButton;
+    else if (activeService == QStringLiteral("news"))
+        activeButton = ui->newsButton;
 
     setActiveServiceButton(activeButton, {
         ui->homeButton, ui->peopleButton, ui->mailButton, ui->chatButton,
@@ -571,6 +603,7 @@ void MainWindow::showDashboard(const QString &displayName)
     setLoggedIn(true);
     m_client->loadDashboard();
     m_refreshTimer.start();
+    m_homeRefreshTimer.start();
 
     // Start with the desktop itself as the home state. Home remains available from the bar.
     updateServiceButtonStates();
@@ -598,6 +631,14 @@ void MainWindow::dashboardLoaded(const QStringList &buddies, const QStringList &
         QStringLiteral("%1 %2 currently online")
             .arg(onlineUsers.size())
             .arg(onlineUsers.size() == 1 ? QStringLiteral("user") : QStringLiteral("users")));
+
+    // The dashboard is refreshed periodically. Only the initial dashboard load
+    // should fetch the server-managed Home screen; reloading it on every refresh
+    // causes the Home window to visibly blink.
+    if (!m_homeScreenRequested) {
+        m_homeScreenRequested = true;
+        m_client->loadHomeScreen();
+    }
 }
 
 void MainWindow::rebuildBuddyTree(const QStringList &buddies, const QStringList &onlineUsers)

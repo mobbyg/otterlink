@@ -428,6 +428,102 @@ Returns HTTP `204 No Content`.
 
 Events are currently limited to dates no more than two years ahead.
 
+## Content screens
+
+Authenticated clients can retrieve the currently active Home screen with GET /api/content/home. The server evaluates publication and start/end scheduling. A published screen with no dates is permanent; clients do not implement scheduling rules themselves.
+
+A screen response contains metadata plus structured JSON content. The current Qt6 renderer understands hero, announcements, services, footer, an optional background asset, and an optional normalized `elements` overlay layer. The content format is intentionally structured rather than arbitrary HTML, CSS, or JavaScript. Unknown fields may be ignored by clients.
+
+Individual published or future screens can be retrieved with GET /api/content/screens/{screenID}. Draft/unpublished screens are not exposed through client content endpoints.
+
+### Content administration
+
+The dedicated content editor is available at /admin/content.
+
+Admin endpoints:
+
+- GET /api/admin/content/screens
+- PUT /api/admin/content/screens
+- DELETE /api/admin/content/screens/{screenID}
+
+The PUT body contains slug, title, published, optional start_at/end_at RFC3339 values, priority, and a structured content JSON object.
+
+Screen version increments when an existing screen is saved. The version is intended to provide a stable cache/version signal as asset delivery and conditional HTTP caching are added.
+
+The current editor is the foundational screen-management slice. The server asset layer provides persistent image storage and cacheable asset delivery, and screen JSON can reference an uploaded asset as its background.
+
+## Content assets
+
+Authenticated clients can retrieve an image asset with:
+
+- GET /api/content/assets/{assetID}
+
+The response includes the stored image bytes and an ETag derived from the asset SHA-256 hash. Assets are cacheable for one year and clients may use If-None-Match to receive HTTP 304 Not Modified when unchanged.
+
+Supported upload types are PNG, JPEG, GIF, and WebP. The maximum upload size is 10 MB.
+
+Admin endpoints:
+
+- GET /api/admin/content/assets
+- POST /api/admin/content/assets
+- DELETE /api/admin/content/assets/{assetID}
+
+Uploads use multipart/form-data with the file field named asset. The server stores the binary asset outside the database and keeps only metadata in SQLite. The storage directory defaults to data/assets and can be changed with OTTERLINK_ASSET_ROOT.
+
+Asset IDs and hashes are stable references for the content system. A screen can reference an uploaded image as a background with content such as:
+
+```json
+{
+  "background": {
+    "asset": 12,
+    "fit": "cover"
+  }
+}
+```
+
+The `asset` value is the asset ID returned by the admin asset endpoint. Supported `fit` values currently include `cover` and `contain`. The Qt6 client and admin Preview both render the referenced background behind the structured screen content.
+
+### Normalized screen elements
+
+A screen may provide an `elements` array when the background artwork is intended to act as a graphical template. Element positions and sizes use normalized values from `0.0` to `1.0`, measured from the top-left of the screen. This keeps a design independent of the client window's pixel dimensions.
+
+The overlay supports `text`, `button`, and `image` elements. Buttons can use the existing service destination format and emit the corresponding client service action when clicked. Image elements reference uploaded assets by ID and support `contain` (default) or `cover` fitting.
+
+Example for a 1280×720 artwork:
+
+```json
+{
+  "background": {
+    "asset": 1,
+    "fit": "cover"
+  },
+  "elements": [
+    {
+      "type": "text",
+      "text": "Welcome, Otters!",
+      "x": 0.52,
+      "y": 0.20,
+      "width": 0.38,
+      "height": 0.12
+    },
+    {
+      "type": "button",
+      "text": "Community Chat",
+      "x": 0.58,
+      "y": 0.40,
+      "width": 0.22,
+      "height": 0.09,
+      "destination": {
+        "type": "service",
+        "service": "chat"
+      }
+    }
+  ]
+}
+```
+
+For a 1280×720 template, `x: 0.5` corresponds to 640 pixels and `y: 0.5` corresponds to 360 pixels. The coordinates are still stored as normalized values; clients calculate their actual pixel positions from the current screen size. The admin Preview uses a 16:9 canvas when `elements` are present.
+
 ## Administration API
 
 Administration endpoints require an authenticated account with the `admin` role. The Qt client does not expose these functions.

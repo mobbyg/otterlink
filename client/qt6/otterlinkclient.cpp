@@ -6,6 +6,8 @@
 #include <QNetworkReply>
 #include <QNetworkRequest>
 #include <QUrl>
+#include <QImageReader>
+#include <algorithm>
 
 #include <functional>
 #include <memory>
@@ -90,6 +92,40 @@ void OtterLinkClient::login(const QString &username, const QString &password)
             if (m_username.isEmpty())
                 m_username = username.trimmed();
             emit loggedIn(m_username);
+        }
+        reply->deleteLater();
+    });
+}
+
+void OtterLinkClient::loadNews(int limit, const QString &category, qint64 sourceId)
+{
+    QString path = QStringLiteral("/api/news?limit=%1").arg(limit);
+    if (!category.trimmed().isEmpty())
+        path += QStringLiteral("&category=") + QString::fromUtf8(QUrl::toPercentEncoding(category.trimmed()));
+    if (sourceId > 0)
+        path += QStringLiteral("&source_id=%1").arg(sourceId);
+
+    auto *reply = m_network.get(request(path));
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+        if (reply->error() != QNetworkReply::NoError) {
+            emit errorOccurred(serverErrorMessage(reply, reply->errorString()));
+        } else {
+            const QJsonObject obj = QJsonDocument::fromJson(reply->readAll()).object();
+            emit newsLoaded(obj.value(QStringLiteral("items")).toArray());
+        }
+        reply->deleteLater();
+    });
+}
+
+void OtterLinkClient::loadNewsSources()
+{
+    auto *reply = m_network.get(request(QStringLiteral("/api/news/sources")));
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+        if (reply->error() != QNetworkReply::NoError) {
+            emit errorOccurred(serverErrorMessage(reply, reply->errorString()));
+        } else {
+            const QJsonObject obj = QJsonDocument::fromJson(reply->readAll()).object();
+            emit newsSourcesLoaded(obj.value(QStringLiteral("sources")).toArray());
         }
         reply->deleteLater();
     });
@@ -340,6 +376,73 @@ void OtterLinkClient::removeBuddy(const QString &username)
             emit buddyChanged();
             loadDashboard();
         }
+        reply->deleteLater();
+    });
+}
+
+void OtterLinkClient::loadHomeScreen()
+{
+    if (m_token.isEmpty())
+        return;
+
+    auto *reply = m_network.get(request(QStringLiteral("/api/content/home")));
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+        if (reply->error() != QNetworkReply::NoError) {
+            reply->deleteLater();
+            return;
+        }
+
+        const QJsonObject screen = QJsonDocument::fromJson(reply->readAll()).object();
+        emit homeScreenLoaded(screen);
+
+        const QJsonObject content = screen.value(QStringLiteral("content")).toObject();
+        const qint64 backgroundID =
+            content.value(QStringLiteral("background")).toObject()
+                   .value(QStringLiteral("asset")).toInteger();
+
+        QSet<qint64> imageIDs;
+        if (backgroundID > 0)
+            imageIDs.insert(backgroundID);
+
+        for (const QJsonValue &value : content.value(QStringLiteral("elements")).toArray()) {
+            const QJsonObject item = value.toObject();
+            const QString type = item.value(QStringLiteral("type")).toString().trimmed().toLower();
+            if (type == QStringLiteral("image") || type == QStringLiteral("button")) {
+                const qint64 assetID = item.value(QStringLiteral("asset")).toInteger();
+                if (assetID > 0)
+                    imageIDs.insert(assetID);
+            }
+        }
+
+        auto ids = imageIDs.values();
+        std::sort(ids.begin(), ids.end());
+
+        const auto loadNext = std::make_shared<std::function<void(int)>>();
+        *loadNext = [this, screen, backgroundID, ids, loadNext](int index) {
+            if (index >= ids.size())
+                return;
+
+            const qint64 assetID = ids.at(index);
+            auto *assetReply = m_network.get(
+                request(QStringLiteral("/api/content/assets/%1").arg(assetID)));
+            connect(assetReply, &QNetworkReply::finished, this,
+                    [this, screen, backgroundID, ids, index, assetReply, loadNext, assetID]() {
+                if (assetReply->error() == QNetworkReply::NoError) {
+                    QImage image;
+                    image.loadFromData(assetReply->readAll());
+                    if (!image.isNull()) {
+                        if (assetID == backgroundID)
+                            emit homeBackgroundLoaded(screen, image);
+                        else
+                            emit homeAssetLoaded(assetID, image);
+                    }
+                }
+                assetReply->deleteLater();
+                (*loadNext)(index + 1);
+            });
+        };
+
+        (*loadNext)(0);
         reply->deleteLater();
     });
 }

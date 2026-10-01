@@ -69,10 +69,12 @@ private:
     QHash<QString, OtterServiceWindow *> m_serviceWindows;
     QHash<OtterServiceWindow *, QString> m_windowServices;
     QTimer m_refreshTimer;
+    QTimer m_homeRefreshTimer;
     QTimer m_connectionTimer;
     QTimer m_connectionFinishTimer;
     int m_connectionStage = 0;
     int m_nextWindowOffset = 0;
     bool m_connectionReady = false;
+    bool m_homeScreenRequested = false;
     QString m_connectionDisplayName;
 };

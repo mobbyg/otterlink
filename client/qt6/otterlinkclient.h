@@ -3,6 +3,7 @@
 #include <QJsonArray>
 #include <QJsonObject>
 #include <QNetworkAccessManager>
+#include <QImage>
 #include <QNetworkReply>
 #include <QSet>
 #include <QString>
@@ -37,10 +38,13 @@ public:
     void markDirectMessagesRead(const QString &username);
     void setAway(bool away);
     void loadEvents(int year, int month);
+    void loadNews(int limit = 100, const QString &category = QString(), qint64 sourceId = 0);
+    void loadNewsSources();
     void createEvent(const QJsonObject &event);
     void updateEvent(qint64 eventId, const QJsonObject &event);
     void deleteEvent(qint64 eventId);
     void resolveKeyword(const QString &keyword);
+    void loadHomeScreen();
     void logout();
 
 signals:
@@ -55,9 +59,14 @@ signals:
     void presenceLoaded(const QJsonArray &users);
     void awayChanged(bool away);
     void eventsLoaded(const QJsonArray &events, int year, int month);
+    void newsLoaded(const QJsonArray &items);
+    void newsSourcesLoaded(const QJsonArray &sources);
     void eventChanged(const QJsonObject &event);
     void eventDeleted(qint64 eventId);
     void keywordResolved(const QJsonObject &keyword);
+    void homeScreenLoaded(const QJsonObject &screen);
+    void homeBackgroundLoaded(const QJsonObject &screen, const QImage &image);
+    void homeAssetLoaded(qint64 assetId, const QImage &image);
     void chatMessageSent();
     void chatChannelsLoaded(const QJsonArray &channels);
     void chatChannelLoaded(const QJsonObject &channel, const QJsonArray &members,
