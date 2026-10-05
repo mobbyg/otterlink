@@ -27,6 +27,27 @@ cmake --build build
 
 Run `otterlink` from the resulting build directory. The default server is `http://127.0.0.1:9090`; the server field can be changed to point at another Otter Link instance.
 
+### Windows cross-build from Linux
+
+The repository includes a MinGW-w64 CMake toolchain at:
+
+```
+cmake/toolchains/mingw-w64-x86_64.cmake
+```
+
+Keep the Windows build in a separate directory so it does not interfere with the native Linux build:
+
+```sh
+cmake -S . -B build-windows \
+  -DCMAKE_TOOLCHAIN_FILE=cmake/toolchains/mingw-w64-x86_64.cmake \
+  -DCMAKE_PREFIX_PATH=/path/to/windows/qt
+cmake --build build-windows --parallel
+```
+
+The toolchain file intentionally does not contain a machine-specific Qt path. The Windows Qt installation must provide a Qt 6 target build suitable for a Linux-to-Windows MinGW cross-build, including the required host Qt tools. Qt documents that cross-compilation requires host Qt tools in addition to the target Qt libraries. The MinGW compiler used by the target Qt build must also be compatible with the Qt version being used.
+
+The repository does not include Qt or MinGW binaries; install those separately on the build machine.
+
 ## Current development UI
 
 The current client provides:
