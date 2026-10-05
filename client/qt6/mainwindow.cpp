@@ -25,11 +25,13 @@
 #include <QMenuBar>
 #include <QAction>
 #include <QPushButton>
+#include <QPixmap>
 #include <QSoundEffect>
 #include <QSignalBlocker>
 #include <QStyle>
 #include <QTreeWidget>
 #include <QTreeWidgetItem>
+#include <QUrl>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 
@@ -260,6 +262,11 @@ MainWindow::MainWindow(QWidget *parent)
         m_homeRefreshTimer.stop();
         m_connectionTimer.stop();
         m_connectionFinishTimer.stop();
+        if (m_connectionSfx)
+            m_connectionSfx->stop();
+        if (m_connectionPresentationWidget)
+            m_connectionPresentationWidget->hide();
+        ui->loginButton->setEnabled(true);
         m_pendingBuddyGroups.clear();
         m_homeScreenRequested = false;
         closeAllServiceWindows();
@@ -658,7 +665,8 @@ void MainWindow::finishConnectionPresentation()
 
 void MainWindow::showDashboard(const QString &displayName)
 {
-    if (ui->stackedWidget->currentWidget() == ui->connectionPage && m_connectionStage < 2) {
+    if (m_connectionPresentationWidget && m_connectionPresentationWidget->isVisible()
+        && m_connectionStage < 2) {
         m_connectionReady = true;
         m_connectionDisplayName = displayName;
         return;
