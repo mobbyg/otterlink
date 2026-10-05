@@ -623,35 +623,110 @@ void MainWindow::beginConnectionPresentation()
     m_connectionReady = false;
     m_connectionDisplayName.clear();
     m_connectionStage = 0;
-    ui->connectionStageLabel->setText(QStringLiteral("CALLING"));
-    ui->connectionDetailLabel->setText(QStringLiteral("Dialing Otter Link..."));
-    ui->connectionProgress->setValue(10);
-    ui->connectionOtterLabel->setText(QStringLiteral("( o.o )\n /|\\\n  / \\\n\n~ ~ ~"));
-    ui->stackedWidget->setCurrentWidget(ui->connectionPage);
-    m_connectionTimer.start();
+    ui->loginButton->setEnabled(false);
+    m_connectionPresentationWidget->show();
+    updateConnectionPresentation(0);
+
+    if (m_connectionSfxEnabled) {
+        m_connectionSfx->stop();
+        m_connectionSfx->play();
+        // The modem recording normally ends the first stage. This is only a safety
+        // timeout in case the platform cannot play the bundled sound.
+        m_connectionTimer.start(30000);
+    } else {
+        // Silent mode intentionally uses a faster, fixed three-second presentation.
+        m_connectionTimer.start(3000);
+    }
+}
+
+void MainWindow::toggleConnectionSfx()
+{
+    m_connectionSfxEnabled = !m_connectionSfxEnabled;
+    updateSfxButton();
+
+    if (!m_connectionPresentationWidget->isVisible() || m_connectionStage != 0)
+        return;
+
+    m_connectionSfx->stop();
+    if (m_connectionSfxEnabled) {
+        m_connectionSfx->play();
+        m_connectionTimer.start(30000);
+    } else {
+        m_connectionTimer.start(3000);
+    }
+}
+
+void MainWindow::updateSfxButton()
+{
+    if (!m_sfxButton)
+        return;
+
+    m_sfxButton->setIcon(QIcon(m_connectionSfxEnabled
+                                   ? QStringLiteral(":/images/sfx_on.png")
+                                   : QStringLiteral(":/images/sfx_off.png")));
+    m_sfxButton->setToolTip(m_connectionSfxEnabled
+                                ? QStringLiteral("Modem SFX: On")
+                                : QStringLiteral("Modem SFX: Off"));
+}
+
+void MainWindow::updateConnectionPresentation(int stage)
+{
+    if (!m_connectionImageLabel || !m_connectionStatusLabel)
+        return;
+
+    QString imageResource;
+    QString status;
+    Qt::Alignment alignment = Qt::AlignCenter;
+
+    switch (stage) {
+    case 0:
+        imageResource = QStringLiteral(":/images/connect1.webp");
+        status = QStringLiteral("Connecting...");
+        alignment = Qt::AlignLeft | Qt::AlignVCenter;
+        break;
+    case 1:
+        imageResource = QStringLiteral(":/images/connect2.webp");
+        status = QStringLiteral("logging in");
+        alignment = Qt::AlignCenter;
+        break;
+    case 2:
+        imageResource = QStringLiteral(":/images/connected.webp");
+        status = QStringLiteral("Let's go!");
+        alignment = Qt::AlignRight | Qt::AlignVCenter;
+        break;
+    default:
+        return;
+    }
+
+    const QPixmap pixmap(imageResource);
+    if (!pixmap.isNull()) {
+        m_connectionImageLabel->setPixmap(
+            pixmap.scaled(QSize(300, 108), Qt::KeepAspectRatio, Qt::SmoothTransformation));
+    } else {
+        m_connectionImageLabel->setPixmap(QPixmap());
+    }
+
+    m_connectionImageLabel->setAlignment(alignment);
+    m_connectionStatusLabel->setText(status);
+    m_connectionStatusLabel->setAlignment(alignment);
 }
 
 void MainWindow::advanceConnectionStage()
 {
     ++m_connectionStage;
+    m_connectionTimer.stop();
 
     switch (m_connectionStage) {
     case 1:
-        ui->connectionStageLabel->setText(QStringLiteral("CONNECTING"));
-        ui->connectionDetailLabel->setText(QStringLiteral("Establishing carrier..."));
-        ui->connectionProgress->setValue(55);
+        updateConnectionPresentation(1);
+        m_connectionTimer.start(3000);
         break;
     case 2:
-        ui->connectionStageLabel->setText(QStringLiteral("CONNECTED"));
-        ui->connectionDetailLabel->setText(QStringLiteral("Welcome to Otter Link."));
-        ui->connectionProgress->setValue(100);
-        ui->connectionOtterLabel->setText(QStringLiteral("  /\\_/\\\n ( o.o )\n  > ^ <"));
-        m_connectionTimer.stop();
+        updateConnectionPresentation(2);
         if (m_connectionReady)
             m_connectionFinishTimer.start(450);
         break;
     default:
-        m_connectionTimer.stop();
         break;
     }
 }
