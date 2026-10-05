@@ -54,7 +54,7 @@ Current endpoints:
 
 Environment variables:
 
-- `OTTERLINK_ADDR` — HTTP listen address; default `:8080`.
+- `OTTERLINK_ADDR` — HTTP listen address; default `:9090`.
 - `OTTERLINK_PROTOCOL_ADDR` — native client protocol listen address; default `:8023`.
 - `OTTERLINK_OSCAR_ADDR` — OSCAR compatibility listen address; default `:5190`.
 - `OTTERLINK_DB` — SQLite database path; default `data/otterlink.db`.
