@@ -390,6 +390,32 @@ QLabel#newsArticleTitle {
             letter-spacing: 1px;
         }
 
+        QLabel#connectionPresentationStatus {
+            color: #000000;
+            background: transparent;
+            font-size: 11px;
+        }
+
+        QPushButton#connectionSfxButton {
+            background: transparent;
+            border: none;
+            padding: 1px;
+            margin: 0;
+        }
+
+        QPushButton#connectionSfxButton:hover {
+            background: rgba(255, 255, 255, 100);
+            border: 1px solid #7d9daf;
+            border-radius: 3px;
+        }
+
+        QPushButton#connectionSfxButton:pressed {
+            background: rgba(120, 184, 215, 100);
+            border: 1px solid #3f7898;
+            border-radius: 3px;
+        }
+
+
         QLabel#placeholderTitleLabel {
             color: #075b86;
         }
