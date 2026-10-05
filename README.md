@@ -1,4 +1,4 @@
-<img width="400" height="120" alt="otterlink_logo" src="https://github.com/user-attachments/assets/9da99a3d-298b-4740-9e55-6af0f387c59f" />
+<img width="800" height="240" alt="OL Logo" src="https://github.com/user-attachments/assets/eba172be-15af-4792-8c5d-c8b4562ed9cb" />
 
 **Your connection to the online world of yesterday.**
 
