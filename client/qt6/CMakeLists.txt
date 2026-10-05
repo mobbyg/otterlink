@@ -7,7 +7,7 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Core Network Widgets)
+find_package(Qt6 REQUIRED COMPONENTS Core Multimedia Network Widgets)
 
 qt_add_executable(otterlink
     main.cpp
@@ -37,7 +37,7 @@ qt_add_executable(otterlink
     resources/otterlink.qrc
 )
 
-target_link_libraries(otterlink PRIVATE Qt6::Core Qt6::Network Qt6::Widgets)
+target_link_libraries(otterlink PRIVATE Qt6::Core Qt6::Multimedia Qt6::Network Qt6::Widgets)
 
 if (WIN32)
     set_target_properties(otterlink PROPERTIES WIN32_EXECUTABLE TRUE)
