@@ -515,7 +515,7 @@ function renderVisualEditor() {
     } else {
       const assetID = Number(item.asset || 0);
       if (assetID > 0) {
-        const image = document.createElement('img');
+        const image = type === 'image' ? visual : document.createElement('img');
         image.alt = item.alt || item.text || '';
         image.draggable = false;
         image.style.width = '100%';
@@ -524,7 +524,7 @@ function renderVisualEditor() {
         image.style.display = 'block';
         image.style.pointerEvents = 'none';
         loadPreviewAssetImage(assetID, image);
-        visual.appendChild(image);
+        if (type === 'button') visual.appendChild(image);
       } else {
         visual.textContent = type === 'button' ? 'Button' : 'Image';
       }
