@@ -595,7 +595,12 @@ function handleEditorPointerMove(event) {
     const maxHeight = Math.max(0.01, 1 - editorResize.y);
     item.width = Number(Math.min(maxWidth, Math.max(0.01, editorResize.width + dw)).toFixed(4));
     item.height = Number(Math.min(maxHeight, Math.max(0.01, editorResize.height + dh)).toFixed(4));
-    renderVisualEditor();
+    const wrapper = canvas.querySelector('.editor-element[data-index="' + editorResize.index + '"]');
+    if (wrapper) {
+      wrapper.style.width = (clampSize(item.width, 0.3) * 100) + '%';
+      wrapper.style.height = (clampSize(item.height, 0.1) * 100) + '%';
+    }
+    updateInspector();
     return;
   }
 
@@ -605,7 +610,12 @@ function handleEditorPointerMove(event) {
   const dy = (event.clientY - editorDrag.startY) / rect.height;
   item.x = Number(clamp01(editorDrag.x + dx).toFixed(4));
   item.y = Number(clamp01(editorDrag.y + dy).toFixed(4));
-  renderVisualEditor();
+  const wrapper = canvas.querySelector('.editor-element[data-index="' + editorDrag.index + '"]');
+  if (wrapper) {
+    wrapper.style.left = (clamp01(item.x) * 100) + '%';
+    wrapper.style.top = (clamp01(item.y) * 100) + '%';
+  }
+  updateInspector();
 }
 
 function endEditorDrag() {
