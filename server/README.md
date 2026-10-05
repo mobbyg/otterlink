@@ -16,7 +16,7 @@ go run .
 
 The server starts three listeners by default:
 
-- HTTP API: `:9090`
+- HTTP API: `:9090` (or HTTPS when TLS is configured)
 - Otter Link protocol: `:8023`
 - OSCAR compatibility: `:5190`
 
@@ -28,6 +28,12 @@ Health check:
 
 ```sh
 curl http://localhost:9090/api/health
+```
+
+For a TLS-enabled server, use HTTPS instead:
+
+```sh
+curl https://localhost:9090/api/health
 ```
 
 Expected response:
@@ -52,6 +58,12 @@ Environment variables:
 - `OTTERLINK_PROTOCOL_ADDR` — native client protocol listen address; default `:8023`.
 - `OTTERLINK_OSCAR_ADDR` — OSCAR compatibility listen address; default `:5190`.
 - `OTTERLINK_DB` — SQLite database path; default `data/otterlink.db`.
+- `OTTERLINK_TLS_CERT_FILE` — PEM certificate file for the HTTP API. Must be set together with `OTTERLINK_TLS_KEY_FILE`.
+- `OTTERLINK_TLS_KEY_FILE` — PEM private key file for the HTTP API. Must be set together with `OTTERLINK_TLS_CERT_FILE`.
+
+When both TLS variables are set, the HTTP API is served over HTTPS with a minimum TLS version of 1.2. When neither is set, the existing plain HTTP development mode remains available.
+
+For production, use a certificate whose name matches the server hostname clients use. Do not commit private keys or certificates containing private key material to the repository.
 
 ## OSCAR compatibility
 
