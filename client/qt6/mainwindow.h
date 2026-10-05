@@ -5,8 +5,12 @@
 #include <QMainWindow>
 #include <QTimer>
 
+class QLabel;
 class QFrame;
+class QPushButton;
+class QSoundEffect;
 class QTreeWidget;
+class QWidget;
 class OtterHomePage;
 class OtterPeopleWidget;
 class OtterServiceWindow;
@@ -50,6 +54,9 @@ private slots:
 private:
     void setLoggedIn(bool loggedIn);
     void beginConnectionPresentation();
+    void toggleConnectionSfx();
+    void updateConnectionPresentation(int stage);
+    void updateSfxButton();
     void rebuildBuddyTree(const QStringList &buddies, const QStringList &onlineUsers);
     void openServiceWindow(const QString &service, const QString &title, QWidget *content);
     void closeServiceWindow(OtterServiceWindow *window);
@@ -72,9 +79,15 @@ private:
     QTimer m_homeRefreshTimer;
     QTimer m_connectionTimer;
     QTimer m_connectionFinishTimer;
+    QLabel *m_connectionImageLabel = nullptr;
+    QLabel *m_connectionStatusLabel = nullptr;
+    QWidget *m_connectionPresentationWidget = nullptr;
+    QPushButton *m_sfxButton = nullptr;
+    QSoundEffect *m_connectionSfx = nullptr;
     int m_connectionStage = 0;
     int m_nextWindowOffset = 0;
     bool m_connectionReady = false;
+    bool m_connectionSfxEnabled = true;
     bool m_homeScreenRequested = false;
     QString m_connectionDisplayName;
 };
