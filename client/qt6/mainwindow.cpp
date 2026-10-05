@@ -25,11 +25,13 @@
 #include <QMenuBar>
 #include <QAction>
 #include <QPushButton>
+#include <QSoundEffect>
 #include <QSignalBlocker>
 #include <QStyle>
 #include <QTreeWidget>
 #include <QTreeWidgetItem>
 #include <QVBoxLayout>
+#include <QHBoxLayout>
 
 #include <initializer_list>
 
@@ -150,6 +152,74 @@ MainWindow::MainWindow(QWidget *parent)
     ui->buddiesLayout->replaceWidget(ui->buddiesList, m_buddyTree);
     ui->buddiesList->hide();
     ui->buddiesList->deleteLater();
+
+    // The connection presentation lives on the login page so the username/password
+    // fields remain visible while the classic dial-up sequence plays above them.
+    m_connectionPresentationWidget = new QWidget(ui->authPage);
+    m_connectionPresentationWidget->setObjectName(QStringLiteral("connectionPresentation"));
+    m_connectionPresentationWidget->setMinimumHeight(145);
+    m_connectionPresentationWidget->setMaximumHeight(145);
+
+    auto *presentationLayout = new QVBoxLayout(m_connectionPresentationWidget);
+    presentationLayout->setContentsMargins(0, 0, 0, 0);
+    presentationLayout->setSpacing(2);
+
+    m_connectionImageLabel = new QLabel(m_connectionPresentationWidget);
+    m_connectionImageLabel->setObjectName(QStringLiteral("connectionPresentationImage"));
+    m_connectionImageLabel->setAlignment(Qt::AlignCenter);
+    m_connectionImageLabel->setMinimumHeight(112);
+    m_connectionImageLabel->setMaximumHeight(112);
+    m_connectionImageLabel->setScaledContents(false);
+    presentationLayout->addWidget(m_connectionImageLabel);
+
+    m_connectionStatusLabel = new QLabel(m_connectionPresentationWidget);
+    m_connectionStatusLabel->setObjectName(QStringLiteral("connectionPresentationStatus"));
+    m_connectionStatusLabel->setAlignment(Qt::AlignCenter);
+    m_connectionStatusLabel->setMinimumHeight(18);
+    presentationLayout->addWidget(m_connectionStatusLabel);
+
+    const int authGapIndex = ui->authLayout->indexOf(ui->authGap);
+    if (authGapIndex >= 0)
+        ui->authLayout->insertWidget(authGapIndex, m_connectionPresentationWidget);
+    else
+        ui->authLayout->addWidget(m_connectionPresentationWidget);
+    m_connectionPresentationWidget->hide();
+
+    // Small icon-only modem SFX toggle, kept in the lower-right corner of the login page.
+    auto *sfxRow = new QHBoxLayout;
+    sfxRow->setContentsMargins(0, 0, 0, 0);
+    sfxRow->addStretch(1);
+    m_sfxButton = new QPushButton(ui->authPage);
+    m_sfxButton->setObjectName(QStringLiteral("connectionSfxButton"));
+    m_sfxButton->setFixedSize(28, 28);
+    m_sfxButton->setIconSize(QSize(22, 22));
+    m_sfxButton->setText(QString());
+    m_sfxButton->setFlat(true);
+    m_sfxButton->setCursor(Qt::PointingHandCursor);
+    m_sfxButton->setFocusPolicy(Qt::NoFocus);
+    sfxRow->addWidget(m_sfxButton, 0, Qt::AlignRight);
+    const int authBottomIndex = ui->authLayout->indexOf(ui->authBottom);
+    if (authBottomIndex >= 0)
+        ui->authLayout->insertLayout(authBottomIndex, sfxRow);
+    else
+        ui->authLayout->addLayout(sfxRow);
+
+    m_connectionSfx = new QSoundEffect(this);
+    m_connectionSfx->setSource(QUrl(QStringLiteral("qrc:/audio/dial-up-modem-01.wav")));
+    m_connectionSfx->setVolume(1.0);
+    connect(m_sfxButton, &QPushButton::clicked, this, &MainWindow::toggleConnectionSfx);
+    connect(m_connectionSfx, &QSoundEffect::playingChanged, this, [this]() {
+        // With SFX enabled, the modem recording controls the length of the first stage.
+        // A fallback timer in beginConnectionPresentation() handles an unavailable sound.
+        if (m_connectionSfxEnabled && !m_connectionSfx->isPlaying()
+            && m_connectionStage == 0
+            && m_connectionPresentationWidget
+            && m_connectionPresentationWidget->isVisible()) {
+            m_connectionTimer.stop();
+            advanceConnectionStage();
+        }
+    });
+    updateSfxButton();
 
     setLoggedIn(false);
 
@@ -598,6 +668,11 @@ void MainWindow::showDashboard(const QString &displayName)
     m_connectionDisplayName.clear();
     m_connectionTimer.stop();
     m_connectionFinishTimer.stop();
+    if (m_connectionSfx)
+        m_connectionSfx->stop();
+    if (m_connectionPresentationWidget)
+        m_connectionPresentationWidget->hide();
+    ui->loginButton->setEnabled(true);
     ui->identityLabel->setText(
         QStringLiteral("Connected as <b>%1</b>").arg(displayName.toHtmlEscaped()));
     setLoggedIn(true);
@@ -744,12 +819,17 @@ void MainWindow::openPrivateMessage(const QString &username)
 
 void MainWindow::showError(const QString &message)
 {
-    const bool wasConnecting = ui->stackedWidget->currentWidget() == ui->connectionPage;
+    const bool wasConnecting = m_connectionPresentationWidget
+                               && m_connectionPresentationWidget->isVisible();
     if (wasConnecting) {
         m_connectionReady = false;
         m_connectionDisplayName.clear();
         m_connectionTimer.stop();
         m_connectionFinishTimer.stop();
+        if (m_connectionSfx)
+            m_connectionSfx->stop();
+        m_connectionPresentationWidget->hide();
+        ui->loginButton->setEnabled(true);
         setLoggedIn(false);
     }
     QMessageBox::warning(this, QStringLiteral("Otter Link"), message);
