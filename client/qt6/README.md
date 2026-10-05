@@ -25,7 +25,7 @@ cmake -S . -B build
 cmake --build build
 ```
 
-Run `otterlink` from the resulting build directory. The default server is `http://127.0.0.1:9090`; the server field can be changed to point at another Otter Link instance.
+Run `otterlink` from the resulting build directory. The default server is `http://127.0.0.1:9090`; the server field can be changed to point at another Otter Link instance. For a TLS-enabled server, enter its `https://` URL (for example, `https://otterlink.example.org:9090`). Qt uses the platform certificate store to validate the server certificate.
 
 ## Current development UI
 
@@ -134,3 +134,20 @@ plugin is:
 The client logs a warning if a Home asset cannot be decoded, including the
 Qt image-reader error and detected format, which makes missing image plugins
 straightforward to diagnose.
+
+
+## Transport security
+
+The Qt client uses Qt Network for all HTTP API requests. When the server is
+configured with TLS and the client uses an `https://` server URL, the login,
+authentication token, Home content, chat, buddy/presence, messages, events, and
+other HTTP API traffic are encrypted by TLS in transit.
+
+The client does **not** disable certificate validation. The server certificate
+must be trusted by the operating system and must match the hostname used in the
+server URL. For local development without a trusted certificate, the existing
+`http://127.0.0.1:9090` mode remains available.
+
+The separate native JSON-lines listener (`:8023`) and OSCAR compatibility
+listener (`:5190`) are not changed by this HTTP TLS slice. Their transport
+security/compatibility requirements are a separate concern.
