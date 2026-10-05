@@ -65,3 +65,22 @@ See `../../docs/presentation.md` for the broader design direction.
 ## Direction
 
 This is a native client foundation, not a finished UI. Service operations should remain behind the client/service boundary so the same Otter Link account and community can later be presented by native Amiga/AROS, C64/C128, and Commander X16 clients.
+
+## Windows cross-build
+
+A 64-bit Windows cross-build can be configured from Linux with the repository
+toolchain file:
+
+```sh
+cmake -S . -B build-windows \
+  -DCMAKE_TOOLCHAIN_FILE=cmake/toolchains/mingw-w64-x86_64.cmake \
+  -DCMAKE_PREFIX_PATH=/path/to/windows/qt
+cmake --build build-windows
+```
+
+The Windows Qt installation must be a Qt 6 build for Windows/x86_64 using
+MinGW-w64. The Linux host Qt installation is used for the host-side Qt build
+tools, while the Windows Qt installation supplies the target headers,
+libraries, CMake package files, and Windows deployment tools.
+
+Do not commit Qt SDK binaries or compiler toolchains to the repository.
