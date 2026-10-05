@@ -167,6 +167,10 @@ async function previewScreen() {
   let content = parseEditorJSON();
   if (!content) return;
   $('screen-preview-title').textContent = $('screen-title').value.trim() || 'Screen Preview';
+  if (editorContent) {
+    applyVisualEditor();
+    content = normalizeEditorContent(editorContent);
+  }
   renderPreview(content);
   $('screen-preview').classList.remove('hidden');
 }
@@ -328,6 +332,12 @@ function renderPreviewElements(elements, canvas) {
       element.style.overflow = 'hidden';
       element.style.whiteSpace = 'pre-wrap';
       element.style.background = 'transparent';
+      element.style.color = item.color || '#ffffff';
+      element.style.fontSize = Math.max(8, Math.min(200, Number(item.font_size) || 32)) + 'px';
+      element.style.fontWeight = String(item.weight || 700);
+      element.style.textAlign = item.align || 'left';
+      element.style.lineHeight = '1.1';
+      element.style.boxSizing = 'border-box';
     }
     canvas.appendChild(element);
   }
@@ -631,6 +641,37 @@ function endEditorResize() {
 }
 
 
+async function updateAssetInspectorPreview(assetID) {
+  const preview = $('editor-asset-preview');
+  if (!preview) return;
+  preview.innerHTML = '';
+
+  const id = Number(assetID || 0);
+  if (id < 1) {
+    preview.textContent = 'No asset selected';
+    return;
+  }
+
+  const asset = assets.find((entry) => Number(entry.id) === id);
+  const image = document.createElement('img');
+  image.alt = asset ? asset.name || ('Asset ' + id) : 'Asset ' + id;
+  image.draggable = false;
+  image.style.maxWidth = '100%';
+  image.style.maxHeight = '180px';
+  image.style.width = 'auto';
+  image.style.height = 'auto';
+  image.style.display = 'block';
+  image.style.margin = '0 auto';
+
+  const caption = document.createElement('div');
+  caption.className = 'editor-asset-preview-caption';
+  caption.textContent = asset ? assetLabel(asset) : 'Asset #' + id;
+
+  preview.appendChild(image);
+  preview.appendChild(caption);
+  await loadPreviewAssetImage(id, image);
+}
+
 function updateInspector() {
   const properties = $('editor-properties');
   const empty = $('editor-no-selection');
@@ -653,6 +694,7 @@ function updateInspector() {
   $('editor-font-weight').value = String(item.weight || 700);
   $('editor-asset').value = String(Number(item.asset || 0));
   if (!$('editor-asset').value) $('editor-asset').value = '0';
+  updateAssetInspectorPreview(item.asset);
   $('editor-x').value = clamp01(item.x).toFixed(2);
   $('editor-y').value = clamp01(item.y).toFixed(2);
   $('editor-width').value = clampSize(item.width, type === 'button' ? 0.22 : 0.30).toFixed(2);
@@ -823,7 +865,11 @@ $('editor-font-size').addEventListener('change', (event) => updateSelectedProper
 $('editor-text-color').addEventListener('input', (event) => updateSelectedProperty('color', event.target.value));
 $('editor-text-align').addEventListener('change', (event) => updateSelectedProperty('align', event.target.value));
 $('editor-font-weight').addEventListener('change', (event) => updateSelectedProperty('weight', Number(event.target.value || 700)));
-$('editor-asset').addEventListener('change', (event) => updateSelectedProperty('asset', Number(event.target.value || 0)));
+$('editor-asset').addEventListener('change', (event) => {
+  const assetID = Number(event.target.value || 0);
+  updateSelectedProperty('asset', assetID);
+  updateAssetInspectorPreview(assetID);
+});
 $('editor-x').addEventListener('change', (event) => updateSelectedProperty('x', event.target.value));
 $('editor-y').addEventListener('change', (event) => updateSelectedProperty('y', event.target.value));
 $('editor-width').addEventListener('change', (event) => updateSelectedProperty('width', event.target.value));
