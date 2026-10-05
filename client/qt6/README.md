@@ -84,3 +84,53 @@ tools, while the Windows Qt installation supplies the target headers,
 libraries, CMake package files, and Windows deployment tools.
 
 Do not commit Qt SDK binaries or compiler toolchains to the repository.
+
+
+## Image format support
+
+Server-managed Home graphics can use WebP assets. Qt provides WebP support
+through the Qt Image Formats plugin, so the plugin must be available at runtime
+on every target.
+
+### Linux
+
+On Ubuntu/Debian systems using the distribution Qt 6 packages, install the
+Qt 6 image-format plugins:
+
+```sh
+sudo apt install qt6-image-formats-plugins
+```
+
+This package supplies the WebP image plugin used by `QImage`/`QImageReader`.
+
+### Windows
+
+When packaging the cross-built Windows client, include the WebP image plugin
+from the Windows Qt installation alongside the other Qt plugins:
+
+```text
+otterlink-windows/
+├── otterlink.exe
+├── Qt6Core.dll
+├── Qt6Gui.dll
+├── Qt6Network.dll
+├── Qt6Widgets.dll
+├── libgcc_s_seh-1.dll
+├── libstdc++-6.dll
+├── libwinpthread-1.dll
+├── platforms/
+│   └── qwindows.dll
+└── imageformats/
+    └── qwebp.dll
+```
+
+For the Qt 6.4.2 MinGW installation used for the Linux cross-build, the source
+plugin is:
+
+```text
+~/Qt/6.4.2/mingw_64/plugins/imageformats/qwebp.dll
+```
+
+The client logs a warning if a Home asset cannot be decoded, including the
+Qt image-reader error and detected format, which makes missing image plugins
+straightforward to diagnose.
