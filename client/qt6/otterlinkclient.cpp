@@ -7,6 +7,8 @@
 #include <QNetworkRequest>
 #include <QUrl>
 #include <QImageReader>
+#include <QBuffer>
+#include <QDebug>
 #include <algorithm>
 
 #include <functional>
@@ -428,13 +430,27 @@ void OtterLinkClient::loadHomeScreen()
             connect(assetReply, &QNetworkReply::finished, this,
                     [this, screen, backgroundID, ids, index, assetReply, loadNext, assetID]() {
                 if (assetReply->error() == QNetworkReply::NoError) {
-                    QImage image;
-                    image.loadFromData(assetReply->readAll());
-                    if (!image.isNull()) {
-                        if (assetID == backgroundID)
-                            emit homeBackgroundLoaded(screen, image);
-                        else
-                            emit homeAssetLoaded(assetID, image);
+                    const QByteArray data = assetReply->readAll();
+                    QBuffer buffer;
+                    buffer.setData(data);
+                    if (!buffer.open(QIODevice::ReadOnly)) {
+                        qWarning() << "Home asset" << assetID << "could not open image data buffer.";
+                    } else {
+                        QImageReader reader(&buffer);
+                        reader.setAutoDetectImageFormat(true);
+                        QImage image = reader.read();
+                        if (!image.isNull()) {
+                            if (assetID == backgroundID)
+                                emit homeBackgroundLoaded(screen, image);
+                            else
+                                emit homeAssetLoaded(assetID, image);
+                        } else {
+                            qWarning() << "Home asset" << assetID
+                                       << "image decode failed:"
+                                       << reader.errorString()
+                                       << "format:" << reader.format()
+                                       << "bytes:" << data.size();
+                        }
                     }
                 }
                 assetReply->deleteLater();
