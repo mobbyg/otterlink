@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"crypto/tls"
 	"log"
 	"net/http"
 	"os"
@@ -108,7 +109,19 @@ func main() {
 	mux.HandleFunc("POST /api/auth/logout", authAPI.Logout)
 	mux.HandleFunc("GET /api/me", authAPI.Me)
 	mux.Handle("/", webServer.Handler())
-	httpServer := &http.Server{Addr: addr, Handler: mux}
+	tlsCertFile := strings.TrimSpace(os.Getenv("OTTERLINK_TLS_CERT_FILE"))
+	tlsKeyFile := strings.TrimSpace(os.Getenv("OTTERLINK_TLS_KEY_FILE"))
+	if (tlsCertFile == "") != (tlsKeyFile == "") {
+		log.Fatalf("OTTERLINK_TLS_CERT_FILE and OTTERLINK_TLS_KEY_FILE must be set together")
+	}
+
+	httpServer := &http.Server{
+		Addr: addr,
+		Handler: mux,
+		TLSConfig: &tls.Config{
+			MinVersion: tls.VersionTLS12,
+		},
+	}
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
@@ -136,11 +149,21 @@ func main() {
 	oscarErr := make(chan error, 1)
 	go func() { oscarErr <- oscarServer.ListenAndServe(ctx) }()
 
-	log.Printf("Otter Link HTTP server listening on %s", addr)
+	if tlsCertFile != "" {
+		log.Printf("Otter Link HTTPS server listening on %s", addr)
+	} else {
+		log.Printf("Otter Link HTTP server listening on %s", addr)
+	}
 	log.Printf("Otter Link protocol listening on %s", protocolAddr)
 	log.Printf("Otter Link OSCAR compatibility listening on %s", oscarAddr)
 	httpErr := make(chan error, 1)
-	go func() { httpErr <- httpServer.ListenAndServe() }()
+	go func() {
+		if tlsCertFile != "" {
+			httpErr <- httpServer.ListenAndServeTLS(tlsCertFile, tlsKeyFile)
+		} else {
+			httpErr <- httpServer.ListenAndServe()
+		}
+	}()
 
 	select {
 	case err := <-httpErr:
