@@ -8,7 +8,9 @@ The HTTP listener defaults to:
 
 `http://localhost:9090`
 
-Set `OTTERLINK_ADDR` to change the listen address.
+When `OTTERLINK_TLS_CERT_FILE` and `OTTERLINK_TLS_KEY_FILE` are both configured, the same API is served over HTTPS instead. The server requires TLS 1.2 or newer. Clients should use the HTTPS hostname covered by the certificate, for example `https://otterlink.example.org/`.
+
+Set `OTTERLINK_ADDR` to change the listen address. Set the TLS certificate and private-key paths with `OTTERLINK_TLS_CERT_FILE` and `OTTERLINK_TLS_KEY_FILE`; the two variables must be configured together. Keep the existing HTTP mode for local development when TLS is not configured.
 
 All JSON request bodies must use:
 
