@@ -120,6 +120,8 @@ Environment variables:
 - `OTTERLINK_OSCAR_ADDR` — OSCAR compatibility listen address; default `:5190`
 - `OTTERLINK_DB` — SQLite database path; default `data/otterlink.db`
 - `OTTERLINK_ADMIN_USERNAME` — existing account to grant the `admin` role at server startup; unset by default
+- `OTTERLINK_TLS_CERT_FILE` — PEM certificate file for HTTPS; must be set together with `OTTERLINK_TLS_KEY_FILE`
+- `OTTERLINK_TLS_KEY_FILE` — PEM private key file for HTTPS; must be set together with `OTTERLINK_TLS_CERT_FILE`
 
 For example:
 
@@ -128,6 +130,8 @@ OTTERLINK_ADMIN_USERNAME=yourusername go run .
 ```
 
 This promotes the named existing account; it does not create an account or set a password.
+
+When both TLS variables are set, the HTTP API and web client are served over HTTPS with a minimum TLS version of 1.2. When neither is set, the existing plain HTTP development mode remains available. The Qt client accepts either `http://` or `https://` server URLs and uses the operating system certificate store for HTTPS certificate validation. Do not disable certificate validation or use certificates whose hostname does not match the server URL.
 
 ## Administration
 
