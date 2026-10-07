@@ -11,6 +11,8 @@
 #include "ui_mainwindow.h"
 
 #include <QComboBox>
+#include <QDir>
+#include <QFile>
 #include <QDialog>
 #include <QDialogButtonBox>
 #include <QFont>
@@ -31,6 +33,7 @@
 #include <QStyle>
 #include <QTreeWidget>
 #include <QTreeWidgetItem>
+#include <QTextStream>
 #include <QUrl>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -219,7 +222,6 @@ MainWindow::MainWindow(QWidget *parent)
         if (file.open(QIODevice::WriteOnly | QIODevice::Append | QIODevice::Text)) {
             QTextStream stream(&file);
             stream << "QSoundEffect status=" << static_cast<int>(m_connectionSfx->status())
-                   << " error=" << static_cast<int>(m_connectionSfx->error())
                    << " playing=" << (m_connectionSfx->isPlaying() ? "true" : "false")
                    << " source=" << m_connectionSfx->source().toString() << Qt::endl;
         }
