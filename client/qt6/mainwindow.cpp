@@ -209,6 +209,22 @@ MainWindow::MainWindow(QWidget *parent)
     m_connectionSfx = new QSoundEffect(this);
     m_connectionSfx->setSource(QUrl(QStringLiteral("qrc:/audio/dial-up-modem-01.wav")));
     m_connectionSfx->setVolume(1.0);
+
+    // Temporary diagnostic for Windows audio-backend testing. The status is written
+    // to the system temp directory so GUI builds without a console still expose
+    // whether QSoundEffect successfully loaded the bundled WAV.
+    connect(m_connectionSfx, &QSoundEffect::statusChanged, this, [this]() {
+        const QString path = QDir::tempPath() + QStringLiteral("/otterlink-sfx-debug.txt");
+        QFile file(path);
+        if (file.open(QIODevice::WriteOnly | QIODevice::Append | QIODevice::Text)) {
+            QTextStream stream(&file);
+            stream << "QSoundEffect status=" << static_cast<int>(m_connectionSfx->status())
+                   << " error=" << static_cast<int>(m_connectionSfx->error())
+                   << " playing=" << (m_connectionSfx->isPlaying() ? "true" : "false")
+                   << " source=" << m_connectionSfx->source().toString() << Qt::endl;
+        }
+    });
+
     connect(m_sfxButton, &QPushButton::clicked, this, &MainWindow::toggleConnectionSfx);
     connect(m_connectionSfx, &QSoundEffect::playingChanged, this, [this]() {
         // With SFX enabled, the modem recording controls the length of the first stage.
