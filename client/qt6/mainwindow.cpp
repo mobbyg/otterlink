@@ -210,13 +210,11 @@ MainWindow::MainWindow(QWidget *parent)
         ui->authLayout->addLayout(sfxRow);
 
     m_connectionSfx = new QSoundEffect(this);
-    m_connectionSfx->setSource(QUrl(QStringLiteral("qrc:/audio/dial-up-modem-01.wav")));
-    m_connectionSfx->setVolume(1.0);
 
-    // Temporary diagnostic for Windows audio-backend testing. The status is written
-    // to the system temp directory so GUI builds without a console still expose
-    // whether QSoundEffect successfully loaded the bundled WAV.
-    connect(m_connectionSfx, &QSoundEffect::statusChanged, this, [this]() {
+    // Temporary diagnostic for Windows audio-backend testing. Install the
+    // status handler before assigning the source so the initial load transition
+    // cannot be missed, then write an immediate snapshot as well.
+    const auto logSfxState = [this]() {
         const QString path = QDir::tempPath() + QStringLiteral("/otterlink-sfx-debug.txt");
         QFile file(path);
         if (file.open(QIODevice::WriteOnly | QIODevice::Append | QIODevice::Text)) {
@@ -225,7 +223,12 @@ MainWindow::MainWindow(QWidget *parent)
                    << " playing=" << (m_connectionSfx->isPlaying() ? "true" : "false")
                    << " source=" << m_connectionSfx->source().toString() << Qt::endl;
         }
-    });
+    };
+
+    connect(m_connectionSfx, &QSoundEffect::statusChanged, this, logSfxState);
+    m_connectionSfx->setSource(QUrl(QStringLiteral("qrc:/audio/dial-up-modem-01.wav")));
+    m_connectionSfx->setVolume(1.0);
+    logSfxState();
 
     connect(m_sfxButton, &QPushButton::clicked, this, &MainWindow::toggleConnectionSfx);
     connect(m_connectionSfx, &QSoundEffect::playingChanged, this, [this]() {
