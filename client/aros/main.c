@@ -45,7 +45,7 @@ int main(void)
         End;
 
     if (app == NULL)
-        return RETURN_FAIL;
+        return 1;
 
     DoMethod(window, MUIM_Notify,
         MUIA_Window_CloseRequest, TRUE,
@@ -74,5 +74,5 @@ int main(void)
     }
 
     MUI_DisposeObject(app);
-    return RETURN_OK;
+    return 0;
 }
