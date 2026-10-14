@@ -80,6 +80,31 @@ function editArticle(article) {
   $('article-preview').classList.add('hidden');
   $('article-editor').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
+function insertMarkdown(kind) {
+  const field = $('article-body');
+  const start = field.selectionStart ?? field.value.length;
+  const end = field.selectionEnd ?? start;
+  const selected = field.value.slice(start, end);
+  let before = '';
+  let after = '';
+  let replacement = selected;
+  switch (kind) {
+    case 'h1': before = '# '; replacement = selected || 'Heading'; after = ''; break;
+    case 'h2': before = '## '; replacement = selected || 'Subtitle'; after = ''; break;
+    case 'bold': before = '**'; replacement = selected || 'bold text'; after = '**'; break;
+    case 'italic': before = '*'; replacement = selected || 'italic text'; after = '*'; break;
+    case 'list': before = '- '; replacement = (selected || 'List item').replace(/\n/g, '\n- '); after = ''; break;
+    case 'link': before = '['; replacement = selected || 'link text'; after = '](https://example.com)'; break;
+    default: return;
+  }
+  const insertion = before + replacement + after;
+  field.setRangeText(insertion, start, end, 'select');
+  field.focus();
+  field.dispatchEvent(new Event('input', { bubbles: true }));
+}
+document.querySelectorAll('[data-markdown]').forEach((button) => {
+  button.addEventListener('click', () => insertMarkdown(button.dataset.markdown));
+});
 $('new-article').addEventListener('click', () => { clearEditor(); $('article-title').focus(); });
 $('clear-article').addEventListener('click', clearEditor);
 $('refresh-articles').addEventListener('click', refreshArticles);
