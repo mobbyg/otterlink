@@ -7,9 +7,12 @@
 #include "otterpeoplewidget.h"
 #include "otterdmwidget.h"
 #include "ottereventswidget.h"
+#include "otternewswidget.h"
 #include "ui_mainwindow.h"
 
 #include <QComboBox>
+#include <QDir>
+#include <QFile>
 #include <QDialog>
 #include <QDialogButtonBox>
 #include <QFont>
@@ -24,11 +27,16 @@
 #include <QMenuBar>
 #include <QAction>
 #include <QPushButton>
+#include <QPixmap>
+#include <QSoundEffect>
 #include <QSignalBlocker>
 #include <QStyle>
 #include <QTreeWidget>
 #include <QTreeWidgetItem>
+#include <QTextStream>
+#include <QUrl>
 #include <QVBoxLayout>
+#include <QHBoxLayout>
 
 #include <initializer_list>
 
@@ -86,6 +94,8 @@ MainWindow::MainWindow(QWidget *parent)
 
     resize(1000, 680);
     m_refreshTimer.setInterval(5000);
+    m_homeRefreshTimer.setInterval(15 * 60 * 1000);
+    connect(&m_homeRefreshTimer, &QTimer::timeout, m_client, &OtterLinkClient::loadHomeScreen);
     m_connectionTimer.setInterval(700);
 
     // The old service stack remains the source for the existing service widgets.
@@ -148,6 +158,92 @@ MainWindow::MainWindow(QWidget *parent)
     ui->buddiesList->hide();
     ui->buddiesList->deleteLater();
 
+    // The connection presentation lives on the login page so the username/password
+    // fields remain visible while the classic dial-up sequence plays above them.
+    m_connectionPresentationWidget = new QWidget(ui->authPage);
+    m_connectionPresentationWidget->setObjectName(QStringLiteral("connectionPresentation"));
+    m_connectionPresentationWidget->setMinimumHeight(145);
+    m_connectionPresentationWidget->setMaximumHeight(145);
+
+    auto *presentationLayout = new QVBoxLayout(m_connectionPresentationWidget);
+    presentationLayout->setContentsMargins(0, 0, 0, 0);
+    presentationLayout->setSpacing(2);
+
+    m_connectionImageLabel = new QLabel(m_connectionPresentationWidget);
+    m_connectionImageLabel->setObjectName(QStringLiteral("connectionPresentationImage"));
+    m_connectionImageLabel->setAlignment(Qt::AlignCenter);
+    m_connectionImageLabel->setMinimumHeight(112);
+    m_connectionImageLabel->setMaximumHeight(112);
+    m_connectionImageLabel->setScaledContents(false);
+    presentationLayout->addWidget(m_connectionImageLabel);
+
+    m_connectionStatusLabel = new QLabel(m_connectionPresentationWidget);
+    m_connectionStatusLabel->setObjectName(QStringLiteral("connectionPresentationStatus"));
+    m_connectionStatusLabel->setAlignment(Qt::AlignCenter);
+    m_connectionStatusLabel->setMinimumHeight(18);
+    presentationLayout->addWidget(m_connectionStatusLabel);
+
+    const int authGapIndex = ui->authLayout->indexOf(ui->authGap);
+    if (authGapIndex >= 0)
+        ui->authLayout->insertWidget(authGapIndex, m_connectionPresentationWidget);
+    else
+        ui->authLayout->addWidget(m_connectionPresentationWidget);
+    m_connectionPresentationWidget->hide();
+
+    // Small icon-only modem SFX toggle, kept in the lower-right corner of the login page.
+    auto *sfxRow = new QHBoxLayout;
+    sfxRow->setContentsMargins(0, 0, 0, 0);
+    sfxRow->addStretch(1);
+    m_sfxButton = new QPushButton(ui->authPage);
+    m_sfxButton->setObjectName(QStringLiteral("connectionSfxButton"));
+    m_sfxButton->setFixedSize(28, 28);
+    m_sfxButton->setIconSize(QSize(22, 22));
+    m_sfxButton->setText(QString());
+    m_sfxButton->setFlat(true);
+    m_sfxButton->setCursor(Qt::PointingHandCursor);
+    m_sfxButton->setFocusPolicy(Qt::NoFocus);
+    sfxRow->addWidget(m_sfxButton, 0, Qt::AlignRight);
+    const int authBottomIndex = ui->authLayout->indexOf(ui->authBottom);
+    if (authBottomIndex >= 0)
+        ui->authLayout->insertLayout(authBottomIndex, sfxRow);
+    else
+        ui->authLayout->addLayout(sfxRow);
+
+    m_connectionSfx = new QSoundEffect(this);
+
+    // Temporary diagnostic for Windows audio-backend testing. Install the
+    // status handler before assigning the source so the initial load transition
+    // cannot be missed, then write an immediate snapshot as well.
+    const auto logSfxState = [this]() {
+        const QString path = QDir::tempPath() + QStringLiteral("/otterlink-sfx-debug.txt");
+        QFile file(path);
+        if (file.open(QIODevice::WriteOnly | QIODevice::Append | QIODevice::Text)) {
+            QTextStream stream(&file);
+            stream << "QSoundEffect status=" << static_cast<int>(m_connectionSfx->status())
+                   << " playing=" << (m_connectionSfx->isPlaying() ? "true" : "false")
+                   << " source=" << m_connectionSfx->source().toString() << Qt::endl;
+        }
+    };
+
+    connect(m_connectionSfx, &QSoundEffect::statusChanged, this, logSfxState);
+    m_connectionSfx->setSource(QUrl(QStringLiteral("qrc:/audio/dial-up-modem-01.wav")));
+    m_connectionSfx->setVolume(1.0);
+    logSfxState();
+
+    connect(m_sfxButton, &QPushButton::clicked, this, &MainWindow::toggleConnectionSfx);
+    connect(m_connectionSfx, &QSoundEffect::playingChanged, this, [this]() {
+        // With SFX enabled, the modem recording controls the length of the first stage.
+        // A fallback timer in beginConnectionPresentation() handles an unavailable sound.
+        if (m_connectionSfxEnabled && !m_connectionSfx->isPlaying()
+            && m_connectionStage == 0
+            && m_connectionPresentationWidget
+            && m_connectionPresentationWidget->isVisible()) {
+            m_connectionTimer.stop();
+            advanceConnectionStage();
+        }
+    });
+    updateSfxButton();
+
     setLoggedIn(false);
 
     connect(ui->loginButton, &QPushButton::clicked, this, &MainWindow::login);
@@ -184,14 +280,32 @@ MainWindow::MainWindow(QWidget *parent)
             m_peopleWidget, &OtterPeopleWidget::setPresence);
     connect(m_client, &OtterLinkClient::loggedOut, this, [this]() {
         m_refreshTimer.stop();
+        m_homeRefreshTimer.stop();
         m_connectionTimer.stop();
         m_connectionFinishTimer.stop();
+        if (m_connectionSfx)
+            m_connectionSfx->stop();
+        if (m_connectionPresentationWidget)
+            m_connectionPresentationWidget->hide();
+        ui->loginButton->setEnabled(true);
         m_pendingBuddyGroups.clear();
+        m_homeScreenRequested = false;
         closeAllServiceWindows();
         setLoggedIn(false);
     });
     connect(m_client, &OtterLinkClient::errorOccurred, this, &MainWindow::showError);
     connect(m_client, &OtterLinkClient::keywordResolved, this, &MainWindow::keywordResolved);
+    connect(m_client, &OtterLinkClient::homeScreenLoaded, m_homePage,
+            static_cast<void (OtterHomePage::*)(const QJsonObject &)>(
+                &OtterHomePage::setServerScreen));
+    connect(m_client, &OtterLinkClient::homeBackgroundLoaded, m_homePage,
+            [this](const QJsonObject &, const QImage &image) {
+                m_homePage->setServerBackground(image);
+            });
+    connect(m_client, &OtterLinkClient::homeAssetLoaded, m_homePage,
+            [this](qint64 assetId, const QImage &image) {
+                m_homePage->setServerAsset(assetId, image);
+            });
 
     auto *fileMenu = menuBar()->addMenu(QStringLiteral("File"));
     auto *awayAction = fileMenu->addAction(QStringLiteral("Away / AFK"));
@@ -379,6 +493,9 @@ void MainWindow::navigateService()
     } else if (button == ui->eventsButton) {
         auto *page = new OtterEventsWidget(m_client, m_desktop);
         openServiceWindow(QStringLiteral("events"), QStringLiteral("Events"), page);
+    } else if (button == ui->newsButton) {
+        auto *page = new OtterNewsWidget(m_client, m_desktop);
+        openServiceWindow(QStringLiteral("news"), QStringLiteral("News"), page);
     } else {
         QString title;
         if (button == ui->mailButton)
@@ -436,10 +553,21 @@ void MainWindow::openServiceWindow(const QString &service, const QString &title,
 
     const int offset = m_nextWindowOffset;
     m_nextWindowOffset = (m_nextWindowOffset + 28) % 140;
-    const int preferredWidth = service == QStringLiteral("events") ? 635 : 620;
-    const int width = qMin(preferredWidth, qMax(360, m_desktop->width() - 70));
-    const int height = qMin(440, qMax(250, m_desktop->height() - 70));
-    window->resize(width, height);
+
+    if (service == QStringLiteral("home")) {
+        // Home is a fixed 1280x720 service. Keep the authored canvas at its
+        // native size; the page itself owns that fixed coordinate system.
+        auto *titleBar = window->findChild<QFrame *>(
+            QStringLiteral("serviceWindowTitleBar"));
+        const int titleBarHeight = titleBar ? titleBar->sizeHint().height() : 30;
+        window->setFixedSize(1284, 720 + titleBarHeight + 4);
+    } else {
+        const int preferredWidth = service == QStringLiteral("events") ? 635 : 620;
+        const int width = qMin(preferredWidth, qMax(360, m_desktop->width() - 70));
+        const int height = qMin(440, qMax(250, m_desktop->height() - 70));
+        window->resize(width, height);
+    }
+
     window->move(24 + offset, 20 + offset);
 
     connect(window, &OtterServiceWindow::closeRequested,
@@ -502,6 +630,8 @@ void MainWindow::updateServiceButtonStates(OtterServiceWindow *activeWindow)
         activeButton = ui->peopleButton;
     else if (activeService == QStringLiteral("chat"))
         activeButton = ui->chatButton;
+    else if (activeService == QStringLiteral("news"))
+        activeButton = ui->newsButton;
 
     setActiveServiceButton(activeButton, {
         ui->homeButton, ui->peopleButton, ui->mailButton, ui->chatButton,
@@ -514,35 +644,110 @@ void MainWindow::beginConnectionPresentation()
     m_connectionReady = false;
     m_connectionDisplayName.clear();
     m_connectionStage = 0;
-    ui->connectionStageLabel->setText(QStringLiteral("CALLING"));
-    ui->connectionDetailLabel->setText(QStringLiteral("Dialing Otter Link..."));
-    ui->connectionProgress->setValue(10);
-    ui->connectionOtterLabel->setText(QStringLiteral("( o.o )\n /|\\\n  / \\\n\n~ ~ ~"));
-    ui->stackedWidget->setCurrentWidget(ui->connectionPage);
-    m_connectionTimer.start();
+    ui->loginButton->setEnabled(false);
+    m_connectionPresentationWidget->show();
+    updateConnectionPresentation(0);
+
+    if (m_connectionSfxEnabled) {
+        m_connectionSfx->stop();
+        m_connectionSfx->play();
+        // The modem recording normally ends the first stage. This is only a safety
+        // timeout in case the platform cannot play the bundled sound.
+        m_connectionTimer.start(30000);
+    } else {
+        // Silent mode intentionally uses a faster, fixed three-second presentation.
+        m_connectionTimer.start(3000);
+    }
+}
+
+void MainWindow::toggleConnectionSfx()
+{
+    m_connectionSfxEnabled = !m_connectionSfxEnabled;
+    updateSfxButton();
+
+    if (!m_connectionPresentationWidget->isVisible() || m_connectionStage != 0)
+        return;
+
+    m_connectionSfx->stop();
+    if (m_connectionSfxEnabled) {
+        m_connectionSfx->play();
+        m_connectionTimer.start(30000);
+    } else {
+        m_connectionTimer.start(3000);
+    }
+}
+
+void MainWindow::updateSfxButton()
+{
+    if (!m_sfxButton)
+        return;
+
+    m_sfxButton->setIcon(QIcon(m_connectionSfxEnabled
+                                   ? QStringLiteral(":/images/sfx_on.png")
+                                   : QStringLiteral(":/images/sfx_off.png")));
+    m_sfxButton->setToolTip(m_connectionSfxEnabled
+                                ? QStringLiteral("Modem SFX: On")
+                                : QStringLiteral("Modem SFX: Off"));
+}
+
+void MainWindow::updateConnectionPresentation(int stage)
+{
+    if (!m_connectionImageLabel || !m_connectionStatusLabel)
+        return;
+
+    QString imageResource;
+    QString status;
+    Qt::Alignment alignment = Qt::AlignCenter;
+
+    switch (stage) {
+    case 0:
+        imageResource = QStringLiteral(":/images/connect1.webp");
+        status = QStringLiteral("Connecting...");
+        alignment = Qt::AlignLeft | Qt::AlignVCenter;
+        break;
+    case 1:
+        imageResource = QStringLiteral(":/images/connect2.webp");
+        status = QStringLiteral("logging in");
+        alignment = Qt::AlignCenter;
+        break;
+    case 2:
+        imageResource = QStringLiteral(":/images/connected.webp");
+        status = QStringLiteral("Let's go!");
+        alignment = Qt::AlignRight | Qt::AlignVCenter;
+        break;
+    default:
+        return;
+    }
+
+    const QPixmap pixmap(imageResource);
+    if (!pixmap.isNull()) {
+        m_connectionImageLabel->setPixmap(
+            pixmap.scaled(QSize(300, 108), Qt::KeepAspectRatio, Qt::SmoothTransformation));
+    } else {
+        m_connectionImageLabel->setPixmap(QPixmap());
+    }
+
+    m_connectionImageLabel->setAlignment(alignment);
+    m_connectionStatusLabel->setText(status);
+    m_connectionStatusLabel->setAlignment(alignment);
 }
 
 void MainWindow::advanceConnectionStage()
 {
     ++m_connectionStage;
+    m_connectionTimer.stop();
 
     switch (m_connectionStage) {
     case 1:
-        ui->connectionStageLabel->setText(QStringLiteral("CONNECTING"));
-        ui->connectionDetailLabel->setText(QStringLiteral("Establishing carrier..."));
-        ui->connectionProgress->setValue(55);
+        updateConnectionPresentation(1);
+        m_connectionTimer.start(3000);
         break;
     case 2:
-        ui->connectionStageLabel->setText(QStringLiteral("CONNECTED"));
-        ui->connectionDetailLabel->setText(QStringLiteral("Welcome to Otter Link."));
-        ui->connectionProgress->setValue(100);
-        ui->connectionOtterLabel->setText(QStringLiteral("  /\\_/\\\n ( o.o )\n  > ^ <"));
-        m_connectionTimer.stop();
+        updateConnectionPresentation(2);
         if (m_connectionReady)
             m_connectionFinishTimer.start(450);
         break;
     default:
-        m_connectionTimer.stop();
         break;
     }
 }
@@ -556,7 +761,8 @@ void MainWindow::finishConnectionPresentation()
 
 void MainWindow::showDashboard(const QString &displayName)
 {
-    if (ui->stackedWidget->currentWidget() == ui->connectionPage && m_connectionStage < 2) {
+    if (m_connectionPresentationWidget && m_connectionPresentationWidget->isVisible()
+        && m_connectionStage < 2) {
         m_connectionReady = true;
         m_connectionDisplayName = displayName;
         return;
@@ -566,11 +772,17 @@ void MainWindow::showDashboard(const QString &displayName)
     m_connectionDisplayName.clear();
     m_connectionTimer.stop();
     m_connectionFinishTimer.stop();
+    if (m_connectionSfx)
+        m_connectionSfx->stop();
+    if (m_connectionPresentationWidget)
+        m_connectionPresentationWidget->hide();
+    ui->loginButton->setEnabled(true);
     ui->identityLabel->setText(
         QStringLiteral("Connected as <b>%1</b>").arg(displayName.toHtmlEscaped()));
     setLoggedIn(true);
     m_client->loadDashboard();
     m_refreshTimer.start();
+    m_homeRefreshTimer.start();
 
     // Start with the desktop itself as the home state. Home remains available from the bar.
     updateServiceButtonStates();
@@ -598,6 +810,14 @@ void MainWindow::dashboardLoaded(const QStringList &buddies, const QStringList &
         QStringLiteral("%1 %2 currently online")
             .arg(onlineUsers.size())
             .arg(onlineUsers.size() == 1 ? QStringLiteral("user") : QStringLiteral("users")));
+
+    // The dashboard is refreshed periodically. Only the initial dashboard load
+    // should fetch the server-managed Home screen; reloading it on every refresh
+    // causes the Home window to visibly blink.
+    if (!m_homeScreenRequested) {
+        m_homeScreenRequested = true;
+        m_client->loadHomeScreen();
+    }
 }
 
 void MainWindow::rebuildBuddyTree(const QStringList &buddies, const QStringList &onlineUsers)
@@ -703,12 +923,17 @@ void MainWindow::openPrivateMessage(const QString &username)
 
 void MainWindow::showError(const QString &message)
 {
-    const bool wasConnecting = ui->stackedWidget->currentWidget() == ui->connectionPage;
+    const bool wasConnecting = m_connectionPresentationWidget
+                               && m_connectionPresentationWidget->isVisible();
     if (wasConnecting) {
         m_connectionReady = false;
         m_connectionDisplayName.clear();
         m_connectionTimer.stop();
         m_connectionFinishTimer.stop();
+        if (m_connectionSfx)
+            m_connectionSfx->stop();
+        m_connectionPresentationWidget->hide();
+        ui->loginButton->setEnabled(true);
         setLoggedIn(false);
     }
     QMessageBox::warning(this, QStringLiteral("Otter Link"), message);

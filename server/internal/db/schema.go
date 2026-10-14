@@ -119,6 +119,38 @@ CREATE TABLE IF NOT EXISTS events (
 CREATE INDEX IF NOT EXISTS idx_events_start_at ON events(start_at);
 CREATE INDEX IF NOT EXISTS idx_events_target ON events(target_type, target_id);
 
+CREATE TABLE IF NOT EXISTS news_sources (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    url TEXT NOT NULL UNIQUE,
+    category TEXT NOT NULL,
+    enabled INTEGER NOT NULL DEFAULT 1 CHECK (enabled IN (0,1)),
+    refresh_interval_minutes INTEGER NOT NULL DEFAULT 30,
+    last_fetched_at TEXT,
+    last_success_at TEXT,
+    last_error TEXT NOT NULL DEFAULT '',
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_news_sources_enabled ON news_sources(enabled);
+
+CREATE TABLE IF NOT EXISTS news_items (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    source_id INTEGER NOT NULL REFERENCES news_sources(id) ON DELETE CASCADE,
+    title TEXT NOT NULL,
+    author TEXT NOT NULL DEFAULT '',
+    published_at TEXT,
+    summary TEXT NOT NULL DEFAULT '',
+    url TEXT NOT NULL,
+    guid TEXT NOT NULL,
+    image_url TEXT NOT NULL DEFAULT '',
+    article_html TEXT NOT NULL DEFAULT '',
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(source_id, guid)
+);
+CREATE INDEX IF NOT EXISTS idx_news_items_source_published ON news_items(source_id, published_at DESC, id DESC);
+CREATE INDEX IF NOT EXISTS idx_news_items_published ON news_items(published_at DESC, id DESC);
+
 CREATE TABLE IF NOT EXISTS service_keywords (
     keyword TEXT PRIMARY KEY COLLATE NOCASE,
     display_name TEXT NOT NULL,
@@ -133,6 +165,33 @@ CREATE TABLE IF NOT EXISTS service_keyword_targets (
     label TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_service_keyword_targets_keyword ON service_keyword_targets(keyword);
+
+CREATE TABLE IF NOT EXISTS content_screens (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    slug TEXT NOT NULL UNIQUE COLLATE NOCASE,
+    title TEXT NOT NULL,
+    published INTEGER NOT NULL DEFAULT 0 CHECK (published IN (0,1)),
+    start_at TEXT,
+    end_at TEXT,
+    priority INTEGER NOT NULL DEFAULT 0,
+    version INTEGER NOT NULL DEFAULT 1,
+    content_json TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_content_screens_slug_schedule
+    ON content_screens(slug, published, start_at, end_at, priority);
+
+CREATE TABLE IF NOT EXISTS content_assets (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    mime TEXT NOT NULL,
+    size INTEGER NOT NULL,
+    sha256 TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_content_assets_sha256 ON content_assets(sha256);
 `
 
 func Initialize(db *sql.DB) error {
@@ -151,6 +210,7 @@ func Initialize(db *sql.DB) error {
 	if err := rows.Err(); err != nil { return fmt.Errorf("read users schema rows: %w", err) }
 	if !hasRole { if _, err := db.Exec(`ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'user'`); err != nil { return fmt.Errorf("add users role column: %w", err) } }
 
+	if err := addColumnIfMissing(db, "news_items", "article_html", `ALTER TABLE news_items ADD COLUMN article_html TEXT NOT NULL DEFAULT ''`); err != nil { return err }
 	if err := addColumnIfMissing(db, "chat_channels", "creator_username", `ALTER TABLE chat_channels ADD COLUMN creator_username TEXT NOT NULL DEFAULT ''`); err != nil { return err }
 	if err := addColumnIfMissing(db, "chat_channels", "original_mod_username", `ALTER TABLE chat_channels ADD COLUMN original_mod_username TEXT`); err != nil { return err }
 	if _, err := db.Exec(`UPDATE chat_channels SET creator_username = COALESCE((SELECT username FROM users WHERE users.id = chat_channels.creator_user_id), '') WHERE creator_username = ''`); err != nil { return fmt.Errorf("backfill chat creator usernames: %w", err) }

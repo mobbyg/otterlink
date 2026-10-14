@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"crypto/tls"
 	"log"
 	"net/http"
 	"os"
@@ -15,12 +16,15 @@ import (
 	"time"
 
 	"github.com/mobbyg/otterlink/server/internal/accounts"
+	"github.com/mobbyg/otterlink/server/internal/assets"
 	"github.com/mobbyg/otterlink/server/internal/api"
 	"github.com/mobbyg/otterlink/server/internal/buddies"
 	"github.com/mobbyg/otterlink/server/internal/chat"
+	"github.com/mobbyg/otterlink/server/internal/content"
 	"github.com/mobbyg/otterlink/server/internal/db"
 	"github.com/mobbyg/otterlink/server/internal/dm"
 	"github.com/mobbyg/otterlink/server/internal/events"
+	"github.com/mobbyg/otterlink/server/internal/news"
 	"github.com/mobbyg/otterlink/server/internal/keywords"
 	"github.com/mobbyg/otterlink/server/internal/oscar"
 	"github.com/mobbyg/otterlink/server/internal/presence"
@@ -34,6 +38,7 @@ const (
 	defaultProtocolAddr = ":8023"
 	defaultOscarAddr    = ":5190"
 	defaultDB           = "data/otterlink.db"
+	defaultAssetRoot    = "data/assets"
 )
 
 type healthResponse struct {
@@ -46,6 +51,7 @@ func main() {
 	protocolAddr := getenv("OTTERLINK_PROTOCOL_ADDR", defaultProtocolAddr)
 	oscarAddr := getenv("OTTERLINK_OSCAR_ADDR", defaultOscarAddr)
 	dbPath := getenv("OTTERLINK_DB", defaultDB)
+	assetRoot := getenv("OTTERLINK_ASSET_ROOT", defaultAssetRoot)
 
 	if err := os.MkdirAll(filepath.Dir(dbPath), 0o755); err != nil {
 		log.Fatalf("create database directory: %v", err)
@@ -83,9 +89,18 @@ func main() {
 	chatHub := chat.NewHub(database, 100)
 	dmService := dm.Service{DB: database, Limit: 100}
 	eventsService := events.Service{DB: database}
+	newsService := news.Service{DB: database}
+	newsCtx, newsCancel := context.WithCancel(context.Background())
+	defer newsCancel()
+	go runNewsRefreshLoop(newsCtx, newsService)
 	keywordService := keywords.NewService(database)
+	contentService := content.Service{DB: database}
+	assetService := assets.Service{DB: database, Root: assetRoot}
+	if err := content.EnsureDefaultHome(database); err != nil {
+		log.Fatalf("initialize default home screen: %v", err)
+	}
 	authAPI := api.AuthAPI{Accounts: accountService, Presence: presenceService, Chat: chatHub}
-	webServer := &web.Server{Accounts: accountService, Buddies: buddyService, Presence: presenceService, Chat: chatHub, DM: dmService, Events: eventsService, Keywords: keywordService}
+	webServer := &web.Server{Accounts: accountService, Buddies: buddyService, Presence: presenceService, Chat: chatHub, DM: dmService, Events: eventsService, News: newsService, Keywords: keywordService, Content: contentService, Assets: assetService}
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/health", healthHandler)
@@ -94,7 +109,19 @@ func main() {
 	mux.HandleFunc("POST /api/auth/logout", authAPI.Logout)
 	mux.HandleFunc("GET /api/me", authAPI.Me)
 	mux.Handle("/", webServer.Handler())
-	httpServer := &http.Server{Addr: addr, Handler: mux}
+	tlsCertFile := strings.TrimSpace(os.Getenv("OTTERLINK_TLS_CERT_FILE"))
+	tlsKeyFile := strings.TrimSpace(os.Getenv("OTTERLINK_TLS_KEY_FILE"))
+	if (tlsCertFile == "") != (tlsKeyFile == "") {
+		log.Fatalf("OTTERLINK_TLS_CERT_FILE and OTTERLINK_TLS_KEY_FILE must be set together")
+	}
+
+	httpServer := &http.Server{
+		Addr: addr,
+		Handler: mux,
+		TLSConfig: &tls.Config{
+			MinVersion: tls.VersionTLS12,
+		},
+	}
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
@@ -122,11 +149,21 @@ func main() {
 	oscarErr := make(chan error, 1)
 	go func() { oscarErr <- oscarServer.ListenAndServe(ctx) }()
 
-	log.Printf("Otter Link HTTP server listening on %s", addr)
+	if tlsCertFile != "" {
+		log.Printf("Otter Link HTTPS server listening on %s", addr)
+	} else {
+		log.Printf("Otter Link HTTP server listening on %s", addr)
+	}
 	log.Printf("Otter Link protocol listening on %s", protocolAddr)
 	log.Printf("Otter Link OSCAR compatibility listening on %s", oscarAddr)
 	httpErr := make(chan error, 1)
-	go func() { httpErr <- httpServer.ListenAndServe() }()
+	go func() {
+		if tlsCertFile != "" {
+			httpErr <- httpServer.ListenAndServeTLS(tlsCertFile, tlsKeyFile)
+		} else {
+			httpErr <- httpServer.ListenAndServe()
+		}
+	}()
 
 	select {
 	case err := <-httpErr:
@@ -168,6 +205,31 @@ func main() {
 		log.Printf("OSCAR shutdown timeout reached")
 	}
 	log.Printf("Otter Link stopped")
+}
+
+func runNewsRefreshLoop(ctx context.Context, service news.Service) {
+	refresh := func() {
+		count, err := service.RefreshDueSources(ctx, time.Now().UTC())
+		if err != nil {
+			log.Printf("news refresh: %v", err)
+			return
+		}
+		if count > 0 {
+			log.Printf("news refresh: refreshed %d source(s)", count)
+		}
+	}
+
+	refresh()
+	ticker := time.NewTicker(time.Minute)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ticker.C:
+			refresh()
+		case <-ctx.Done():
+			return
+		}
+	}
 }
 
 func healthHandler(w http.ResponseWriter, _ *http.Request) {

@@ -25,7 +25,7 @@ cmake -S . -B build
 cmake --build build
 ```
 
-Run `otterlink` from the resulting build directory. The default server is `http://127.0.0.1:9090`; the server field can be changed to point at another Otter Link instance.
+Run `otterlink` from the resulting build directory. The default server is `http://127.0.0.1:9090`; the server field can be changed to point at another Otter Link instance. For a TLS-enabled server, enter its `https://` URL (for example, `https://otterlink.example.org:9090`). Qt uses the platform certificate store to validate the server certificate.
 
 ## Current development UI
 
@@ -65,3 +65,89 @@ See `../../docs/presentation.md` for the broader design direction.
 ## Direction
 
 This is a native client foundation, not a finished UI. Service operations should remain behind the client/service boundary so the same Otter Link account and community can later be presented by native Amiga/AROS, C64/C128, and Commander X16 clients.
+
+## Windows cross-build
+
+A 64-bit Windows cross-build can be configured from Linux with the repository
+toolchain file:
+
+```sh
+cmake -S . -B build-windows \
+  -DCMAKE_TOOLCHAIN_FILE=cmake/toolchains/mingw-w64-x86_64.cmake \
+  -DCMAKE_PREFIX_PATH=/path/to/windows/qt
+cmake --build build-windows
+```
+
+The Windows Qt installation must be a Qt 6 build for Windows/x86_64 using
+MinGW-w64. The Linux host Qt installation is used for the host-side Qt build
+tools, while the Windows Qt installation supplies the target headers,
+libraries, CMake package files, and Windows deployment tools.
+
+Do not commit Qt SDK binaries or compiler toolchains to the repository.
+
+
+## Image format support
+
+Server-managed Home graphics can use WebP assets. Qt provides WebP support
+through the Qt Image Formats plugin, so the plugin must be available at runtime
+on every target.
+
+### Linux
+
+On Ubuntu/Debian systems using the distribution Qt 6 packages, install the
+Qt 6 image-format plugins:
+
+```sh
+sudo apt install qt6-image-formats-plugins
+```
+
+This package supplies the WebP image plugin used by `QImage`/`QImageReader`.
+
+### Windows
+
+When packaging the cross-built Windows client, include the WebP image plugin
+from the Windows Qt installation alongside the other Qt plugins:
+
+```text
+otterlink-windows/
+├── otterlink.exe
+├── Qt6Core.dll
+├── Qt6Gui.dll
+├── Qt6Network.dll
+├── Qt6Widgets.dll
+├── libgcc_s_seh-1.dll
+├── libstdc++-6.dll
+├── libwinpthread-1.dll
+├── platforms/
+│   └── qwindows.dll
+└── imageformats/
+    └── qwebp.dll
+```
+
+For the Qt 6.4.2 MinGW installation used for the Linux cross-build, the source
+plugin is:
+
+```text
+~/Qt/6.4.2/mingw_64/plugins/imageformats/qwebp.dll
+```
+
+The client logs a warning if a Home asset cannot be decoded, including the
+Qt image-reader error and detected format, which makes missing image plugins
+straightforward to diagnose.
+
+
+## Transport security
+
+The Qt client uses Qt Network for all HTTP API requests. When the server is
+configured with TLS and the client uses an `https://` server URL, the login,
+authentication token, Home content, chat, buddy/presence, messages, events, and
+other HTTP API traffic are encrypted by TLS in transit.
+
+The client does **not** disable certificate validation. The server certificate
+must be trusted by the operating system and must match the hostname used in the
+server URL. For local development without a trusted certificate, the existing
+`http://127.0.0.1:9090` mode remains available.
+
+The separate native JSON-lines listener (`:8023`) and OSCAR compatibility
+listener (`:5190`) are not changed by this HTTP TLS slice. Their transport
+security/compatibility requirements are a separate concern.
