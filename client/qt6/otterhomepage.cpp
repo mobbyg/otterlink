@@ -44,9 +44,15 @@ QLabel *makeLabel(const QString &text, QWidget *parent, int pointSize = -1, bool
 QString destinationService(const QJsonObject &value)
 {
     const QJsonObject destination = value.value(QStringLiteral("destination")).toObject();
-    if (destination.value(QStringLiteral("type")).toString() != QStringLiteral("service"))
-        return QString();
-    return destination.value(QStringLiteral("service")).toString().trimmed().toLower();
+    const QString type = destination.value(QStringLiteral("type")).toString().trimmed().toLower();
+    if (type == QStringLiteral("service"))
+        return destination.value(QStringLiteral("service")).toString().trimmed().toLower();
+    if (type == QStringLiteral("native-news")) {
+        const QString slug = destination.value(QStringLiteral("slug")).toString().trimmed().toLower();
+        if (!slug.isEmpty())
+            return QStringLiteral("native-news:") + slug;
+    }
+    return QString();
 }
 
 } // namespace
