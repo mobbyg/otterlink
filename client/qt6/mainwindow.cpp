@@ -331,7 +331,7 @@ MainWindow::MainWindow(QWidget *parent)
                 body->setObjectName(QStringLiteral("nativeArticleBody"));
                 body->setOpenLinks(false);
                 body->setOpenExternalLinks(false);
-                body->setPlainText(article.value(QStringLiteral("body")).toString());
+                body->setMarkdown(article.value(QStringLiteral("body")).toString());
                 layout->addWidget(body, 1);
 
                 const QString windowTitle = QStringLiteral("OtterWeb — %1")
