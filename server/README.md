@@ -1,6 +1,6 @@
 # Otter Link Server
 
-The Otter Link server is the Go service implementation. It currently provides the HTTP API, the native development protocol, and an OSCAR compatibility listener backed by a shared SQLite account database.
+The Otter Link server is the Go service implementation. It provides the HTTP API, the native development protocol, and an OSCAR compatibility listener backed by a shared SQLite account database. The HTTP services include authentication, presence and buddies, private messages, Community Chat, Events, service keywords, RSS/Atom News, server-managed Home/content screens, and administration.
 
 ## Requirements
 
@@ -42,13 +42,15 @@ Expected response:
 {"status":"ok","service":"otter-link"}
 ```
 
-Current endpoints:
+Selected core endpoints:
 
 - `GET /api/health`
 - `POST /api/auth/register`
 - `POST /api/auth/login`
 - `POST /api/auth/logout`
 - `GET /api/me`
+
+The full service API also includes private messages, Community Chat, Events, service keywords, News, and server-managed Home/content. See [`../docs/api.md`](../docs/api.md) for the detailed reference.
 
 ## Configuration
 
