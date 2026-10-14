@@ -108,7 +108,7 @@ func (s *Server) adminNativeNewsSave(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "unable to load native article", http.StatusInternalServerError)
 			return
 		}
-		if existing.Published && !req.Published {
+		if !req.Published {
 			referenced, err := nativeArticleReferencedByHome(s.Content.DB, existing.Slug)
 			if err != nil {
 				http.Error(w, "unable to check Home article links", http.StatusInternalServerError)
