@@ -595,6 +595,7 @@ void MainWindow::openServiceWindow(const QString &service, const QString &title,
     // The Home canvas stays fixed at its authored 1280x720 coordinate system.
     const bool resizable = service == QStringLiteral("news")
         || service == QStringLiteral("web")
+        || service == QStringLiteral("otterweb")
         || service.startsWith(QStringLiteral("native-news:"));
     auto *window = new OtterServiceWindow(title, content, resizable, m_desktop);
     m_serviceWindows.insert(service, window);
