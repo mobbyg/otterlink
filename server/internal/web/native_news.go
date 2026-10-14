@@ -80,6 +80,10 @@ func (s *Server) adminNativeNewsSave(w http.ResponseWriter, r *http.Request) {
 	}
 	req.Slug = strings.ToLower(strings.TrimSpace(req.Slug))
 	req.Title = strings.TrimSpace(req.Title)
+	if req.ID < 0 {
+		http.Error(w, "invalid native article id", http.StatusBadRequest)
+		return
+	}
 	if req.ID == 0 && !nativeNewsSlugPattern.MatchString(req.Slug) {
 		http.Error(w, "slug must be 1-64 lowercase letters, numbers, hyphens, or underscores and start with a letter or number", http.StatusBadRequest)
 		return
