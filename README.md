@@ -28,8 +28,15 @@ Otter Link is an active development project. The server, development web client,
 - Multi-room Community Chat with persistent message history
 - Temporary user-created rooms and permanent administrator-created rooms
 - Chat channel roles, moderation, bans, kicks, unbanning, and role management
-- Qt 6 Community Chat service window
-- Automated tests for server, chat, and OSCAR components
+- Qt 6 desktop workspace with the classic connection presentation and service windows
+- Persistent private messages, unread-message tracking, and away/AFK presence
+- Events service with server-side permissions and web administration
+- Service/community keyword shortcuts
+- RSS/Atom news ingestion, configurable feed administration, and a Qt News reader
+- Server-managed Home/content screens with scheduling, managed assets, and clickable destinations
+- Native OtterLink article publishing and links from Home screens into the article reader
+- Command-line administration client backed by the HTTP administration API
+- Automated tests for server, chat, news, content, and OSCAR components
 
 ## What it is not
 
@@ -51,7 +58,7 @@ After starting the server, open `http://localhost:9090/` for the development web
 
 ## HTTP API
 
-Current public HTTP endpoints include:
+Selected core HTTP endpoints include:
 
 - `GET /api/health`
 - `POST /api/auth/register`
@@ -75,7 +82,7 @@ Current public HTTP endpoints include:
 - `GET /api/admin/users` — admin role required
 - `GET /api/admin/audit` — admin role required
 
-Detailed protocol and architecture documentation lives in [`docs/`](docs/).
+The list above is intentionally representative rather than exhaustive. The server also exposes APIs for private messages, Events, service keywords, News, and server-managed Home/content. See [`docs/api.md`](docs/api.md) for the current API reference and [`docs/`](docs/) for architecture and protocol documentation.
 
 ## Build and run
 
@@ -152,6 +159,11 @@ Current administration functions include:
 - Chat channel management
 - Chat role management
 - Recent activity/audit view
+- Events administration
+- RSS/Atom news-source management and feed refresh/testing
+- Server-managed Home/content screens and image assets
+- Native OtterLink news article publishing
+- Service keyword configuration
 
 Audit entries record administrative actions and outcomes without recording passwords or session tokens.
 
@@ -190,7 +202,7 @@ The web client is embedded in the Go server and requires no separate frontend bu
 
 ### Qt 6 client
 
-The Qt client currently provides the modern desktop development surface, including the Community Chat service window with room selection, room creation, message history, active-user display, roles, and moderation controls.
+The Qt client currently provides a desktop workspace with Home, People, Community Chat, and News service windows. Home content is delivered by the server and can include scheduled screens, graphics, and clickable destinations. The News service supports RSS/Atom articles and native OtterLink-published articles, with an article reader for supported content. People includes buddy/presence information and private messaging; Community Chat includes room selection, room creation, message history, active-user display, roles, and moderation controls.
 
 The desktop presentation is still under development. The client architecture keeps service-specific behavior in dedicated service components rather than putting it into generic window infrastructure.
 
