@@ -1,6 +1,9 @@
 package web
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestNativeNewsSlugPattern(t *testing.T) {
 	valid := []string{"welcome", "update-2026", "a_1", "0-starts-with-number"}
@@ -9,7 +12,7 @@ func TestNativeNewsSlugPattern(t *testing.T) {
 			t.Errorf("expected slug %q to be valid", slug)
 		}
 	}
-	invalid := []string{"", "-starts-with-hyphen", "_starts-with-underscore", "Uppercase", "contains space", "a/route", "a-very-long-" + string(make([]byte, 70))}
+	invalid := []string{"", "-starts-with-hyphen", "_starts-with-underscore", "Uppercase", "contains space", "a/route", strings.Repeat("a", 65)}
 	for _, slug := range invalid {
 		if nativeNewsSlugPattern.MatchString(slug) {
 			t.Errorf("expected slug %q to be invalid", slug)
