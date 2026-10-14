@@ -32,6 +32,17 @@ Sessions are server-side and revocable. Clients should not assume that a token r
 
 Requests without a valid token receive HTTP `401 Unauthorized`.
 
+### Registration policy
+
+The server stores a registration mode in SQLite. The default for new and existing installations is `invite-only`.
+
+- `invite-only`: public self-registration is blocked until invitation-key support is available. Administrators can create accounts for trusted testers.
+- `open`: public self-registration is enabled.
+- `closed`: public self-registration is blocked.
+- All three modes allow existing users to sign in. Administrator-created accounts are allowed in all modes.
+
+Administrators change this mode in the protected web admin page. The API checks the policy server-side; hiding the registration form is not considered enforcement.
+
 ### Register
 
 `POST /api/auth/register`
@@ -47,7 +58,7 @@ Request:
 }
 ```
 
-Returns HTTP `201 Created` with the created user.
+Returns HTTP `201 Created` with the created user when mode is `open`. In `invite-only` or `closed` mode, public registration returns HTTP `403 Forbidden`. Invitation-key redemption is planned but not yet implemented.
 
 ### Login
 
@@ -599,3 +610,12 @@ New services should follow these conventions:
 8. Document request fields, response shapes, permissions, and lifecycle rules before treating an API as stable.
 
 The long-term goal is **one service, many clients**: Qt, web, and future native retro clients should consume the same logical services even when their presentation and transport capabilities differ.
+
+
+### Administrator registration controls
+
+- `GET /api/admin/registration-mode` — returns the current mode; admin role required.
+- `PUT /api/admin/registration-mode` — body `{"mode":"invite-only"}`, `{"mode":"open"}`, or `{"mode":"closed"}`; admin role required.
+- `POST /api/admin/users` — create a normal user account with username, display name, optional email, and a password of at least 12 characters; admin role required. This works in every registration mode and is audit-logged.
+
+Registration mode changes are persisted in the existing SQLite database and survive server restarts. The server initializes the setting to `invite-only` without changing existing accounts.
