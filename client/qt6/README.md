@@ -38,15 +38,19 @@ The current client provides:
 - Movable internal service windows
 - Open/raise behavior that prevents duplicate windows for each service
 - Minimize and close controls on service windows
-- Home, People, and Community Chat service windows
-- Placeholder windows for planned Mail, Boards, News, Files, and Games services
+- Server-managed Home screens, including graphics and clickable destinations
+- People service with buddy/presence information and private messaging
+- Community Chat service window with room selection, message history, active-user display, roles, and moderation controls
+- News service window with RSS/Atom articles and native OtterLink-published articles
+- Article-reader window for supported news content
+- Placeholder windows for planned Mail, Boards, Files, and Games services
 - Dashboard data presented through the existing client/service functions
 - Community chat history and message sending
 - Manual and automatic dashboard refresh
 - Buddy add/remove controls
 - Disconnect/logout
 
-The desktop workspace is intentionally a presentation-layer change. Existing service/network behavior is retained rather than redesigned as part of this UI work.
+The desktop workspace is intentionally a presentation-layer feature, but the Home and News windows now consume server-managed services rather than acting as placeholders. Home screens and native news articles can be published through the web administration interface without rebuilding the client. Existing service/network behavior remains behind the client/service boundary.
 
 The connection presentation is cosmetic: the HTTP login request proceeds normally while the client presents the connection sequence. If the server responds quickly, the client still completes the presentation before entering the dashboard; if authentication fails, the presentation is cancelled and the error is shown.
 
