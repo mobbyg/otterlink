@@ -21,6 +21,26 @@ async function request(path, options = {}) {
 
 function showError(message) { $('content-error').textContent = message || ''; }
 
+
+async function loadNativeArticleTargets() {
+  const group = $('editor-native-news-options');
+  if (!group) return;
+  group.replaceChildren();
+  try {
+    const result = await request('/api/admin/native-news');
+    for (const article of result.articles || []) {
+      if (!article.published || !article.slug) continue;
+      const option = document.createElement('option');
+      option.value = 'native-news:' + article.slug;
+      option.textContent = article.title + ' — ' + article.slug;
+      group.appendChild(option);
+    }
+  } catch (error) {
+    showError('Unable to load native article link targets: ' + (error.message || String(error)));
+  }
+}
+
+
 function formatBytes(bytes) {
   const value = Number(bytes);
   if (!Number.isFinite(value) || value < 0) return '—';
@@ -710,7 +730,10 @@ function updateInspector() {
   $('editor-width').value = clampSize(item.width, type === 'button' ? 0.22 : 0.30).toFixed(2);
   $('editor-height').value = clampSize(item.height, type === 'button' ? 0.09 : 0.12).toFixed(2);
   $('editor-fit').value = item.fit === 'cover' ? 'cover' : 'contain';
-  const service = item.destination?.type === 'service' ? String(item.destination.service || '') : '';
+  let service = item.destination?.type === 'service' ? String(item.destination.service || '') : '';
+  if (item.destination?.type === 'native-news' && item.destination.slug) {
+    service = 'native-news:' + String(item.destination.slug);
+  }
   $('editor-service').value = service;
   $('editor-text').disabled = type === 'image';
   $('editor-font-size').disabled = type !== 'text';
@@ -743,6 +766,8 @@ function updateSelectedService(value) {
   if (!item) return;
   if (!value) {
     delete item.destination;
+  } else if (value.startsWith('native-news:')) {
+    item.destination = { type: 'native-news', slug: value.slice('native-news:'.length) };
   } else {
     item.destination = { type: 'service', service: value };
   }
@@ -900,3 +925,4 @@ $('delete-screen').addEventListener('click', () => {
 
 refreshScreens();
 refreshAssets();
+loadNativeArticleTargets();
