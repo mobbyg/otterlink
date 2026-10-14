@@ -45,7 +45,7 @@ function filterNativeArticleTargets() {
   const query = ($('editor-destination-search')?.value || '').trim().toLowerCase();
   const group = $('editor-native-news-options');
   if (!group) return;
-  for (const option of group.options) {
+  for (const option of group.querySelectorAll('option')) {
     option.hidden = Boolean(query) && !option.textContent.toLowerCase().includes(query);
   }
 }
