@@ -593,7 +593,8 @@ void MainWindow::openServiceWindow(const QString &service, const QString &title,
 
     // Resizing is an explicit per-window capability, never inferred from the title.
     // The Home canvas stays fixed at its authored 1280x720 coordinate system.
-    const bool resizable = service == QStringLiteral("news")
+    const bool resizable = service == QStringLiteral("chat")
+        || service == QStringLiteral("news")
         || service == QStringLiteral("web")
         || service == QStringLiteral("otterweb")
         || service.startsWith(QStringLiteral("native-news:"));
