@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Otter Link Native News</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="admin-page native-news-page">
+  <main class="shell">
+    <header class="topbar">
+      <div><strong>Otter Link Native News</strong><span>Official OtterLink articles and announcements</span></div>
+      <a class="button secondary" href="/admin">Back to Administration</a>
+    </header>
+    <nav class="admin-nav" aria-label="Native news sections">
+      <a href="#article-list">Articles</a>
+      <a href="#article-editor">Editor</a>
+    </nav>
+    <section id="article-list" class="card">
+      <div class="section-title">
+        <div><small>NATIVE OTTERLINK CONTENT</small><h1>News &amp; Publishing</h1></div>
+        <div><button id="new-article">New Article</button> <button id="refresh-articles" class="secondary">Refresh</button></div>
+      </div>
+      <p class="status">These are OtterLink-authored articles, separate from imported RSS / Atom stories. Published articles can be linked from the fixed Home screen by their stable slug.</p>
+      <p id="native-news-error" class="error" role="alert"></p>
+      <div class="admin-table-wrap">
+        <table class="admin-table">
+          <thead><tr><th>Title</th><th>Stable key / slug</th><th>Status</th><th>Home-link eligible</th><th>Updated</th><th>Manage</th></tr></thead>
+          <tbody id="native-news-articles"></tbody>
+        </table>
+      </div>
+    </section>
+    <section id="article-editor" class="card" style="margin-top:20px">
+      <div class="section-title"><div><small>ARTICLE EDITOR</small><h2 id="editor-heading">New Article</h2></div><span id="article-status" class="status">Draft</span></div>
+      <p class="status">The slug is assigned when an article is created and stays stable so Home links do not silently change when a title is edited.</p>
+      <form id="article-form">
+        <input id="article-id" type="hidden" value="0">
+        <label>Title<input id="article-title" maxlength="160" required placeholder="Welcome to OtterLink"></label>
+        <label>Stable key / slug<input id="article-slug" maxlength="64" required pattern="[a-z0-9][a-z0-9_-]{0,63}" placeholder="welcome-to-otterlink"></label>
+        <label>Article body
+          <div class="markdown-toolbar" role="toolbar" aria-label="Article formatting">
+            <button type="button" class="secondary" data-markdown="h1">Heading</button>
+            <button type="button" class="secondary" data-markdown="h2">Subtitle</button>
+            <button type="button" class="secondary" data-markdown="bold"><strong>B</strong></button>
+            <button type="button" class="secondary" data-markdown="italic"><em>I</em></button>
+            <button type="button" class="secondary" data-markdown="list">Bulleted list</button>
+            <button type="button" class="secondary" data-markdown="link">Link</button>
+          </div>
+          <textarea id="article-body" rows="20" maxlength="1048576" placeholder="Write your announcement or article here... Markdown is supported: use headings, paragraphs, lists, bold, italics, and links." ></textarea>
+          <small class="markdown-help">Formatting uses Markdown. Headings and subtitles are rendered by the Qt article reader.</small>
+        </label>
+        <label class="checkbox-label"><input id="article-published" type="checkbox"> Published and linkable from Home</label>
+        <div class="admin-actions">
+          <button id="save-article" type="submit">Save Article</button>
+          <button id="preview-article" type="button" class="secondary">Preview Text</button>
+          <button id="clear-article" type="button" class="secondary">Clear</button>
+        </div>
+      </form>
+      <div id="article-preview" class="hidden" style="margin-top:16px">
+        <h3 id="preview-title"></h3>
+        <pre id="preview-body" style="white-space:pre-wrap;overflow-wrap:anywhere"></pre>
+      </div>
+    </section>
+    <footer>Otter Link administration • native publishing</footer>
+  </main>
+  <script src="/static/native-news.js"></script>
+</body>
+</html>

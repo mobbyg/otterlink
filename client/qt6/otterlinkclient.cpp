@@ -133,6 +133,28 @@ void OtterLinkClient::loadNewsSources()
     });
 }
 
+void OtterLinkClient::loadNativeArticle(const QString &slug)
+{
+    const QString cleanSlug = slug.trimmed().toLower();
+    if (cleanSlug.isEmpty())
+        return;
+
+    auto *reply = m_network.get(request(
+        QStringLiteral("/api/native-news/") + QString::fromUtf8(QUrl::toPercentEncoding(cleanSlug))));
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+        if (reply->error() != QNetworkReply::NoError) {
+            emit errorOccurred(serverErrorMessage(reply, reply->errorString()));
+        } else {
+            const QJsonDocument doc = QJsonDocument::fromJson(reply->readAll());
+            if (doc.isObject())
+                emit nativeArticleLoaded(doc.object());
+            else
+                emit errorOccurred(QStringLiteral("The native article response was invalid."));
+        }
+        reply->deleteLater();
+    });
+}
+
 void OtterLinkClient::loadDashboard()
 {
     if (m_token.isEmpty())

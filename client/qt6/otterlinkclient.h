@@ -40,6 +40,7 @@ public:
     void loadEvents(int year, int month);
     void loadNews(int limit = 100, const QString &category = QString(), qint64 sourceId = 0);
     void loadNewsSources();
+    void loadNativeArticle(const QString &slug);
     void createEvent(const QJsonObject &event);
     void updateEvent(qint64 eventId, const QJsonObject &event);
     void deleteEvent(qint64 eventId);
@@ -61,6 +62,7 @@ signals:
     void eventsLoaded(const QJsonArray &events, int year, int month);
     void newsLoaded(const QJsonArray &items);
     void newsSourcesLoaded(const QJsonArray &sources);
+    void nativeArticleLoaded(const QJsonObject &article);
     void eventChanged(const QJsonObject &event);
     void eventDeleted(qint64 eventId);
     void keywordResolved(const QJsonObject &keyword);
