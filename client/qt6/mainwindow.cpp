@@ -547,7 +547,11 @@ void MainWindow::openServiceWindow(const QString &service, const QString &title,
     if (content == ui->homePage || content == ui->peoplePage || content == ui->chatPage)
         ui->serviceStack->removeWidget(content);
 
-    auto *window = new OtterServiceWindow(title, content, m_desktop);
+    // Resizing is an explicit per-window capability, never inferred from the title.
+    // The Home canvas stays fixed at its authored 1280x720 coordinate system.
+    const bool resizable = service == QStringLiteral("news")
+        || service == QStringLiteral("web");
+    auto *window = new OtterServiceWindow(title, content, resizable, m_desktop);
     m_serviceWindows.insert(service, window);
     m_windowServices.insert(window, service);
 
