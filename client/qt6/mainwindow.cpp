@@ -33,6 +33,7 @@
 #include <QStyle>
 #include <QTreeWidget>
 #include <QTreeWidgetItem>
+#include <QTextBrowser>
 #include <QTextStream>
 #include <QUrl>
 #include <QVBoxLayout>
@@ -116,7 +117,9 @@ MainWindow::MainWindow(QWidget *parent)
     m_homePage = new OtterHomePage;
     connect(m_homePage, &OtterHomePage::serviceRequested, this,
             [this](const QString &service) {
-                if (service == QStringLiteral("people"))
+                if (service.startsWith(QStringLiteral("native-news:"))) {
+                    openNativeArticle(service.mid(QStringLiteral("native-news:").size()));
+                } else if (service == QStringLiteral("people"))
                     ui->peopleButton->click();
                 else if (service == QStringLiteral("chat"))
                     ui->chatButton->click();
@@ -294,6 +297,47 @@ MainWindow::MainWindow(QWidget *parent)
         setLoggedIn(false);
     });
     connect(m_client, &OtterLinkClient::errorOccurred, this, &MainWindow::showError);
+    connect(m_client, &OtterLinkClient::nativeArticleLoaded, this,
+            [this](const QJsonObject &article) {
+                const QString slug = article.value(QStringLiteral("slug")).toString().trimmed();
+                const QString key = QStringLiteral("native-news:") + slug;
+                if (slug.isEmpty())
+                    return;
+                if (OtterServiceWindow *existing = m_serviceWindows.value(key, nullptr)) {
+                    existing->activateWindow();
+                    return;
+                }
+
+                auto *page = new QWidget(m_desktop);
+                auto *layout = new QVBoxLayout(page);
+                layout->setContentsMargins(14, 14, 14, 14);
+                layout->setSpacing(8);
+
+                auto *title = new QLabel(article.value(QStringLiteral("title")).toString(), page);
+                title->setObjectName(QStringLiteral("nativeArticleTitle"));
+                QFont titleFont = title->font();
+                titleFont.setBold(true);
+                titleFont.setPointSize(titleFont.pointSize() + 3);
+                title->setFont(titleFont);
+                title->setWordWrap(true);
+                layout->addWidget(title);
+
+                auto *meta = new QLabel(
+                    QStringLiteral("OtterLink • %1").arg(slug), page);
+                meta->setObjectName(QStringLiteral("nativeArticleMeta"));
+                layout->addWidget(meta);
+
+                auto *body = new QTextBrowser(page);
+                body->setObjectName(QStringLiteral("nativeArticleBody"));
+                body->setOpenLinks(false);
+                body->setOpenExternalLinks(false);
+                body->setPlainText(article.value(QStringLiteral("body")).toString());
+                layout->addWidget(body, 1);
+
+                const QString windowTitle = QStringLiteral("OtterWeb — %1")
+                    .arg(article.value(QStringLiteral("title")).toString());
+                openServiceWindow(key, windowTitle, page);
+            });
     connect(m_client, &OtterLinkClient::keywordResolved, this, &MainWindow::keywordResolved);
     connect(m_client, &OtterLinkClient::homeScreenLoaded, m_homePage,
             static_cast<void (OtterHomePage::*)(const QJsonObject &)>(
@@ -550,7 +594,8 @@ void MainWindow::openServiceWindow(const QString &service, const QString &title,
     // Resizing is an explicit per-window capability, never inferred from the title.
     // The Home canvas stays fixed at its authored 1280x720 coordinate system.
     const bool resizable = service == QStringLiteral("news")
-        || service == QStringLiteral("web");
+        || service == QStringLiteral("web")
+        || service.startsWith(QStringLiteral("native-news:"));
     auto *window = new OtterServiceWindow(title, content, resizable, m_desktop);
     m_serviceWindows.insert(service, window);
     m_windowServices.insert(window, service);
@@ -580,6 +625,20 @@ void MainWindow::openServiceWindow(const QString &service, const QString &title,
     window->show();
     window->activateWindow();
     updateServiceButtonStates(window);
+}
+
+void MainWindow::openNativeArticle(const QString &slug)
+{
+    const QString cleanSlug = slug.trimmed().toLower();
+    if (cleanSlug.isEmpty())
+        return;
+    const QString key = QStringLiteral("native-news:") + cleanSlug;
+    if (OtterServiceWindow *existing = m_serviceWindows.value(key, nullptr)) {
+        existing->activateWindow();
+        updateServiceButtonStates(existing);
+        return;
+    }
+    m_client->loadNativeArticle(cleanSlug);
 }
 
 void MainWindow::closeServiceWindow(OtterServiceWindow *window)
