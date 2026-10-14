@@ -35,8 +35,18 @@ async function loadNativeArticleTargets() {
       option.textContent = article.title + ' — ' + article.slug;
       group.appendChild(option);
     }
+    filterNativeArticleTargets();
   } catch (error) {
     showError('Unable to load native article link targets: ' + (error.message || String(error)));
+  }
+}
+
+function filterNativeArticleTargets() {
+  const query = ($('editor-destination-search')?.value || '').trim().toLowerCase();
+  const group = $('editor-native-news-options');
+  if (!group) return;
+  for (const option of group.options) {
+    option.hidden = Boolean(query) && !option.textContent.toLowerCase().includes(query);
   }
 }
 
@@ -911,6 +921,7 @@ $('editor-width').addEventListener('change', (event) => updateSelectedProperty('
 $('editor-height').addEventListener('change', (event) => updateSelectedProperty('height', event.target.value));
 $('editor-fit').addEventListener('change', (event) => updateSelectedProperty('fit', event.target.value === 'cover' ? 'cover' : 'contain'));
 $('editor-service').addEventListener('change', (event) => updateSelectedService(event.target.value));
+$('editor-destination-search').addEventListener('input', filterNativeArticleTargets);
 $('editor-button-background').addEventListener('input', (event) => updateSelectedProperty('background', event.target.value));
 $('editor-button-color').addEventListener('input', (event) => updateSelectedProperty('color', event.target.value));
 $('visual-editor-canvas').addEventListener('pointermove', handleEditorPointerMove);
