@@ -2,6 +2,7 @@ package web
 
 import (
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"net/http"
 	"regexp"
@@ -94,6 +95,26 @@ func (s *Server) adminNativeNewsSave(w http.ResponseWriter, r *http.Request) {
 
 	var id int64
 	if req.ID > 0 {
+		existing, err := getNativeNewsByID(s.Content.DB, req.ID)
+		if errors.Is(err, sql.ErrNoRows) {
+			http.Error(w, "native article not found", http.StatusNotFound)
+			return
+		}
+		if err != nil {
+			http.Error(w, "unable to load native article", http.StatusInternalServerError)
+			return
+		}
+		if existing.Published && !req.Published {
+			referenced, err := nativeArticleReferencedByHome(s.Content.DB, existing.Slug)
+			if err != nil {
+				http.Error(w, "unable to check Home article links", http.StatusInternalServerError)
+				return
+			}
+			if referenced {
+				http.Error(w, "this article is linked from a published Home screen; update the Home destinations before unpublishing it", http.StatusConflict)
+				return
+			}
+		}
 		result, err := s.Content.DB.Exec(`UPDATE native_news_articles
 			SET title=?, body=?, published=?, updated_at=CURRENT_TIMESTAMP WHERE id=?`,
 			req.Title, req.Body, req.Published, req.ID)
@@ -158,6 +179,55 @@ func (s *Server) nativeNewsArticle(w http.ResponseWriter, r *http.Request) {
 	}
 	article.Published = published != 0
 	writeJSON(w, http.StatusOK, article)
+}
+
+
+func nativeArticleReferencedByHome(db *sql.DB, slug string) (bool, error) {
+	rows, err := db.Query(`SELECT content_json FROM content_screens
+		WHERE slug='home' AND published=1`)
+	if err != nil {
+		return false, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var raw string
+		if err := rows.Scan(&raw); err != nil {
+			return false, err
+		}
+		var value any
+		if err := json.Unmarshal([]byte(raw), &value); err != nil {
+			return false, err
+		}
+		if containsNativeArticleDestination(value, slug) {
+			return true, nil
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return false, err
+	}
+	return false, nil
+}
+
+func containsNativeArticleDestination(value any, slug string) bool {
+	switch item := value.(type) {
+	case map[string]any:
+		destination, ok := item["destination"].(map[string]any)
+		if ok && destination["type"] == "native-news" && destination["slug"] == slug {
+			return true
+		}
+		for _, child := range item {
+			if containsNativeArticleDestination(child, slug) {
+				return true
+			}
+		}
+	case []any:
+		for _, child := range item {
+			if containsNativeArticleDestination(child, slug) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func getNativeNewsByID(db *sql.DB, id int64) (nativeNewsArticle, error) {
