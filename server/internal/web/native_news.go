@@ -5,9 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"regexp"
-	"strconv"
 	"strings"
-	"time"
 )
 
 type nativeNewsArticle struct {
@@ -176,5 +174,3 @@ func getNativeNewsByID(db *sql.DB, id int64) (nativeNewsArticle, error) {
 	return article, nil
 }
 
-var _ = strconv.IntSize
-var _ = time.Second
