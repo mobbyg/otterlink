@@ -192,6 +192,18 @@ CREATE TABLE IF NOT EXISTS content_assets (
     updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 CREATE INDEX IF NOT EXISTS idx_content_assets_sha256 ON content_assets(sha256);
+
+-- Native OtterLink-authored articles are deliberately separate from RSS/Atom items.
+CREATE TABLE IF NOT EXISTS native_news_articles (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    slug TEXT NOT NULL UNIQUE COLLATE NOCASE,
+    title TEXT NOT NULL,
+    body TEXT NOT NULL DEFAULT '',
+    published INTEGER NOT NULL DEFAULT 0 CHECK (published IN (0,1)),
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_native_news_published ON native_news_articles(published, updated_at DESC, id DESC);
 `
 
 func Initialize(db *sql.DB) error {
