@@ -77,6 +77,9 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /api/chat", s.chatLegacySend)
 
 	mux.HandleFunc("GET /api/admin/users", s.adminUsers)
+	mux.HandleFunc("POST /api/admin/users", s.adminUserCreate)
+	mux.HandleFunc("GET /api/admin/registration-mode", s.adminRegistrationMode)
+	mux.HandleFunc("PUT /api/admin/registration-mode", s.adminRegistrationMode)
 	mux.HandleFunc("GET /api/admin/audit", s.adminAudit)
 	mux.HandleFunc("GET /api/admin/users/{username}", s.adminUserDetail)
 	mux.HandleFunc("PATCH /api/admin/users/{username}", s.adminUserUpdate)

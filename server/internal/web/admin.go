@@ -307,3 +307,61 @@ func (s *Server) adminUserDelete(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusNoContent)
 }
+
+
+// Registration mode is stored in the existing SQLite database so it survives restarts.
+type registrationModeRequest struct {
+	Mode string `json:"mode"`
+}
+
+func (s *Server) adminRegistrationMode(w http.ResponseWriter, r *http.Request) {
+	admin, ok := s.requireAdmin(w, r)
+	if !ok { return }
+	if r.Method == http.MethodGet {
+		mode := "invite-only"
+		err := s.Accounts.DB.QueryRow(`SELECT setting_value FROM server_settings WHERE setting_key = 'registration_mode'`).Scan(&mode)
+		if err != nil && err != sql.ErrNoRows {
+			http.Error(w, "unable to load registration mode", http.StatusInternalServerError); return
+		}
+		writeJSON(w, http.StatusOK, map[string]string{"mode": mode})
+		return
+	}
+	var req registrationModeRequest
+	if !decodeJSON(w, r, &req) { return }
+	req.Mode = strings.TrimSpace(req.Mode)
+	if req.Mode != "invite-only" && req.Mode != "open" && req.Mode != "closed" {
+		http.Error(w, "mode must be invite-only, open, or closed", http.StatusBadRequest); return
+	}
+	if _, err := s.Accounts.DB.Exec(`INSERT INTO server_settings (setting_key, setting_value, updated_at) VALUES ('registration_mode', ?, CURRENT_TIMESTAMP) ON CONFLICT(setting_key) DO UPDATE SET setting_value = excluded.setting_value, updated_at = CURRENT_TIMESTAMP`, req.Mode); err != nil {
+		http.Error(w, "unable to save registration mode", http.StatusInternalServerError); return
+	}
+	if err := s.Accounts.LogAudit(admin, "admin.registration_mode", "", "success", "Registration mode set to "+req.Mode, nil); err != nil {
+		http.Error(w, "unable to record audit event", http.StatusInternalServerError); return
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"mode": req.Mode})
+}
+
+type adminUserCreateRequest struct {
+	Username string `json:"username"`
+	DisplayName string `json:"display_name"`
+	Email string `json:"email"`
+	Password string `json:"password"`
+}
+
+func (s *Server) adminUserCreate(w http.ResponseWriter, r *http.Request) {
+	admin, ok := s.requireAdmin(w, r)
+	if !ok { return }
+	var req adminUserCreateRequest
+	if !decodeJSON(w, r, &req) { return }
+	user, err := s.Accounts.Register(req.Username, req.DisplayName, req.Email, req.Password)
+	if err != nil {
+		_ = s.Accounts.LogAudit(admin, "admin.user_create", req.Username, "failure", "Account creation failed validation", nil)
+		http.Error(w, err.Error(), http.StatusBadRequest); return
+	}
+	if err := s.Accounts.LogAudit(admin, "admin.user_create", user.Username, "success", "Account created by administrator", &user.ID); err != nil {
+		http.Error(w, "unable to record audit event", http.StatusInternalServerError); return
+	}
+	info, err := s.adminUserInfo(user)
+	if err != nil { http.Error(w, "account created but unable to load account details", http.StatusInternalServerError); return }
+	writeJSON(w, http.StatusCreated, info)
+}

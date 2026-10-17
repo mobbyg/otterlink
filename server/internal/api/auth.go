@@ -1,6 +1,7 @@
 package api
 
 import (
+	"database/sql"
 	"crypto/sha256"
 	"encoding/binary"
 	"encoding/json"
@@ -13,6 +14,7 @@ import (
 )
 
 type AuthAPI struct {
+	DB       *sql.DB
 	Accounts accounts.Service
 	Presence *presence.Service
 	Chat     *chat.Hub
@@ -36,6 +38,26 @@ type authResponse struct {
 }
 
 func (a AuthAPI) Register(w http.ResponseWriter, r *http.Request) {
+	mode := "invite-only"
+	if a.DB != nil {
+		if err := a.DB.QueryRow(`SELECT setting_value FROM server_settings WHERE setting_key = 'registration_mode'`).Scan(&mode); err != nil && err != sql.ErrNoRows {
+			http.Error(w, "registration policy unavailable", http.StatusInternalServerError)
+			return
+		}
+	}
+	switch mode {
+	case "open":
+		// Public registration is enabled.
+	case "invite-only":
+		http.Error(w, "registration currently requires an invitation or administrator-created account", http.StatusForbidden)
+		return
+	case "closed":
+		http.Error(w, "new account registration is currently closed", http.StatusForbidden)
+		return
+	default:
+		http.Error(w, "registration policy is invalid", http.StatusInternalServerError)
+		return
+	}
 	var req registerRequest
 	if !decodeJSON(w, r, &req) {
 		return

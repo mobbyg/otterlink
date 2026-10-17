@@ -99,7 +99,7 @@ func main() {
 	if err := content.EnsureDefaultHome(database); err != nil {
 		log.Fatalf("initialize default home screen: %v", err)
 	}
-	authAPI := api.AuthAPI{Accounts: accountService, Presence: presenceService, Chat: chatHub}
+	authAPI := api.AuthAPI{DB: database, Accounts: accountService, Presence: presenceService, Chat: chatHub}
 	webServer := &web.Server{Accounts: accountService, Buddies: buddyService, Presence: presenceService, Chat: chatHub, DM: dmService, Events: eventsService, News: newsService, Keywords: keywordService, Content: contentService, Assets: assetService}
 
 	mux := http.NewServeMux()
