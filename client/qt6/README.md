@@ -12,7 +12,7 @@ The client is intentionally small: it establishes the cross-platform Qt 6 applic
 
 ## Requirements
 
-- Qt 6, including the WebEngineWidgets module
+- Qt 6 Core, Multimedia, Network, and Widgets
 - CMake 3.21 or newer
 - A C++17 compiler
 
@@ -43,8 +43,9 @@ The current client provides:
 - Community Chat service window with room selection, message history, active-user display, roles, and moderation controls
 - News service window with RSS/Atom articles and native OtterLink-published articles
 - Article-reader window for supported news content
-- OtterWeb embedded browser with address bar, back/forward/home navigation, and saved bookmarks
-- Internal Otter Link Search placeholder with a disabled `COMING SOON` field
+- OtterWeb toolbar with address field, Back/Forward/Home, and saved bookmarks
+- Bundled Otter Link Search page with a disabled `COMING SOON` field
+- HTTP and HTTPS addresses open in the system browser; bundled internal pages display inside OtterWeb
 - Placeholder windows for planned Mail, Boards, Files, and Games services
 - Dashboard data presented through the existing client/service functions
 - Community chat history and message sending
@@ -58,7 +59,7 @@ The connection presentation is cosmetic: the HTTP login request proceeds normall
 
 The current connection artwork is intentionally a temporary text/ASCII otter. It is a placeholder for original Otter Link artwork and keeps this change free of external asset dependencies.
 
-The main window layout is maintained in `mainwindow.ui` and is intended to be edited with Qt Designer/Qt Creator. OtterWeb uses Qt WebEngine for embedded page rendering; builds must include the Qt WebEngineWidgets module and deployment packages must bundle its runtime resources. Keep substantial presentation work in `.ui` files and keep service behavior in C++.
+The main window layout is maintained in `mainwindow.ui` and is intended to be edited with Qt Designer/Qt Creator. OtterWeb deliberately uses Qt Widgets' `QTextBrowser` rather than Qt WebEngine so the Windows MinGW cross-build remains supported. The bundled internal search page is rendered in OtterWeb; full external websites are opened in the operating system's default browser.
 
 ## Presentation direction
 
