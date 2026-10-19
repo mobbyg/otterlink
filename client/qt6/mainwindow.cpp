@@ -72,7 +72,18 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
 
-    const QSize navigationIconSize(32, 32);
+    // Tighten the header and service strip without crowding their controls.
+    ui->headerLayout->setContentsMargins(5, 4, 5, 4);
+    ui->headerLayout->setSpacing(4);
+    ui->navigationLayout->setContentsMargins(5, 2, 5, 2);
+    ui->navigationLayout->setSpacing(2);
+    ui->brandLabel->setMinimumSize(190, 34);
+    ui->brandLabel->setMaximumSize(190, 34);
+    ui->brandLabel->setText(QStringLiteral(
+        "<span style=\\"font-size:17px;\\">🦦</span>"
+        "<img src=\\":/images/otterlink_logo.png\\" width=\\"113\\" height=\\"34\\" align=\\"middle\\">"));
+
+    const QSize navigationIconSize(28, 28);
     const auto setNavigationIcon = [navigationIconSize](QPushButton *button,
                                                         const QString &resource) {
         button->setIcon(QIcon(resource));
