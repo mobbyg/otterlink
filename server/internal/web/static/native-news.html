@@ -39,15 +39,28 @@
         <label>Stable key / slug<input id="article-slug" maxlength="64" required pattern="[a-z0-9][a-z0-9_-]{0,63}" placeholder="welcome-to-otterlink"></label>
         <label>Article body
           <div class="markdown-toolbar" role="toolbar" aria-label="Article formatting">
-            <button type="button" class="secondary" data-markdown="h1">Heading</button>
-            <button type="button" class="secondary" data-markdown="h2">Subtitle</button>
-            <button type="button" class="secondary" data-markdown="bold"><strong>B</strong></button>
-            <button type="button" class="secondary" data-markdown="italic"><em>I</em></button>
-            <button type="button" class="secondary" data-markdown="list">Bulleted list</button>
-            <button type="button" class="secondary" data-markdown="link">Link</button>
+            <button type="button" class="secondary" data-markdown="h1" title="Heading" aria-label="Heading">H1</button>
+            <button type="button" class="secondary" data-markdown="h2" title="Subtitle" aria-label="Subtitle">H2</button>
+            <button type="button" class="secondary markdown-icon-text" data-markdown="bold" title="Bold" aria-label="Bold"><strong>B</strong></button>
+            <button type="button" class="secondary markdown-icon-text" data-markdown="italic" title="Italic" aria-label="Italic"><em>I</em></button>
+            <button type="button" class="secondary markdown-icon" data-markdown="list" title="Bulleted list" aria-label="Bulleted list">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6h12M9 12h12M9 18h12"/><path d="M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></svg>
+            </button>
+            <button type="button" class="secondary markdown-icon" data-markdown="align-left" title="Align selected text left" aria-label="Align selected text left">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18M3 9h12M3 13h18M3 17h12M3 21h18"/></svg>
+            </button>
+            <button type="button" class="secondary markdown-icon" data-markdown="align-center" title="Center selected text" aria-label="Center selected text">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18M6 9h12M3 13h18M6 17h12M3 21h18"/></svg>
+            </button>
+            <button type="button" class="secondary markdown-icon" data-markdown="align-right" title="Align selected text right" aria-label="Align selected text right">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5h18M9 9h12M3 13h18M9 17h12M3 21h18"/></svg>
+            </button>
+            <button type="button" class="secondary markdown-icon" data-markdown="link" title="Insert link" aria-label="Insert link">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.1 0l3-3A5 5 0 0 0 13 2.9l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.1 0l-3 3A5 5 0 0 0 11 21.1l1.7-1.7"/></svg>
+            </button>
           </div>
           <textarea id="article-body" rows="20" maxlength="1048576" placeholder="Write your announcement or article here... Markdown is supported: use headings, paragraphs, lists, bold, italics, and links." ></textarea>
-          <small class="markdown-help">Formatting uses Markdown. Headings and subtitles are rendered by the Qt article reader.</small>
+          <small class="markdown-help">Use the toolbar for headings, bold, italics, links, lists, and alignment. When you align a selection, its Markdown formatting is converted to HTML inside the alignment block so bold headings and other inline formatting remain intact.</small>
         </label>
         <label class="checkbox-label"><input id="article-published" type="checkbox"> Published and linkable from Home</label>
         <div class="admin-actions">

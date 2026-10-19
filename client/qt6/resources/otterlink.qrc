@@ -1,5 +1,6 @@
 <RCC>
     <qresource prefix="/">
+        <file>otterweb-search.html</file>
         <file>images/otterlink_logo.png</file>
         <file>images/bulletins.png</file>
         <file>images/community_chat.png</file>

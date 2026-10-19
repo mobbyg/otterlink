@@ -237,3 +237,31 @@ footer { text-align:center; color:#78909e; font-size:.75rem; padding:24px; }
 .markdown-help { display:block; margin-top:8px; color:var(--text-muted); }
 label:has(> input[type="checkbox"]) { display:flex; align-items:center; gap:8px; }
 label > input[type="checkbox"] { width:auto; flex:0 0 auto; margin:0; }
+
+.markdown-toolbar button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 42px;
+  min-height: 38px;
+  padding: 7px 10px;
+  font-size: .9rem;
+}
+.markdown-toolbar button:focus-visible {
+  outline: 2px solid var(--golden-orange);
+  outline-offset: 2px;
+}
+.markdown-toolbar .markdown-icon svg {
+  display: block;
+  width: 19px;
+  height: 19px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.markdown-toolbar .markdown-icon-text {
+  font-size: 1rem;
+  min-width: 38px;
+}
