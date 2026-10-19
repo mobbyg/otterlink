@@ -52,7 +52,10 @@ func (s *Server) contentScreen(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, screen)
 }
 
-func (s *Server) adminContentIndex(w http.ResponseWriter, _ *http.Request) {
+func (s *Server) adminContentIndex(w http.ResponseWriter, r *http.Request) {
+	if !s.requireAdminPage(w, r) {
+		return
+	}
 	data, err := staticFiles.ReadFile("static/content.html")
 	if err != nil {
 		http.Error(w, "content editor unavailable", http.StatusInternalServerError)
