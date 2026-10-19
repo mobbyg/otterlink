@@ -131,6 +131,14 @@ func (s *Server) static(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
+	switch path {
+	case "static/admin.html", "static/admin.js",
+		"static/content.html", "static/content.js",
+		"static/native-news.html", "static/native-news.js":
+		if !s.requireAdminPage(w, r) {
+			return
+		}
+	}
 	http.FileServer(http.FS(staticFiles)).ServeHTTP(w, r)
 }
 
