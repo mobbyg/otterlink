@@ -3,10 +3,12 @@
 
 #include <QCalendarWidget>
 #include <QCheckBox>
+#include <QColor>
 #include <QComboBox>
 #include <QDateTimeEdit>
 #include <QDate>
 #include <QDateTime>
+#include <QFont>
 #include <QDialog>
 #include <QDialogButtonBox>
 #include <QFormLayout>
@@ -18,8 +20,16 @@
 #include <QPlainTextEdit>
 #include <QPushButton>
 #include <QVBoxLayout>
+#include <QTextCharFormat>
 
 namespace {
+QDate eventStartDate(const QJsonObject &event)
+{
+    if (event.value(QStringLiteral("all_day")).toBool())
+        return QDate::fromString(event.value(QStringLiteral("start_at")).toString(), QStringLiteral("yyyy-MM-dd"));
+    return QDateTime::fromString(event.value(QStringLiteral("start_at")).toString(), Qt::ISODate).toLocalTime().date();
+}
+
 QString eventWhen(const QJsonObject &event)
 {
     if (event.value(QStringLiteral("all_day")).toBool()) {
@@ -55,13 +65,14 @@ OtterEventsWidget::OtterEventsWidget(OtterLinkClient *client, QWidget *parent)
 
     m_calendar = new QCalendarWidget(this);
     m_calendar->setNavigationBarVisible(false);
+    m_calendar->setVerticalHeaderFormat(QCalendarWidget::NoVerticalHeader);
     m_calendar->setGridVisible(true);
-    m_calendar->setMinimumWidth(280);
-    m_calendar->setMaximumWidth(360);
-    content->addWidget(m_calendar);
+    m_calendar->setMinimumWidth(360);
+    m_calendar->setMaximumWidth(480);
+    content->addWidget(m_calendar, 2);
 
     m_list = new QListWidget(this);
-    content->addWidget(m_list, 1);
+    content->addWidget(m_list, 3);
     layout->addLayout(content, 1);
 
     auto *actions = new QHBoxLayout;
@@ -137,12 +148,7 @@ void OtterEventsWidget::calendarDateChanged(const QDate &date)
 
     for(int i=0;i<m_events.size();++i){
         const auto event=m_events.at(i).toObject();
-        QDate eventDate;
-        if(event.value(QStringLiteral("all_day")).toBool())
-            eventDate=QDate::fromString(event.value(QStringLiteral("start_at")).toString(),QStringLiteral("yyyy-MM-dd"));
-        else
-            eventDate=QDateTime::fromString(event.value(QStringLiteral("start_at")).toString(),Qt::ISODate).toLocalTime().date();
-
+        const QDate eventDate = eventStartDate(event);
         if(eventDate==date){
             m_list->setCurrentRow(i);
             m_list->scrollToItem(m_list->item(i));
@@ -161,6 +167,12 @@ QJsonObject OtterEventsWidget::selectedEvent() const
 
 void OtterEventsWidget::eventsLoaded(const QJsonArray &events,int year,int month)
 {
+    for (const auto &value : m_events) {
+        const QDate oldDate = eventStartDate(value.toObject());
+        if (oldDate.isValid())
+            m_calendar->setDateTextFormat(oldDate, QTextCharFormat());
+    }
+
     m_year=year;
     m_month=month;
     m_events=events;
@@ -168,6 +180,16 @@ void OtterEventsWidget::eventsLoaded(const QJsonArray &events,int year,int month
 
     const int day=qMin(m_calendar->selectedDate().day(),QDate(year,month,1).daysInMonth());
     m_calendar->setSelectedDate(QDate(year,month,day));
+
+    QTextCharFormat eventFormat;
+    eventFormat.setBackground(QColor(QStringLiteral("#ffd66b")));
+    eventFormat.setForeground(QColor(QStringLiteral("#091a37")));
+    eventFormat.setFontWeight(QFont::DemiBold);
+    for (const auto &value : m_events) {
+        const QDate date = eventStartDate(value.toObject());
+        if (date.isValid())
+            m_calendar->setDateTextFormat(date, eventFormat);
+    }
 
     m_list->clear();
     for(const auto &value:events){
