@@ -27,7 +27,8 @@
     <section id="registration-section" class="card">
       <div class="section-title"><div><small>ACCESS CONTROL</small><h1>New Account Registration</h1></div><button id="save-registration-mode">Save Mode</button></div>
       <p class="status">This setting controls new self-service account creation only. Existing users can always sign in. Administrator-created accounts are allowed in every mode.</p>
-      <p id="registration-error" class="error"></p>
+      <p id="registration-error" class="error" role="alert"></p>
+      <p id="registration-success" class="status" role="status" aria-live="polite"></p>
       <label>Registration mode
         <select id="registration-mode">
           <option value="invite-only">Invite-only (default)</option>
