@@ -24,7 +24,10 @@ func (s *Server) adminUser(r *http.Request) (accounts.User, bool, bool) {
 	return user, user.Role == "admin", true
 }
 
-func (s *Server) adminIndex(w http.ResponseWriter, _ *http.Request) {
+func (s *Server) adminIndex(w http.ResponseWriter, r *http.Request) {
+	if !s.requireAdminPage(w, r) {
+		return
+	}
 	data, err := staticFiles.ReadFile("static/admin.html")
 	if err != nil {
 		http.Error(w, "admin client unavailable", http.StatusInternalServerError)
@@ -32,6 +35,20 @@ func (s *Server) adminIndex(w http.ResponseWriter, _ *http.Request) {
 	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	_, _ = w.Write(data)
+}
+
+func (s *Server) requireAdminPage(w http.ResponseWriter, r *http.Request) bool {
+	cookie, err := r.Cookie("otterlink-session")
+	if err != nil || strings.TrimSpace(cookie.Value) == "" {
+		http.NotFound(w, r)
+		return false
+	}
+	user, err := s.Accounts.FromToken(cookie.Value)
+	if err != nil || user.Role != "admin" || user.Status != "active" {
+		http.NotFound(w, r)
+		return false
+	}
+	return true
 }
 
 func (s *Server) requireAdmin(w http.ResponseWriter, r *http.Request) (accounts.User, bool) {
