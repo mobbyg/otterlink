@@ -1,11 +1,11 @@
 #include "otterwebwidget.h"
 
-#include <QDesktopServices>
 #include <QHBoxLayout>
-#include <QIcon>
 #include <QLineEdit>
 #include <QMenu>
 #include <QMessageBox>
+#include <QAction>
+#include <QFont>
 #include <QPushButton>
 #include <QSettings>
 #include <QUrl>
@@ -38,12 +38,15 @@ OtterWebWidget::OtterWebWidget(QWidget *parent)
     m_address->setPlaceholderText(QStringLiteral("Enter a web address"));
     m_address->setClearButtonEnabled(true);
 
-    for (QPushButton *button : {m_backButton, m_forwardButton, m_homeButton,
-                                m_goButton, m_bookmarkButton}) {
+    for (QPushButton *button : {m_backButton, m_forwardButton, m_homeButton}) {
         button->setMinimumHeight(30);
         toolbar->addWidget(button);
     }
     toolbar->addWidget(m_address, 1);
+    for (QPushButton *button : {m_goButton, m_bookmarkButton}) {
+        button->setMinimumHeight(30);
+        toolbar->addWidget(button);
+    }
     // Keep the bookmark menu separate so saved destinations remain easy to find.
     auto *bookmarkMenuButton = new QPushButton(QStringLiteral("Bookmarks ▾"), this);
     bookmarkMenuButton->setMinimumHeight(30);
