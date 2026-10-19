@@ -2,6 +2,7 @@
 
 #include <QWidget>
 #include <QStringList>
+#include <QUrl>
 
 class QLineEdit;
 class QMenu;
