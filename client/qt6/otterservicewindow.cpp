@@ -111,13 +111,21 @@ OtterServiceWindow::OtterServiceWindow(const QString &title, QWidget *content, b
 
     m_minimizeButton = new QPushButton(QStringLiteral("_"), titleBar);
     m_minimizeButton->setObjectName(QStringLiteral("serviceWindowMinimize"));
-    m_minimizeButton->setFixedSize(22, 20);
+    m_minimizeButton->setFixedSize(22, 18);
     m_minimizeButton->setToolTip(QStringLiteral("Minimize"));
     titleLayout->addWidget(m_minimizeButton);
 
+    if (m_resizable) {
+        m_maximizeButton = new QPushButton(QStringLiteral("□"), titleBar);
+        m_maximizeButton->setObjectName(QStringLiteral("serviceWindowMaximize"));
+        m_maximizeButton->setFixedSize(22, 18);
+        m_maximizeButton->setToolTip(QStringLiteral("Maximize to desktop"));
+        titleLayout->addWidget(m_maximizeButton);
+    }
+
     m_closeButton = new QPushButton(QStringLiteral("×"), titleBar);
     m_closeButton->setObjectName(QStringLiteral("serviceWindowClose"));
-    m_closeButton->setFixedSize(22, 20);
+    m_closeButton->setFixedSize(22, 18);
     m_closeButton->setToolTip(QStringLiteral("Close"));
     titleLayout->addWidget(m_closeButton);
 
@@ -137,6 +145,8 @@ OtterServiceWindow::OtterServiceWindow(const QString &title, QWidget *content, b
     }
 
     connect(m_minimizeButton, &QPushButton::clicked, this, &OtterServiceWindow::minimize);
+    if (m_maximizeButton)
+        connect(m_maximizeButton, &QPushButton::clicked, this, &OtterServiceWindow::toggleMaximize);
     connect(m_closeButton, &QPushButton::clicked, this, &OtterServiceWindow::closeWindow);
 
     setupChatEmojiButton();
@@ -212,11 +222,42 @@ void OtterServiceWindow::activateWindow()
 }
 
 void OtterServiceWindow::minimize() { hide(); }
+
+void OtterServiceWindow::toggleMaximize()
+{
+    QWidget *desktop = parentWidget();
+    if (!desktop || !m_resizable)
+        return;
+
+    if (m_maximized) {
+        m_maximized = false;
+        setGeometry(m_normalGeometry);
+        m_maximizeButton->setText(QStringLiteral("□"));
+        m_maximizeButton->setToolTip(QStringLiteral("Maximize to desktop"));
+        if (m_sizeGrip)
+            m_sizeGrip->show();
+    } else {
+        m_normalGeometry = geometry();
+        m_maximized = true;
+        setGeometry(desktop->rect());
+        m_maximizeButton->setText(QStringLiteral("❐"));
+        m_maximizeButton->setToolTip(QStringLiteral("Restore window"));
+        if (m_sizeGrip)
+            m_sizeGrip->hide();
+    }
+
+    raise();
+}
+
 void OtterServiceWindow::closeWindow() { emit closeRequested(this); }
 
 void OtterServiceWindow::mousePressEvent(QMouseEvent *event)
 {
     if (event->button() == Qt::LeftButton) {
+        if (m_maximized) {
+            event->accept();
+            return;
+        }
         m_dragging = true;
         m_dragOffset = event->position().toPoint();
         raise();
@@ -270,6 +311,8 @@ bool OtterServiceWindow::eventFilter(QObject *watched, QEvent *event)
     if (watched == m_titleLabel->parentWidget() && event->type() == QEvent::MouseButtonPress) {
         auto *mouse = static_cast<QMouseEvent *>(event);
         if (mouse->button() == Qt::LeftButton) {
+            if (m_maximized)
+                return true;
             m_dragging = true;
             m_dragOffset = mouse->position().toPoint();
             raise();
