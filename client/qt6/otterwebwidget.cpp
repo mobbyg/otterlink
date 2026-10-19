@@ -32,6 +32,19 @@ bool isBundledHomeUrl(const QUrl &url)
     return url.scheme() == QStringLiteral("qrc") &&
            url.path() == QStringLiteral("/otterweb-search.html");
 }
+
+bool isSearchHomeUrl(const QUrl &url)
+{
+    return isBundledHomeUrl(url) ||
+           (url.scheme().compare(QStringLiteral("otterlink"), Qt::CaseInsensitive) == 0 &&
+            url.host().compare(QStringLiteral("search"), Qt::CaseInsensitive) == 0 &&
+            url.path().isEmpty());
+}
+
+QString addressForUrl(const QUrl &url)
+{
+    return isBundledHomeUrl(url) ? QStringLiteral("otterlink://search") : url.toString();
+}
 }
 
 OtterWebWidget::OtterWebWidget(QWidget *parent)
@@ -94,7 +107,7 @@ OtterWebWidget::OtterWebWidget(QWidget *parent)
     connect(m_backButton, &QPushButton::clicked, m_view, &QWebEngineView::back);
     connect(m_forwardButton, &QPushButton::clicked, m_view, &QWebEngineView::forward);
     connect(m_view, &QWebEngineView::urlChanged, this, [this](const QUrl &url) {
-        m_address->setText(url.toString());
+        m_address->setText(addressForUrl(url));
         updateNavigationState();
     });
     connect(m_view, &QWebEngineView::titleChanged, this, [this](const QString &) {
@@ -107,7 +120,7 @@ OtterWebWidget::OtterWebWidget(QWidget *parent)
     connect(m_backButton, &QPushButton::clicked, m_view, &QTextBrowser::backward);
     connect(m_forwardButton, &QPushButton::clicked, m_view, &QTextBrowser::forward);
     connect(m_view, &QTextBrowser::sourceChanged, this, [this](const QUrl &url) {
-        m_address->setText(url.toString());
+        m_address->setText(addressForUrl(url));
         updateNavigationState();
     });
     connect(m_view, &QTextBrowser::anchorClicked, this, [this](const QUrl &url) {
@@ -135,13 +148,14 @@ OtterWebWidget::OtterWebWidget(QWidget *parent)
 
 void OtterWebWidget::loadInView(const QUrl &url)
 {
+    const QUrl target = isSearchHomeUrl(url) ? homeUrl : url;
 #ifdef OTTERLINK_USE_WEBENGINE
-    m_view->load(url);
+    m_view->load(target);
 #else
-    if (isBundledHomeUrl(url) || url.scheme().isEmpty())
-        m_view->setSource(url);
-    else if (isWebUrl(url))
-        QDesktopServices::openUrl(url);
+    if (isBundledHomeUrl(target) || target.scheme().isEmpty())
+        m_view->setSource(target);
+    else if (isWebUrl(target))
+        QDesktopServices::openUrl(target);
 #endif
 }
 
@@ -152,6 +166,10 @@ void OtterWebWidget::navigateToAddress()
         return;
 
     const QUrl url = QUrl::fromUserInput(text);
+    if (isSearchHomeUrl(url)) {
+        loadInView(homeUrl);
+        return;
+    }
     if (!url.isValid() || url.scheme().isEmpty()) {
         QMessageBox::warning(this, QStringLiteral("OtterWeb"),
                              QStringLiteral("Enter a valid web address."));
@@ -170,8 +188,8 @@ void OtterWebWidget::navigateToAddress()
         return;
     }
 
-    if (isBundledHomeUrl(url)) {
-        loadInView(url);
+    if (isSearchHomeUrl(url)) {
+        loadInView(homeUrl);
         return;
     }
 
@@ -201,7 +219,7 @@ void OtterWebWidget::addBookmark()
                                  QStringLiteral("Enter a valid address before bookmarking it."));
         return;
     }
-    if (!isWebUrl(url) && !isBundledHomeUrl(url)) {
+    if (!isWebUrl(url) && !isSearchHomeUrl(url)) {
         QMessageBox::information(this, QStringLiteral("OtterWeb"),
                                  QStringLiteral("Only HTTP/HTTPS addresses or internal OtterWeb pages can be bookmarked."));
         return;
@@ -242,7 +260,7 @@ void OtterWebWidget::rebuildBookmarksMenu()
         action->setToolTip(address);
         connect(action, &QAction::triggered, this, [this, address]() {
             const QUrl url = QUrl::fromUserInput(address);
-            if (isWebUrl(url) || isBundledHomeUrl(url))
+            if (isWebUrl(url) || isSearchHomeUrl(url))
                 loadInView(url);
         });
     }
