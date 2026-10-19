@@ -29,7 +29,10 @@ type nativeNewsSaveRequest struct {
 
 var nativeNewsSlugPattern = regexp.MustCompile(`^[a-z0-9][a-z0-9_-]{0,63}$`)
 
-func (s *Server) adminNativeNewsIndex(w http.ResponseWriter, _ *http.Request) {
+func (s *Server) adminNativeNewsIndex(w http.ResponseWriter, r *http.Request) {
+	if !s.requireAdminPage(w, r) {
+		return
+	}
 	data, err := staticFiles.ReadFile("static/native-news.html")
 	if err != nil {
 		http.Error(w, "native news editor unavailable", http.StatusInternalServerError)
