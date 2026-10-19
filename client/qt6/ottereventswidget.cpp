@@ -30,6 +30,13 @@ QDate eventStartDate(const QJsonObject &event)
     return QDateTime::fromString(event.value(QStringLiteral("start_at")).toString(), Qt::ISODate).toLocalTime().date();
 }
 
+QDate eventEndDate(const QJsonObject &event)
+{
+    if (event.value(QStringLiteral("all_day")).toBool())
+        return QDate::fromString(event.value(QStringLiteral("end_at")).toString(), QStringLiteral("yyyy-MM-dd"));
+    return QDateTime::fromString(event.value(QStringLiteral("end_at")).toString(), Qt::ISODate).toLocalTime().date();
+}
+
 QString eventWhen(const QJsonObject &event)
 {
     if (event.value(QStringLiteral("all_day")).toBool()) {
@@ -148,8 +155,11 @@ void OtterEventsWidget::calendarDateChanged(const QDate &date)
 
     for(int i=0;i<m_events.size();++i){
         const auto event=m_events.at(i).toObject();
-        const QDate eventDate = eventStartDate(event);
-        if(eventDate==date){
+        const QDate startDate = eventStartDate(event);
+        QDate endDate = eventEndDate(event);
+        if (!endDate.isValid() || endDate < startDate)
+            endDate = startDate;
+        if(startDate.isValid() && date >= startDate && date <= endDate){
             m_list->setCurrentRow(i);
             m_list->scrollToItem(m_list->item(i));
             return;
@@ -167,11 +177,12 @@ QJsonObject OtterEventsWidget::selectedEvent() const
 
 void OtterEventsWidget::eventsLoaded(const QJsonArray &events,int year,int month)
 {
-    for (const auto &value : m_events) {
-        const QDate oldDate = eventStartDate(value.toObject());
-        if (oldDate.isValid())
-            m_calendar->setDateTextFormat(oldDate, QTextCharFormat());
-    }
+    const QDate firstOfMonth(year, month, 1);
+    const int weekOffset = (firstOfMonth.dayOfWeek() - static_cast<int>(m_calendar->firstDayOfWeek()) + 7) % 7;
+    const QDate gridStart = firstOfMonth.addDays(-weekOffset);
+    const QDate gridEnd = gridStart.addDays(41);
+    for (int day = 0; day < 42; ++day)
+        m_calendar->setDateTextFormat(gridStart.addDays(day), QTextCharFormat());
 
     m_year=year;
     m_month=month;
@@ -186,8 +197,16 @@ void OtterEventsWidget::eventsLoaded(const QJsonArray &events,int year,int month
     eventFormat.setForeground(QColor(QStringLiteral("#091a37")));
     eventFormat.setFontWeight(QFont::DemiBold);
     for (const auto &value : m_events) {
-        const QDate date = eventStartDate(value.toObject());
-        if (date.isValid())
+        const QJsonObject event = value.toObject();
+        QDate startDate = eventStartDate(event);
+        QDate endDate = eventEndDate(event);
+        if (!startDate.isValid())
+            continue;
+        if (!endDate.isValid() || endDate < startDate)
+            endDate = startDate;
+        startDate = qMax(startDate, gridStart);
+        endDate = qMin(endDate, gridEnd);
+        for (QDate date = startDate; date <= endDate; date = date.addDays(1))
             m_calendar->setDateTextFormat(date, eventFormat);
     }
 
