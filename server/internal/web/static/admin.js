@@ -329,6 +329,74 @@ async function createEvent() {
   } catch (error) { showEventError(error.message || String(error)); }
 }
 
+async function refreshRegistrationMode() {
+  $('registration-error').textContent = '';
+  try {
+    const result = await request('/api/admin/registration-mode');
+    $('registration-mode').value = result.mode || 'invite-only';
+    updateRegistrationDescription();
+  } catch (error) { $('registration-error').textContent = error.message || String(error); }
+}
+
+function updateRegistrationDescription() {
+  const descriptions = {
+    'invite-only': 'Invite-only blocks public self-registration until invitation-key support is implemented. Create trusted tester accounts below.',
+    'open': 'Anyone can create an account through the public registration form. Existing accounts are unaffected.',
+    'closed': 'No one can self-register. Existing users can still sign in, and administrators can still create accounts.'
+  };
+  $('registration-description').textContent = descriptions[$('registration-mode').value] || '';
+}
+
+async function saveRegistrationMode() {
+  $('registration-error').textContent = '';
+  $('registration-success').textContent = '';
+  const saveButton = $('save-registration-mode');
+  const requestedMode = $('registration-mode').value;
+  saveButton.disabled = true;
+  saveButton.textContent = 'Saving…';
+  try {
+    const result = await request('/api/admin/registration-mode', {
+      method: 'PUT',
+      body: JSON.stringify({ mode: requestedMode })
+    });
+    $('registration-mode').value = result.mode;
+    updateRegistrationDescription();
+    const labels = { 'invite-only': 'Invite-only', 'open': 'Open registration', 'closed': 'Closed registration' };
+    $('registration-success').textContent = 'Saved successfully: ' + (labels[result.mode] || result.mode) + '.';
+    await refreshAudit();
+  } catch (error) {
+    $('registration-error').textContent = error.message || String(error);
+  } finally {
+    saveButton.disabled = false;
+    saveButton.textContent = 'Save Mode';
+  }
+}
+
+async function createAdminUser() {
+  $('create-user-error').textContent = '';
+  const username = $('new-user-username').value.trim();
+  const displayName = $('new-user-display-name').value.trim();
+  const email = $('new-user-email').value.trim();
+  const password = $('new-user-password').value;
+  if (!username || password.length < 12) {
+    $('create-user-error').textContent = 'Username is required and password must be at least 12 characters.';
+    return;
+  }
+  try {
+    await request('/api/admin/users', {
+      method: 'POST',
+      body: JSON.stringify({ username, display_name: displayName, email, password })
+    });
+    $('new-user-username').value = '';
+    $('new-user-display-name').value = '';
+    $('new-user-email').value = '';
+    $('new-user-password').value = '';
+    await refresh();
+    await refreshAudit();
+    window.alert('Account created. Share the temporary password privately with the user.');
+  } catch (error) { $('create-user-error').textContent = error.message || String(error); }
+}
+
 function showError(message) { $('error').textContent = message || ''; }
 function showDetailError(message) { $('detail-error').textContent = message || ''; }
 function showAuditError(message) { $('audit-error').textContent = message || ''; }
@@ -497,6 +565,13 @@ function closeDetail() { selectedUsername = ''; $('user-panel').classList.add('h
 function escapeHTML(value) { return String(value ?? '').replace(/[&<>'"]/g, (character) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '"':'&quot;' }[character])); }
 
 $('refresh').addEventListener('click', refresh);
+$('save-registration-mode').addEventListener('click', saveRegistrationMode);
+$('registration-mode').addEventListener('change', () => {
+  $('registration-success').textContent = '';
+  $('registration-error').textContent = '';
+  updateRegistrationDescription();
+});
+$('create-user').addEventListener('click', createAdminUser);
 $('refresh-audit').addEventListener('click', refreshAudit);
 $('refresh-channels').addEventListener('click', refreshChannels);
 $('create-channel').addEventListener('click', createChannel);
@@ -518,6 +593,7 @@ $('refresh-news-source').addEventListener('click', refreshNewsSource);
 $('delete-news-source').addEventListener('click', deleteNewsSource);
 $('event-month').addEventListener('change', refreshEvents);
 $('create-event').addEventListener('click', createEvent);
+refreshRegistrationMode();
 refresh();
 refreshChannels();
 refreshAudit();
