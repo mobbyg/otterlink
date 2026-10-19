@@ -62,7 +62,7 @@ OtterWebWidget::OtterWebWidget(QWidget *parent)
     connect(m_backButton, &QPushButton::clicked, m_view, &QWebEngineView::back);
     connect(m_forwardButton, &QPushButton::clicked, m_view, &QWebEngineView::forward);
     connect(m_homeButton, &QPushButton::clicked, this, [this]() {
-        navigateTo(QStringLiteral("https://www.amigaz.org/otterlink/"));
+        navigateTo(QStringLiteral("qrc:/otterweb-search.html"));
     });
     connect(m_goButton, &QPushButton::clicked, this, &OtterWebWidget::navigateToAddress);
     connect(m_address, &QLineEdit::returnPressed, this, &OtterWebWidget::navigateToAddress);
@@ -80,7 +80,7 @@ OtterWebWidget::OtterWebWidget(QWidget *parent)
         m_address->setText(m_view->url().toString());
     });
 
-    m_view->setUrl(QUrl(QStringLiteral("https://www.amigaz.org/otterlink/")));
+    m_view->setUrl(QUrl(QStringLiteral("qrc:/otterweb-search.html")));
     updateNavigationState();
 }
 
