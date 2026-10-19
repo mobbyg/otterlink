@@ -69,12 +69,12 @@ void install(QApplication &app)
             background: transparent;
             color: transparent;
             border: none;
-            padding: 2px;
+            padding: 0;
             margin: 0;
-            min-width: 38px;
-            max-width: 38px;
-            min-height: 38px;
-            max-height: 38px;
+            min-width: 34px;
+            max-width: 34px;
+            min-height: 34px;
+            max-height: 34px;
         }
 
         QPushButton#homeButton:hover, QPushButton#peopleButton:hover, QPushButton#mailButton:hover,
@@ -132,7 +132,8 @@ void install(QApplication &app)
             font-weight: bold;
         }
 
-        QPushButton#serviceWindowMinimize, QPushButton#serviceWindowClose {
+        QPushButton#serviceWindowMinimize, QPushButton#serviceWindowMaximize,
+        QPushButton#serviceWindowClose {
             background: #dbeaf2;
             color: #174563;
             border: 1px solid #78a0b4;
@@ -142,12 +143,14 @@ void install(QApplication &app)
             font-weight: bold;
         }
 
-        QPushButton#serviceWindowMinimize:hover, QPushButton#serviceWindowClose:hover {
+        QPushButton#serviceWindowMinimize:hover, QPushButton#serviceWindowMaximize:hover,
+        QPushButton#serviceWindowClose:hover {
             background: #ffffff;
             border-color: #b7d9e8;
         }
 
-        QPushButton#serviceWindowMinimize:pressed, QPushButton#serviceWindowClose:pressed {
+        QPushButton#serviceWindowMinimize:pressed, QPushButton#serviceWindowMaximize:pressed,
+        QPushButton#serviceWindowClose:pressed {
             background: #b9d2df;
         }
 
