@@ -188,11 +188,6 @@ void OtterWebWidget::navigateToAddress()
         return;
     }
 
-    if (isSearchHomeUrl(url)) {
-        loadInView(homeUrl);
-        return;
-    }
-
     QMessageBox::warning(this, QStringLiteral("OtterWeb"),
                          QStringLiteral("Only HTTP/HTTPS addresses and bundled OtterWeb pages are supported."));
 }
