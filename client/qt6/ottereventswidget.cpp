@@ -3,10 +3,12 @@
 
 #include <QCalendarWidget>
 #include <QCheckBox>
+#include <QColor>
 #include <QComboBox>
 #include <QDateTimeEdit>
 #include <QDate>
 #include <QDateTime>
+#include <QFont>
 #include <QDialog>
 #include <QDialogButtonBox>
 #include <QFormLayout>
@@ -18,8 +20,23 @@
 #include <QPlainTextEdit>
 #include <QPushButton>
 #include <QVBoxLayout>
+#include <QTextCharFormat>
 
 namespace {
+QDate eventStartDate(const QJsonObject &event)
+{
+    if (event.value(QStringLiteral("all_day")).toBool())
+        return QDate::fromString(event.value(QStringLiteral("start_at")).toString(), QStringLiteral("yyyy-MM-dd"));
+    return QDateTime::fromString(event.value(QStringLiteral("start_at")).toString(), Qt::ISODate).toLocalTime().date();
+}
+
+QDate eventEndDate(const QJsonObject &event)
+{
+    if (event.value(QStringLiteral("all_day")).toBool())
+        return QDate::fromString(event.value(QStringLiteral("end_at")).toString(), QStringLiteral("yyyy-MM-dd"));
+    return QDateTime::fromString(event.value(QStringLiteral("end_at")).toString(), Qt::ISODate).toLocalTime().date();
+}
+
 QString eventWhen(const QJsonObject &event)
 {
     if (event.value(QStringLiteral("all_day")).toBool()) {
@@ -55,13 +72,14 @@ OtterEventsWidget::OtterEventsWidget(OtterLinkClient *client, QWidget *parent)
 
     m_calendar = new QCalendarWidget(this);
     m_calendar->setNavigationBarVisible(false);
+    m_calendar->setVerticalHeaderFormat(QCalendarWidget::NoVerticalHeader);
     m_calendar->setGridVisible(true);
-    m_calendar->setMinimumWidth(280);
-    m_calendar->setMaximumWidth(360);
-    content->addWidget(m_calendar);
+    m_calendar->setMinimumWidth(360);
+    m_calendar->setMaximumWidth(480);
+    content->addWidget(m_calendar, 2);
 
     m_list = new QListWidget(this);
-    content->addWidget(m_list, 1);
+    content->addWidget(m_list, 3);
     layout->addLayout(content, 1);
 
     auto *actions = new QHBoxLayout;
@@ -137,13 +155,11 @@ void OtterEventsWidget::calendarDateChanged(const QDate &date)
 
     for(int i=0;i<m_events.size();++i){
         const auto event=m_events.at(i).toObject();
-        QDate eventDate;
-        if(event.value(QStringLiteral("all_day")).toBool())
-            eventDate=QDate::fromString(event.value(QStringLiteral("start_at")).toString(),QStringLiteral("yyyy-MM-dd"));
-        else
-            eventDate=QDateTime::fromString(event.value(QStringLiteral("start_at")).toString(),Qt::ISODate).toLocalTime().date();
-
-        if(eventDate==date){
+        const QDate startDate = eventStartDate(event);
+        QDate endDate = eventEndDate(event);
+        if (!endDate.isValid() || endDate < startDate)
+            endDate = startDate;
+        if(startDate.isValid() && date >= startDate && date <= endDate){
             m_list->setCurrentRow(i);
             m_list->scrollToItem(m_list->item(i));
             return;
@@ -161,6 +177,13 @@ QJsonObject OtterEventsWidget::selectedEvent() const
 
 void OtterEventsWidget::eventsLoaded(const QJsonArray &events,int year,int month)
 {
+    const QDate firstOfMonth(year, month, 1);
+    const int weekOffset = (firstOfMonth.dayOfWeek() - static_cast<int>(m_calendar->firstDayOfWeek()) + 7) % 7;
+    const QDate gridStart = firstOfMonth.addDays(-weekOffset);
+    const QDate gridEnd = gridStart.addDays(41);
+    for (int day = 0; day < 42; ++day)
+        m_calendar->setDateTextFormat(gridStart.addDays(day), QTextCharFormat());
+
     m_year=year;
     m_month=month;
     m_events=events;
@@ -168,6 +191,24 @@ void OtterEventsWidget::eventsLoaded(const QJsonArray &events,int year,int month
 
     const int day=qMin(m_calendar->selectedDate().day(),QDate(year,month,1).daysInMonth());
     m_calendar->setSelectedDate(QDate(year,month,day));
+
+    QTextCharFormat eventFormat;
+    eventFormat.setBackground(QColor(QStringLiteral("#ffd66b")));
+    eventFormat.setForeground(QColor(QStringLiteral("#091a37")));
+    eventFormat.setFontWeight(QFont::DemiBold);
+    for (const auto &value : m_events) {
+        const QJsonObject event = value.toObject();
+        QDate startDate = eventStartDate(event);
+        QDate endDate = eventEndDate(event);
+        if (!startDate.isValid())
+            continue;
+        if (!endDate.isValid() || endDate < startDate)
+            endDate = startDate;
+        startDate = qMax(startDate, gridStart);
+        endDate = qMin(endDate, gridEnd);
+        for (QDate date = startDate; date <= endDate; date = date.addDays(1))
+            m_calendar->setDateTextFormat(date, eventFormat);
+    }
 
     m_list->clear();
     for(const auto &value:events){
