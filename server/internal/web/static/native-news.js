@@ -80,6 +80,72 @@ function editArticle(article) {
   $('article-preview').classList.add('hidden');
   $('article-editor').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
+function escapeHtml(value) {
+  return value.replace(/&/g, '&amp;').replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+function markdownInlineToHtml(value) {
+  const protectedParts = [];
+  const protect = (html) => {
+    const marker = `\u0000${protectedParts.length}\u0000`;
+    protectedParts.push(html);
+    return marker;
+  };
+  let text = escapeHtml(value);
+  text = text.replace(/`([^`]+)`/g, (_match, code) => protect(`<code>${code}</code>`));
+  text = text.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+|mailto:[^\s)]+)\)/g,
+    (_match, label, url) => protect(`<a href="${escapeHtml(url)}">${label}</a>`));
+  text = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  text = text.replace(/__(.+?)__/g, '<strong>$1</strong>');
+  text = text.replace(/\*(.+?)\*/g, '<em>$1</em>');
+  text = text.replace(/_(.+?)_/g, '<em>$1</em>');
+  return text.replace(/\u0000(\d+)\u0000/g, (_match, index) => protectedParts[Number(index)]);
+}
+
+function markdownSelectionToHtml(markdown) {
+  const lines = markdown.replace(/\r\n?/g, '\n').split('\n');
+  const blocks = [];
+  let paragraph = [];
+  let listItems = [];
+
+  const flushParagraph = () => {
+    if (paragraph.length) {
+      blocks.push(`<p>${paragraph.map(markdownInlineToHtml).join('<br>')}</p>`);
+      paragraph = [];
+    }
+  };
+  const flushList = () => {
+    if (listItems.length) {
+      blocks.push(`<ul>${listItems.map((item) => `<li>${markdownInlineToHtml(item)}</li>`).join('')}</ul>`);
+      listItems = [];
+    }
+  };
+
+  for (const line of lines) {
+    const heading = line.match(/^\s{0,3}(#{1,6})\s+(.+)$/);
+    const bullet = line.match(/^\s{0,3}[-*+]\s+(.+)$/);
+    if (!line.trim()) {
+      flushParagraph();
+      flushList();
+    } else if (heading) {
+      flushParagraph();
+      flushList();
+      const level = heading[1].length;
+      blocks.push(`<h${level}>${markdownInlineToHtml(heading[2])}</h${level}>`);
+    } else if (bullet) {
+      flushParagraph();
+      listItems.push(bullet[1]);
+    } else {
+      flushList();
+      paragraph.push(line);
+    }
+  }
+  flushParagraph();
+  flushList();
+  return blocks.join('\n');
+}
+
 function insertMarkdown(kind) {
   const field = $('article-body');
   const start = field.selectionStart ?? field.value.length;
@@ -99,7 +165,11 @@ function insertMarkdown(kind) {
     case 'align-right': {
       const alignment = kind.slice('align-'.length);
       const text = selected || 'Text to align';
-      const insertion = `<div style="text-align: ${alignment};">\n${text}\n</div>`;
+      // Markdown inside a raw HTML block is not parsed as Markdown by QTextDocument.
+      // Convert the selected Markdown to HTML before wrapping it, preserving bold,
+      // italics, links, headings and lists in the aligned content.
+      const formatted = markdownSelectionToHtml(text);
+      const insertion = `<div style="text-align: ${alignment};">\n${formatted}\n</div>`;
       field.setRangeText(insertion, start, end, 'select');
       field.focus();
       field.dispatchEvent(new Event('input', { bubbles: true }));
