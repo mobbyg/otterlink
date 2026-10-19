@@ -8,17 +8,39 @@
 #include <QMessageBox>
 #include <QPushButton>
 #include <QSettings>
-#include <QTextBrowser>
 #include <QUrl>
 #include <QVBoxLayout>
 
+#ifdef OTTERLINK_USE_WEBENGINE
+#include <QWebEngineHistory>
+#include <QWebEngineView>
+#else
+#include <QTextBrowser>
+#endif
+
 namespace {
 const QUrl homeUrl(QStringLiteral("qrc:/otterweb-search.html"));
+
+bool isWebUrl(const QUrl &url)
+{
+    return url.scheme() == QStringLiteral("http") ||
+           url.scheme() == QStringLiteral("https");
+}
+
+bool isBundledHomeUrl(const QUrl &url)
+{
+    return url.scheme() == QStringLiteral("qrc") &&
+           url.path() == QStringLiteral("/otterweb-search.html");
+}
 }
 
 OtterWebWidget::OtterWebWidget(QWidget *parent)
     : QWidget(parent),
+#ifdef OTTERLINK_USE_WEBENGINE
+      m_view(new QWebEngineView(this)),
+#else
       m_view(new QTextBrowser(this)),
+#endif
       m_address(new QLineEdit(this)),
       m_backButton(new QPushButton(QStringLiteral("←"), this)),
       m_forwardButton(new QPushButton(QStringLiteral("→"), this)),
@@ -57,104 +79,141 @@ OtterWebWidget::OtterWebWidget(QWidget *parent)
     root->addLayout(toolbar);
 
     m_view->setObjectName(QStringLiteral("otterWebPage"));
+#ifndef OTTERLINK_USE_WEBENGINE
     m_view->setOpenExternalLinks(false);
     m_view->setOpenLinks(false);
     m_view->setReadOnly(true);
+#endif
     root->addWidget(m_view, 1);
 
     QSettings settings(QStringLiteral("OtterLink"), QStringLiteral("OtterLink"));
     m_bookmarks = settings.value(QStringLiteral("otterweb/bookmarks")).toStringList();
     rebuildBookmarksMenu();
 
+#ifdef OTTERLINK_USE_WEBENGINE
+    connect(m_backButton, &QPushButton::clicked, m_view, &QWebEngineView::back);
+    connect(m_forwardButton, &QPushButton::clicked, m_view, &QWebEngineView::forward);
+    connect(m_view, &QWebEngineView::urlChanged, this, [this](const QUrl &url) {
+        m_address->setText(url.toString());
+        updateNavigationState();
+    });
+    connect(m_view, &QWebEngineView::titleChanged, this, [this](const QString &) {
+        updateNavigationState();
+    });
+    connect(m_view, &QWebEngineView::loadFinished, this, [this](bool) {
+        updateNavigationState();
+    });
+#else
     connect(m_backButton, &QPushButton::clicked, m_view, &QTextBrowser::backward);
     connect(m_forwardButton, &QPushButton::clicked, m_view, &QTextBrowser::forward);
-    connect(m_homeButton, &QPushButton::clicked, this, [this]() {
-        m_view->setSource(homeUrl);
-    });
-    connect(m_goButton, &QPushButton::clicked, this, &OtterWebWidget::navigateToAddress);
-    connect(m_address, &QLineEdit::returnPressed, this, &OtterWebWidget::navigateToAddress);
-    connect(m_bookmarkButton, &QPushButton::clicked, this, &OtterWebWidget::addBookmark);
     connect(m_view, &QTextBrowser::sourceChanged, this, [this](const QUrl &url) {
         m_address->setText(url.toString());
         updateNavigationState();
     });
     connect(m_view, &QTextBrowser::anchorClicked, this, [this](const QUrl &url) {
-        if (url.scheme() == QStringLiteral("http") || url.scheme() == QStringLiteral("https")) {
+        if (isWebUrl(url)) {
             QDesktopServices::openUrl(url);
             return;
         }
         if (url.scheme() == QStringLiteral("qrc") || url.scheme().isEmpty())
-            m_view->setSource(url);
+            loadInView(url);
     });
     connect(m_view, &QTextBrowser::backwardAvailable, m_backButton, &QPushButton::setEnabled);
     connect(m_view, &QTextBrowser::forwardAvailable, m_forwardButton, &QPushButton::setEnabled);
+#endif
 
-    m_view->setSource(homeUrl);
+    connect(m_homeButton, &QPushButton::clicked, this, [this]() {
+        loadInView(homeUrl);
+    });
+    connect(m_goButton, &QPushButton::clicked, this, &OtterWebWidget::navigateToAddress);
+    connect(m_address, &QLineEdit::returnPressed, this, &OtterWebWidget::navigateToAddress);
+    connect(m_bookmarkButton, &QPushButton::clicked, this, &OtterWebWidget::addBookmark);
+
+    loadInView(homeUrl);
     updateNavigationState();
+}
+
+void OtterWebWidget::loadInView(const QUrl &url)
+{
+#ifdef OTTERLINK_USE_WEBENGINE
+    m_view->load(url);
+#else
+    if (isBundledHomeUrl(url) || url.scheme().isEmpty())
+        m_view->setSource(url);
+    else if (isWebUrl(url))
+        QDesktopServices::openUrl(url);
+#endif
 }
 
 void OtterWebWidget::navigateToAddress()
 {
-    QString text = m_address->text().trimmed();
+    const QString text = m_address->text().trimmed();
     if (text.isEmpty())
         return;
 
-    QUrl url = QUrl::fromUserInput(text);
+    const QUrl url = QUrl::fromUserInput(text);
     if (!url.isValid() || url.scheme().isEmpty()) {
         QMessageBox::warning(this, QStringLiteral("OtterWeb"),
                              QStringLiteral("Enter a valid web address."));
         return;
     }
 
-    if (url.scheme() == QStringLiteral("http") || url.scheme() == QStringLiteral("https")) {
-        // Qt WebEngine is not available in the project's MinGW cross-build kit.
-        // Keep OtterWeb buildable and hand public websites to the system browser.
+    if (isWebUrl(url)) {
+#ifdef OTTERLINK_USE_WEBENGINE
+        loadInView(url);
+#else
         if (!QDesktopServices::openUrl(url)) {
             QMessageBox::warning(this, QStringLiteral("OtterWeb"),
                                  QStringLiteral("The system browser could not open this address."));
         }
+#endif
         return;
     }
 
-    if (url.scheme() == QStringLiteral("qrc") &&
-        url.path() == QStringLiteral("/otterweb-search.html")) {
-        m_view->setSource(url);
+    if (isBundledHomeUrl(url)) {
+        loadInView(url);
         return;
     }
 
     QMessageBox::warning(this, QStringLiteral("OtterWeb"),
-                         QStringLiteral("OtterWeb currently displays its bundled internal pages. "
-                                        "HTTP and HTTPS sites open in your system browser."));
+                         QStringLiteral("Only HTTP/HTTPS addresses and bundled OtterWeb pages are supported."));
 }
 
 void OtterWebWidget::updateNavigationState()
 {
     if (!m_view)
         return;
+#ifdef OTTERLINK_USE_WEBENGINE
+    const auto *history = m_view->history();
+    m_backButton->setEnabled(history && history->canGoBack());
+    m_forwardButton->setEnabled(history && history->canGoForward());
+#else
     m_backButton->setEnabled(m_view->isBackwardAvailable());
     m_forwardButton->setEnabled(m_view->isForwardAvailable());
+#endif
 }
 
 void OtterWebWidget::addBookmark()
 {
-    // The embedded reader displays bundled pages; external addresses are handed
-    // to the system browser, so preserve the address-bar URL as the bookmark target.
     const QUrl url = QUrl::fromUserInput(m_address->text().trimmed());
     if (!url.isValid() || url.scheme().isEmpty()) {
         QMessageBox::information(this, QStringLiteral("OtterWeb"),
                                  QStringLiteral("Enter a valid address before bookmarking it."));
         return;
     }
-    if (url.scheme() != QStringLiteral("http") && url.scheme() != QStringLiteral("https") &&
-        !(url.scheme() == QStringLiteral("qrc") &&
-          url.path() == QStringLiteral("/otterweb-search.html"))) {
+    if (!isWebUrl(url) && !isBundledHomeUrl(url)) {
         QMessageBox::information(this, QStringLiteral("OtterWeb"),
-                                 QStringLiteral("Only HTTP and HTTPS addresses or internal OtterWeb pages can be bookmarked."));
+                                 QStringLiteral("Only HTTP/HTTPS addresses or internal OtterWeb pages can be bookmarked."));
         return;
     }
 
-    QString title = m_view->documentTitle().trimmed();
-    if (url.scheme() == QStringLiteral("http") || url.scheme() == QStringLiteral("https"))
+    QString title;
+#ifdef OTTERLINK_USE_WEBENGINE
+    title = m_view->title().trimmed();
+#else
+    title = m_view->documentTitle().trimmed();
+#endif
+    if (isWebUrl(url) && title.isEmpty())
         title = url.host();
     const QString entry = title.isEmpty()
         ? url.toString()
@@ -182,11 +241,9 @@ void OtterWebWidget::rebuildBookmarksMenu()
         QAction *action = m_bookmarksMenu->addAction(label);
         action->setToolTip(address);
         connect(action, &QAction::triggered, this, [this, address]() {
-            const QUrl url(address);
-            if (url.scheme() == QStringLiteral("http") || url.scheme() == QStringLiteral("https"))
-                QDesktopServices::openUrl(url);
-            else if (url.scheme() == QStringLiteral("qrc"))
-                m_view->setSource(url);
+            const QUrl url = QUrl::fromUserInput(address);
+            if (isWebUrl(url) || isBundledHomeUrl(url))
+                loadInView(url);
         });
     }
 
