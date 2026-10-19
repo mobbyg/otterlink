@@ -94,6 +94,17 @@ function insertMarkdown(kind) {
     case 'bold': before = '**'; replacement = selected || 'bold text'; after = '**'; break;
     case 'italic': before = '*'; replacement = selected || 'italic text'; after = '*'; break;
     case 'list': before = '- '; replacement = (selected || 'List item').replace(/\n/g, '\n- '); after = ''; break;
+    case 'align-left':
+    case 'align-center':
+    case 'align-right': {
+      const alignment = kind.slice('align-'.length);
+      const text = selected || 'Text to align';
+      const insertion = `<div style="text-align: ${alignment};">\n${text}\n</div>`;
+      field.setRangeText(insertion, start, end, 'select');
+      field.focus();
+      field.dispatchEvent(new Event('input', { bubbles: true }));
+      return;
+    }
     case 'link': before = '['; replacement = selected || 'link text'; after = '](https://example.com)'; break;
     default: return;
   }
