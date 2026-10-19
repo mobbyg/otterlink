@@ -1,8 +1,8 @@
 #include "ottersearchwidget.h"
 
-#include <QFrame>
 #include <QLabel>
 #include <QLineEdit>
+#include <QFont>
 #include <QVBoxLayout>
 
 OtterSearchWidget::OtterSearchWidget(QWidget *parent)
