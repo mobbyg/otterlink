@@ -113,16 +113,25 @@ func (a AuthAPI) Me(w http.ResponseWriter, r *http.Request) {
 func setAdminPageCookie(w http.ResponseWriter, r *http.Request, token string) {
 	secure := r.TLS != nil || strings.EqualFold(r.Header.Get("X-Forwarded-Proto"), "https")
 	http.SetCookie(w, &http.Cookie{
-		Name: "otterlink-session", Value: token, Path: "/", HttpOnly: true,
-		Secure: secure, SameSite: http.SameSiteStrictMode,
+		Name:     "otterlink-session",
+		Value:    token,
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   secure,
+		SameSite: http.SameSiteStrictMode,
 	})
 }
 
 func clearAdminPageCookie(w http.ResponseWriter, r *http.Request) {
 	secure := r.TLS != nil || strings.EqualFold(r.Header.Get("X-Forwarded-Proto"), "https")
 	http.SetCookie(w, &http.Cookie{
-		Name: "otterlink-session", Value: "", Path: "/", MaxAge: -1,
-		HttpOnly: true, Secure: secure, SameSite: http.SameSiteStrictMode,
+		Name:     "otterlink-session",
+		Value:    "",
+		Path:     "/",
+		MaxAge:   -1,
+		HttpOnly: true,
+		Secure:   secure,
+		SameSite: http.SameSiteStrictMode,
 	})
 }
 
