@@ -80,8 +80,8 @@ MainWindow::MainWindow(QWidget *parent)
     ui->brandLabel->setMinimumSize(190, 34);
     ui->brandLabel->setMaximumSize(190, 34);
     ui->brandLabel->setText(QStringLiteral(
-        "<span style=\\"font-size:17px;\\">🦦</span>"
-        "<img src=\\":/images/otterlink_logo.png\\" width=\\"113\\" height=\\"34\\" align=\\"middle\\">"));
+        "<span style=\"font-size:17px;\">🦦</span>"
+        "<img src=\":/images/otterlink_logo.png\" width=\"113\" height=\"34\" align=\"middle\">"));
 
     const QSize navigationIconSize(28, 28);
     const auto setNavigationIcon = [navigationIconSize](QPushButton *button,
