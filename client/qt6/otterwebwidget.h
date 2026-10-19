@@ -6,7 +6,7 @@
 class QLineEdit;
 class QMenu;
 class QPushButton;
-class QWebEngineView;
+class QTextBrowser;
 
 class OtterWebWidget final : public QWidget
 {
@@ -20,9 +20,8 @@ private:
     void updateNavigationState();
     void addBookmark();
     void rebuildBookmarksMenu();
-    void navigateTo(const QString &address);
 
-    QWebEngineView *m_view = nullptr;
+    QTextBrowser *m_view = nullptr;
     QLineEdit *m_address = nullptr;
     QPushButton *m_backButton = nullptr;
     QPushButton *m_forwardButton = nullptr;
