@@ -137,16 +137,28 @@ void OtterWebWidget::updateNavigationState()
 
 void OtterWebWidget::addBookmark()
 {
-    const QUrl url = m_view->source();
-    if (!url.isValid() || url.scheme() != QStringLiteral("qrc")) {
+    // The embedded reader displays bundled pages; external addresses are handed
+    // to the system browser, so preserve the address-bar URL as the bookmark target.
+    const QUrl url = QUrl::fromUserInput(m_address->text().trimmed());
+    if (!url.isValid() || url.scheme().isEmpty()) {
         QMessageBox::information(this, QStringLiteral("OtterWeb"),
-                                 QStringLiteral("Open an internal OtterWeb page before bookmarking it."));
+                                 QStringLiteral("Enter a valid address before bookmarking it."));
+        return;
+    }
+    if (url.scheme() != QStringLiteral("http") && url.scheme() != QStringLiteral("https") &&
+        !(url.scheme() == QStringLiteral("qrc") &&
+          url.path() == QStringLiteral("/otterweb-search.html"))) {
+        QMessageBox::information(this, QStringLiteral("OtterWeb"),
+                                 QStringLiteral("Only HTTP and HTTPS addresses or internal OtterWeb pages can be bookmarked."));
         return;
     }
 
-    const QString entry = m_view->documentTitle().trimmed().isEmpty()
+    QString title = m_view->documentTitle().trimmed();
+    if (url.scheme() == QStringLiteral("http") || url.scheme() == QStringLiteral("https"))
+        title = url.host();
+    const QString entry = title.isEmpty()
         ? url.toString()
-        : m_view->documentTitle().trimmed() + QStringLiteral(" | ") + url.toString();
+        : title + QStringLiteral(" | ") + url.toString();
     if (!m_bookmarks.contains(entry))
         m_bookmarks.append(entry);
     QSettings settings(QStringLiteral("OtterLink"), QStringLiteral("OtterLink"));
