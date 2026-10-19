@@ -72,7 +72,18 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
 
-    const QSize navigationIconSize(32, 32);
+    // Tighten the header and service strip without crowding their controls.
+    ui->headerLayout->setContentsMargins(5, 4, 5, 4);
+    ui->headerLayout->setSpacing(4);
+    ui->navigationLayout->setContentsMargins(5, 2, 5, 2);
+    ui->navigationLayout->setSpacing(2);
+    ui->brandLabel->setMinimumSize(190, 34);
+    ui->brandLabel->setMaximumSize(190, 34);
+    ui->brandLabel->setText(QStringLiteral(
+        "<span style=\"font-size:17px;\">🦦</span>"
+        "<img src=\":/images/otterlink_logo.png\" width=\"113\" height=\"34\" align=\"middle\">"));
+
+    const QSize navigationIconSize(28, 28);
     const auto setNavigationIcon = [navigationIconSize](QPushButton *button,
                                                         const QString &resource) {
         button->setIcon(QIcon(resource));
@@ -598,6 +609,7 @@ void MainWindow::openServiceWindow(const QString &service, const QString &title,
     // Resizing is an explicit per-window capability, never inferred from the title.
     // The Home canvas stays fixed at its authored 1280x720 coordinate system.
     const bool resizable = service == QStringLiteral("chat")
+        || service == QStringLiteral("events")
         || service == QStringLiteral("news")
         || service == QStringLiteral("web")
         || service == QStringLiteral("otterweb")
@@ -617,9 +629,10 @@ void MainWindow::openServiceWindow(const QString &service, const QString &title,
         const int titleBarHeight = titleBar ? titleBar->sizeHint().height() : 30;
         window->setFixedSize(1284, 720 + titleBarHeight + 4);
     } else {
-        const int preferredWidth = service == QStringLiteral("events") ? 635 : 620;
+        const int preferredWidth = service == QStringLiteral("events") ? 850 : 620;
         const int width = qMin(preferredWidth, qMax(360, m_desktop->width() - 70));
-        const int height = qMin(440, qMax(250, m_desktop->height() - 70));
+        const int preferredHeight = service == QStringLiteral("events") ? 410 : 440;
+        const int height = qMin(preferredHeight, qMax(250, m_desktop->height() - 70));
         window->resize(width, height);
     }
 
