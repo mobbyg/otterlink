@@ -349,15 +349,27 @@ function updateRegistrationDescription() {
 
 async function saveRegistrationMode() {
   $('registration-error').textContent = '';
+  $('registration-success').textContent = '';
+  const saveButton = $('save-registration-mode');
+  const requestedMode = $('registration-mode').value;
+  saveButton.disabled = true;
+  saveButton.textContent = 'Saving…';
   try {
     const result = await request('/api/admin/registration-mode', {
       method: 'PUT',
-      body: JSON.stringify({ mode: $('registration-mode').value })
+      body: JSON.stringify({ mode: requestedMode })
     });
     $('registration-mode').value = result.mode;
     updateRegistrationDescription();
+    const labels = { 'invite-only': 'Invite-only', 'open': 'Open registration', 'closed': 'Closed registration' };
+    $('registration-success').textContent = 'Saved successfully: ' + (labels[result.mode] || result.mode) + '.';
     await refreshAudit();
-  } catch (error) { $('registration-error').textContent = error.message || String(error); }
+  } catch (error) {
+    $('registration-error').textContent = error.message || String(error);
+  } finally {
+    saveButton.disabled = false;
+    saveButton.textContent = 'Save Mode';
+  }
 }
 
 async function createAdminUser() {
@@ -554,7 +566,11 @@ function escapeHTML(value) { return String(value ?? '').replace(/[&<>'"]/g, (cha
 
 $('refresh').addEventListener('click', refresh);
 $('save-registration-mode').addEventListener('click', saveRegistrationMode);
-$('registration-mode').addEventListener('change', updateRegistrationDescription);
+$('registration-mode').addEventListener('change', () => {
+  $('registration-success').textContent = '';
+  $('registration-error').textContent = '';
+  updateRegistrationDescription();
+});
 $('create-user').addEventListener('click', createAdminUser);
 $('refresh-audit').addEventListener('click', refreshAudit);
 $('refresh-channels').addEventListener('click', refreshChannels);
