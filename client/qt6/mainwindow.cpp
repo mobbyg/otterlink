@@ -609,6 +609,7 @@ void MainWindow::openServiceWindow(const QString &service, const QString &title,
     // Resizing is an explicit per-window capability, never inferred from the title.
     // The Home canvas stays fixed at its authored 1280x720 coordinate system.
     const bool resizable = service == QStringLiteral("chat")
+        || service == QStringLiteral("events")
         || service == QStringLiteral("news")
         || service == QStringLiteral("web")
         || service == QStringLiteral("otterweb")
@@ -628,9 +629,10 @@ void MainWindow::openServiceWindow(const QString &service, const QString &title,
         const int titleBarHeight = titleBar ? titleBar->sizeHint().height() : 30;
         window->setFixedSize(1284, 720 + titleBarHeight + 4);
     } else {
-        const int preferredWidth = service == QStringLiteral("events") ? 635 : 620;
+        const int preferredWidth = service == QStringLiteral("events") ? 850 : 620;
         const int width = qMin(preferredWidth, qMax(360, m_desktop->width() - 70));
-        const int height = qMin(440, qMax(250, m_desktop->height() - 70));
+        const int preferredHeight = service == QStringLiteral("events") ? 410 : 440;
+        const int height = qMin(preferredHeight, qMax(250, m_desktop->height() - 70));
         window->resize(width, height);
     }
 
