@@ -8,6 +8,8 @@
 #include "otterdmwidget.h"
 #include "ottereventswidget.h"
 #include "otternewswidget.h"
+#include "otterwebwidget.h"
+#include "ottersearchwidget.h"
 #include "ui_mainwindow.h"
 
 #include <QComboBox>
@@ -540,6 +542,12 @@ void MainWindow::navigateService()
     } else if (button == ui->newsButton) {
         auto *page = new OtterNewsWidget(m_client, m_desktop);
         openServiceWindow(QStringLiteral("news"), QStringLiteral("News"), page);
+    } else if (button == ui->webButton) {
+        auto *page = new OtterWebWidget(m_desktop);
+        openServiceWindow(QStringLiteral("otterweb"), QStringLiteral("OtterWeb"), page);
+    } else if (button == ui->exploreButton) {
+        auto *page = new OtterSearchWidget(m_desktop);
+        openServiceWindow(QStringLiteral("search"), QStringLiteral("Otter Link Search"), page);
     } else {
         QString title;
         if (button == ui->mailButton)
