@@ -32,8 +32,6 @@ qt_add_executable(otterlink
     otternewswidget.h
     otterwebwidget.cpp
     otterwebwidget.h
-    ottersearchwidget.cpp
-    ottersearchwidget.h
     otterservicewindow.cpp
     otterservicewindow.h
     otterkeywordwidget.cpp
