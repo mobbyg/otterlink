@@ -100,7 +100,10 @@ void OtterWebWidget::navigateTo(const QString &address)
                              QStringLiteral("Enter a valid web address."));
         return;
     }
-    if (url.scheme() != QStringLiteral("http") &&
+    const bool internalSearchPage =
+        url.scheme() == QStringLiteral("qrc") &&
+        url.path() == QStringLiteral("/otterweb-search.html");
+    if (!internalSearchPage && url.scheme() != QStringLiteral("http") &&
         url.scheme() != QStringLiteral("https")) {
         QMessageBox::warning(this, QStringLiteral("OtterWeb"),
                              QStringLiteral("OtterWeb currently supports HTTP and HTTPS addresses."));
