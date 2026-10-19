@@ -12,7 +12,7 @@ The client is intentionally small: it establishes the cross-platform Qt 6 applic
 
 ## Requirements
 
-- Qt 6
+- Qt 6, including the WebEngineWidgets module
 - CMake 3.21 or newer
 - A C++17 compiler
 
@@ -43,6 +43,8 @@ The current client provides:
 - Community Chat service window with room selection, message history, active-user display, roles, and moderation controls
 - News service window with RSS/Atom articles and native OtterLink-published articles
 - Article-reader window for supported news content
+- OtterWeb embedded browser with address bar, back/forward/home navigation, and saved bookmarks
+- Internal Otter Link Search placeholder with a disabled `COMING SOON` field
 - Placeholder windows for planned Mail, Boards, Files, and Games services
 - Dashboard data presented through the existing client/service functions
 - Community chat history and message sending
@@ -56,7 +58,7 @@ The connection presentation is cosmetic: the HTTP login request proceeds normall
 
 The current connection artwork is intentionally a temporary text/ASCII otter. It is a placeholder for original Otter Link artwork and keeps this change free of external asset dependencies.
 
-The main window layout is maintained in `mainwindow.ui` and is intended to be edited with Qt Designer/Qt Creator. Keep substantial presentation work in `.ui` files and keep service behavior in C++.
+The main window layout is maintained in `mainwindow.ui` and is intended to be edited with Qt Designer/Qt Creator. OtterWeb uses Qt WebEngine for embedded page rendering; builds must include the Qt WebEngineWidgets module and deployment packages must bundle its runtime resources. Keep substantial presentation work in `.ui` files and keep service behavior in C++.
 
 ## Presentation direction
 
