@@ -61,6 +61,11 @@ func (a AuthAPI) Login(w http.ResponseWriter, r *http.Request) {
 	if a.Presence != nil {
 		a.Presence.OnlineHTTP(user, tokenConnectionID(token))
 	}
+	if user.Role == "admin" && user.Status == "active" {
+		setAdminPageCookie(w, r, token)
+	} else {
+		clearAdminPageCookie(w, r)
+	}
 	writeJSON(w, http.StatusOK, authResponse{User: user, Token: token})
 }
 
@@ -88,6 +93,7 @@ func (a AuthAPI) Logout(w http.ResponseWriter, r *http.Request) {
 	if a.Presence != nil {
 		a.Presence.OfflineHTTP(user.ID, tokenConnectionID(token))
 	}
+	clearAdminPageCookie(w, r)
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -102,6 +108,31 @@ func (a AuthAPI) Me(w http.ResponseWriter, r *http.Request) {
 		a.Presence.OnlineHTTP(user, tokenConnectionID(token))
 	}
 	writeJSON(w, http.StatusOK, user)
+}
+
+func setAdminPageCookie(w http.ResponseWriter, r *http.Request, token string) {
+	secure := r.TLS != nil || strings.EqualFold(r.Header.Get("X-Forwarded-Proto"), "https")
+	http.SetCookie(w, &http.Cookie{
+		Name:     "otterlink-session",
+		Value:    token,
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   secure,
+		SameSite: http.SameSiteStrictMode,
+	})
+}
+
+func clearAdminPageCookie(w http.ResponseWriter, r *http.Request) {
+	secure := r.TLS != nil || strings.EqualFold(r.Header.Get("X-Forwarded-Proto"), "https")
+	http.SetCookie(w, &http.Cookie{
+		Name:     "otterlink-session",
+		Value:    "",
+		Path:     "/",
+		MaxAge:   -1,
+		HttpOnly: true,
+		Secure:   secure,
+		SameSite: http.SameSiteStrictMode,
+	})
 }
 
 func bearerToken(r *http.Request) string {
