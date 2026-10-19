@@ -6,6 +6,12 @@ import (
 )
 
 const schema = `
+CREATE TABLE IF NOT EXISTS server_settings (
+    setting_key TEXT PRIMARY KEY,
+    setting_value TEXT NOT NULL,
+    updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     username TEXT NOT NULL UNIQUE COLLATE NOCASE,
@@ -209,6 +215,7 @@ CREATE INDEX IF NOT EXISTS idx_native_news_published ON native_news_articles(pub
 func Initialize(db *sql.DB) error {
 	if _, err := db.Exec("PRAGMA foreign_keys = ON"); err != nil { return fmt.Errorf("enable foreign keys: %w", err) }
 	if _, err := db.Exec(schema); err != nil { return fmt.Errorf("initialize database schema: %w", err) }
+	if _, err := db.Exec(`INSERT OR IGNORE INTO server_settings (setting_key, setting_value) VALUES ('registration_mode', 'invite-only')`); err != nil { return fmt.Errorf("initialize registration mode: %w", err) }
 
 	rows, err := db.Query(`PRAGMA table_info(users)`)
 	if err != nil { return fmt.Errorf("inspect users schema: %w", err) }
