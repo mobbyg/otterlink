@@ -213,6 +213,40 @@
       </aside>
     </section>
 
+    <section id="games-section" class="card" style="margin-top:20px">
+      <div class="section-title">
+        <div><small>GAMES</small><h1>Interactive Fiction Catalog</h1></div>
+        <button id="refresh-games" class="secondary">Refresh</button>
+      </div>
+      <p class="status">Upload story files here or install them manually in the configured games directory (default: data/games). Files are limited to 20 MiB and existing filenames are never overwritten. Install the frotz package on the server to enable the Z-machine runtime. OtterLink does not bundle copyrighted game files; only host stories you are permitted to distribute.</p>
+      <p id="games-runtime-status" class="status"></p>
+      <p id="games-error" class="error"></p>
+      <div class="event-form">
+        <div class="event-details">
+          <input id="game-id" type="hidden">
+          <label>Slug<input id="game-slug" maxlength="64" placeholder="zork-one"></label>
+          <label>Title<input id="game-title" maxlength="160" placeholder="Game title"></label>
+          <label>Author<input id="game-author" maxlength="120" placeholder="Author or publisher"></label>
+          <label>Category<input id="game-category" maxlength="64" placeholder="Interactive Fiction"></label>
+          <label>Story filename<input id="game-story-file" placeholder="story.z5"></label>
+          <label>Upload story file<input id="game-story-upload" type="file" accept=".z1,.z2,.z3,.z4,.z5,.z6,.z7,.z8,.blorb,.zblorb,.blb"></label>
+          <div class="admin-actions"><button id="upload-game-story" type="button" class="secondary">Upload Story File</button><span id="game-upload-status" class="status"></span></div>
+          <label>Description<textarea id="game-description" rows="4" maxlength="4000" placeholder="A short description of the game"></textarea></label>
+          <label><input id="game-published" type="checkbox" checked> Published in catalog</label>
+          <div class="admin-actions">
+            <button id="save-game">Add Game</button>
+            <button id="clear-game-form" class="secondary">Clear Form</button>
+          </div>
+        </div>
+      </div>
+      <div class="admin-table-wrap">
+        <table class="admin-table">
+          <thead><tr><th>Title</th><th>Category</th><th>Engine</th><th>Story file</th><th>Published</th><th>Runtime</th><th>Manage</th></tr></thead>
+          <tbody id="games-list"></tbody>
+        </table>
+      </div>
+    </section>
+
     <section id="activity-section" class="card" style="margin-top:20px">
       <div class="section-title"><div><small>SECURITY</small><h1>Admin Activity</h1></div><button id="refresh-audit" class="secondary">Refresh</button></div>
       <p class="status">Recent administrative actions. Passwords and session tokens are never recorded here.</p>
@@ -222,5 +256,6 @@
     <footer>Otter Link administration • development UI</footer>
   </main>
   <script src="/static/admin.js"></script>
+  <script src="/static/games-admin.js"></script>
 </body>
 </html>

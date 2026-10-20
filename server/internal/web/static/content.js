@@ -41,12 +41,37 @@ async function loadNativeArticleTargets() {
   }
 }
 
+async function loadGameTargets() {
+  const group = $('editor-game-options');
+  if (!group) return;
+  group.replaceChildren();
+  try {
+    const result = await request('/api/admin/games');
+    for (const game of result.games || []) {
+      if (!game.slug) continue;
+      const option = document.createElement('option');
+      option.value = 'game:' + game.slug;
+      option.textContent = game.title + ' — ' + game.slug + (game.published ? '' : ' (unpublished)');
+      group.appendChild(option);
+    }
+    const selected = editorContent?.elements?.[editorSelectedIndex];
+    if (selected?.destination?.type === 'game' && selected.destination.slug) {
+      $('editor-service').value = 'game:' + String(selected.destination.slug);
+    }
+    filterNativeArticleTargets();
+  } catch (error) {
+    showError('Unable to load game link targets: ' + (error.message || String(error)));
+  }
+}
+
 function filterNativeArticleTargets() {
   const query = ($('editor-destination-search')?.value || '').trim().toLowerCase();
-  const group = $('editor-native-news-options');
-  if (!group) return;
-  for (const option of group.querySelectorAll('option')) {
-    option.hidden = Boolean(query) && !option.textContent.toLowerCase().includes(query);
+  for (const groupID of ['editor-native-news-options', 'editor-game-options']) {
+    const group = $(groupID);
+    if (!group) continue;
+    for (const option of group.querySelectorAll('option')) {
+      option.hidden = Boolean(query) && !option.textContent.toLowerCase().includes(query);
+    }
   }
 }
 
@@ -743,6 +768,8 @@ function updateInspector() {
   let service = item.destination?.type === 'service' ? String(item.destination.service || '') : '';
   if (item.destination?.type === 'native-news' && item.destination.slug) {
     service = 'native-news:' + String(item.destination.slug);
+  } else if (item.destination?.type === 'game' && item.destination.slug) {
+    service = 'game:' + String(item.destination.slug);
   }
   $('editor-service').value = service;
   $('editor-text').disabled = type === 'image';
@@ -778,6 +805,8 @@ function updateSelectedService(value) {
     delete item.destination;
   } else if (value.startsWith('native-news:')) {
     item.destination = { type: 'native-news', slug: value.slice('native-news:'.length) };
+  } else if (value.startsWith('game:')) {
+    item.destination = { type: 'game', slug: value.slice('game:'.length) };
   } else {
     item.destination = { type: 'service', service: value };
   }
@@ -937,3 +966,4 @@ $('delete-screen').addEventListener('click', () => {
 refreshScreens();
 refreshAssets();
 loadNativeArticleTargets();
+loadGameTargets();

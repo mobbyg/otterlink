@@ -60,6 +60,7 @@ private:
     void rebuildBuddyTree(const QStringList &buddies, const QStringList &onlineUsers);
     void openServiceWindow(const QString &service, const QString &title, QWidget *content);
     void openNativeArticle(const QString &slug);
+    void openGameSlug(const QString &slug);
     void closeServiceWindow(OtterServiceWindow *window);
     void closeAllServiceWindows();
     void restoreServicePage(QWidget *page);

@@ -52,6 +52,11 @@ QString destinationService(const QJsonObject &value)
         if (!slug.isEmpty())
             return QStringLiteral("native-news:") + slug;
     }
+    if (type == QStringLiteral("game")) {
+        const QString slug = destination.value(QStringLiteral("slug")).toString().trimmed().toLower();
+        if (!slug.isEmpty())
+            return QStringLiteral("game:") + slug;
+    }
     return QString();
 }
 

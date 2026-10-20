@@ -34,6 +34,7 @@ Otter Link is an active development project. The server, development web client,
 - Service/community keyword shortcuts
 - RSS/Atom news ingestion, configurable feed administration, and a Qt News reader
 - Server-managed Home/content screens with scheduling, managed assets, and clickable destinations
+- Interactive Fiction catalog and user-owned Z-machine sessions through the external Frotz interpreter
 - Native OtterLink article publishing and links from Home screens into the article reader
 - Command-line administration client backed by the HTTP administration API
 - Automated tests for server, chat, news, content, and OSCAR components
@@ -81,6 +82,10 @@ Selected core HTTP endpoints include:
 - `/api/admin/chat/*` — admin role required
 - `GET /api/admin/users` — admin role required
 - `GET /api/admin/audit` — admin role required
+- `GET /api/games` — published game catalog
+- `POST /api/games/{gameID}/sessions` — start an Interactive Fiction session
+- `/api/game-sessions/{sessionID}/*` — session output, input, and stop operations
+- `/api/admin/games` — admin-managed game catalog
 
 The list above is intentionally representative rather than exhaustive. The server also exposes APIs for private messages, Events, service keywords, News, and server-managed Home/content. See [`docs/api.md`](docs/api.md) for the current API reference and [`docs/`](docs/) for architecture and protocol documentation.
 
@@ -91,6 +96,7 @@ The list above is intentionally representative rather than exhaustive. The serve
 - Go 1.24 or newer
 - A C compiler/toolchain suitable for the Go SQLite driver
 - Qt 6 for the native Qt client
+- Optional `frotz` package on the server to enable Z-machine gameplay (`dfrotz`)
 
 ### Server
 
@@ -126,6 +132,8 @@ Environment variables:
 - `OTTERLINK_PROTOCOL_ADDR` — Otter Link protocol listen address; default `:8023`
 - `OTTERLINK_OSCAR_ADDR` — OSCAR compatibility listen address; default `:5190`
 - `OTTERLINK_DB` — SQLite database path; default `data/otterlink.db`
+- `OTTERLINK_GAMES_ROOT` — directory containing administrator-managed story files; default `data/games`
+- `OTTERLINK_DFROTZ` — optional explicit path to the `dfrotz` executable
 - `OTTERLINK_ADMIN_USERNAME` — existing account to grant the `admin` role at server startup; unset by default
 - `OTTERLINK_TLS_CERT_FILE` — PEM certificate file for HTTPS; must be set together with `OTTERLINK_TLS_KEY_FILE`
 - `OTTERLINK_TLS_KEY_FILE` — PEM private key file for HTTPS; must be set together with `OTTERLINK_TLS_CERT_FILE`
@@ -163,6 +171,7 @@ Current administration functions include:
 - RSS/Atom news-source management and feed refresh/testing
 - Server-managed Home/content screens and image assets
 - Native OtterLink news article publishing
+- Interactive Fiction catalog administration (story files can be uploaded by admins or installed on the server; no copyrighted games are bundled)
 - Service keyword configuration
 
 Audit entries record administrative actions and outcomes without recording passwords or session tokens.

@@ -406,18 +406,31 @@ void OtterLinkClient::removeBuddy(const QString &username)
 
 void OtterLinkClient::loadHomeScreen()
 {
+    loadContentScreen(QStringLiteral("/api/content/home"), false);
+}
+
+void OtterLinkClient::loadGamesHomeScreen()
+{
+    loadContentScreen(QStringLiteral("/api/content/screens/slug/games"), true);
+}
+
+void OtterLinkClient::loadContentScreen(const QString &path, bool gamesScreen)
+{
     if (m_token.isEmpty())
         return;
 
-    auto *reply = m_network.get(request(QStringLiteral("/api/content/home")));
-    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+    auto *reply = m_network.get(request(path));
+    connect(reply, &QNetworkReply::finished, this, [this, reply, gamesScreen]() {
         if (reply->error() != QNetworkReply::NoError) {
             reply->deleteLater();
             return;
         }
 
         const QJsonObject screen = QJsonDocument::fromJson(reply->readAll()).object();
-        emit homeScreenLoaded(screen);
+        if (gamesScreen)
+            emit gamesHomeScreenLoaded(screen);
+        else
+            emit homeScreenLoaded(screen);
 
         const QJsonObject content = screen.value(QStringLiteral("content")).toObject();
         const qint64 backgroundID =
@@ -442,7 +455,7 @@ void OtterLinkClient::loadHomeScreen()
         std::sort(ids.begin(), ids.end());
 
         const auto loadNext = std::make_shared<std::function<void(int)>>();
-        *loadNext = [this, screen, backgroundID, ids, loadNext](int index) {
+        *loadNext = [this, screen, backgroundID, ids, loadNext, gamesScreen](int index) {
             if (index >= ids.size())
                 return;
 
@@ -450,7 +463,7 @@ void OtterLinkClient::loadHomeScreen()
             auto *assetReply = m_network.get(
                 request(QStringLiteral("/api/content/assets/%1").arg(assetID)));
             connect(assetReply, &QNetworkReply::finished, this,
-                    [this, screen, backgroundID, ids, index, assetReply, loadNext, assetID]() {
+                    [this, screen, backgroundID, ids, index, assetReply, loadNext, assetID, gamesScreen]() {
                 if (assetReply->error() == QNetworkReply::NoError) {
                     const QByteArray data = assetReply->readAll();
                     QBuffer buffer;
@@ -462,10 +475,17 @@ void OtterLinkClient::loadHomeScreen()
                         reader.setAutoDetectImageFormat(true);
                         QImage image = reader.read();
                         if (!image.isNull()) {
-                            if (assetID == backgroundID)
-                                emit homeBackgroundLoaded(screen, image);
-                            else
-                                emit homeAssetLoaded(assetID, image);
+                            if (assetID == backgroundID) {
+                                if (gamesScreen)
+                                    emit gamesHomeBackgroundLoaded(screen, image);
+                                else
+                                    emit homeBackgroundLoaded(screen, image);
+                            } else {
+                                if (gamesScreen)
+                                    emit gamesHomeAssetLoaded(assetID, image);
+                                else
+                                    emit homeAssetLoaded(assetID, image);
+                            }
                         } else {
                             qWarning() << "Home asset" << assetID
                                        << "image decode failed:"

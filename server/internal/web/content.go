@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/mobbyg/otterlink/server/internal/content"
@@ -21,6 +22,28 @@ func (s *Server) contentHome(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		http.Error(w, "unable to load home screen", http.StatusInternalServerError)
+		return
+	}
+	writeJSON(w, http.StatusOK, screen)
+}
+
+func (s *Server) contentScreenBySlug(w http.ResponseWriter, r *http.Request) {
+	if _, ok := s.user(r); !ok {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+	slug := strings.ToLower(strings.TrimSpace(r.PathValue("slug")))
+	if slug == "" {
+		http.Error(w, "invalid screen slug", http.StatusBadRequest)
+		return
+	}
+	screen, err := s.Content.Active(slug, time.Now().UTC())
+	if err == sql.ErrNoRows {
+		http.NotFound(w, r)
+		return
+	}
+	if err != nil {
+		http.Error(w, "unable to load screen", http.StatusInternalServerError)
 		return
 	}
 	writeJSON(w, http.StatusOK, screen)

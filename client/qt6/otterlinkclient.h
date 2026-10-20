@@ -46,6 +46,12 @@ public:
     void deleteEvent(qint64 eventId);
     void resolveKeyword(const QString &keyword);
     void loadHomeScreen();
+    void loadGamesHomeScreen();
+    void loadGames();
+    void startGameSession(qint64 gameId);
+    void pollGameSession(const QString &sessionId, qint64 afterSequence);
+    void sendGameInput(const QString &sessionId, const QString &text);
+    void stopGameSession(const QString &sessionId);
     void logout();
 
 signals:
@@ -69,6 +75,14 @@ signals:
     void homeScreenLoaded(const QJsonObject &screen);
     void homeBackgroundLoaded(const QJsonObject &screen, const QImage &image);
     void homeAssetLoaded(qint64 assetId, const QImage &image);
+    void gamesHomeScreenLoaded(const QJsonObject &screen);
+    void gamesHomeBackgroundLoaded(const QJsonObject &screen, const QImage &image);
+    void gamesHomeAssetLoaded(qint64 assetId, const QImage &image);
+    void gamesLoaded(const QJsonArray &games);
+    void gameSessionStarted(const QJsonObject &session);
+    void gameOutputLoaded(const QJsonObject &result);
+    void gameInputSent(const QString &sessionId);
+    void gameSessionStopped(const QString &sessionId);
     void chatMessageSent();
     void chatChannelsLoaded(const QJsonArray &channels);
     void chatChannelLoaded(const QJsonObject &channel, const QJsonArray &members,
@@ -79,6 +93,7 @@ signals:
 
 private:
     QNetworkRequest request(const QString &path) const;
+    void loadContentScreen(const QString &path, bool gamesScreen);
 
     QNetworkAccessManager m_network;
     QString m_baseUrl = QStringLiteral("http://127.0.0.1:9090");

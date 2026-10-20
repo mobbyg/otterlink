@@ -8,6 +8,7 @@
 #include "otterdmwidget.h"
 #include "ottereventswidget.h"
 #include "otternewswidget.h"
+#include "ottergameswidget.h"
 #include "otterwebwidget.h"
 #include "ui_mainwindow.h"
 
@@ -129,7 +130,9 @@ MainWindow::MainWindow(QWidget *parent)
     m_homePage = new OtterHomePage;
     connect(m_homePage, &OtterHomePage::serviceRequested, this,
             [this](const QString &service) {
-                if (service.startsWith(QStringLiteral("native-news:"))) {
+                if (service.startsWith(QStringLiteral("game:"))) {
+                    openGameSlug(service.mid(QStringLiteral("game:").size()));
+                } else if (service.startsWith(QStringLiteral("native-news:"))) {
                     openNativeArticle(service.mid(QStringLiteral("native-news:").size()));
                 } else if (service == QStringLiteral("people"))
                     ui->peopleButton->click();
@@ -555,6 +558,8 @@ void MainWindow::navigateService()
     } else if (button == ui->webButton) {
         auto *page = new OtterWebWidget(m_desktop);
         openServiceWindow(QStringLiteral("otterweb"), QStringLiteral("OtterWeb"), page);
+    } else if (button == ui->gamesButton) {
+        openGameSlug(QString());
     } else {
         QString title;
         if (button == ui->mailButton)
@@ -613,6 +618,7 @@ void MainWindow::openServiceWindow(const QString &service, const QString &title,
         || service == QStringLiteral("news")
         || service == QStringLiteral("web")
         || service == QStringLiteral("otterweb")
+        || service == QStringLiteral("games")
         || service.startsWith(QStringLiteral("native-news:"));
     auto *window = new OtterServiceWindow(title, content, resizable, m_desktop);
     m_serviceWindows.insert(service, window);
@@ -629,9 +635,11 @@ void MainWindow::openServiceWindow(const QString &service, const QString &title,
         const int titleBarHeight = titleBar ? titleBar->sizeHint().height() : 30;
         window->setFixedSize(1284, 720 + titleBarHeight + 4);
     } else {
-        const int preferredWidth = service == QStringLiteral("events") ? 850 : 620;
+        const int preferredWidth = service == QStringLiteral("events") ? 850
+            : service == QStringLiteral("games") ? 900 : 620;
         const int width = qMin(preferredWidth, qMax(360, m_desktop->width() - 70));
-        const int preferredHeight = service == QStringLiteral("events") ? 410 : 440;
+        const int preferredHeight = service == QStringLiteral("events") ? 410
+            : service == QStringLiteral("games") ? 600 : 440;
         const int height = qMin(preferredHeight, qMax(250, m_desktop->height() - 70));
         window->resize(width, height);
     }
@@ -644,6 +652,42 @@ void MainWindow::openServiceWindow(const QString &service, const QString &title,
     window->show();
     window->activateWindow();
     updateServiceButtonStates(window);
+}
+
+void MainWindow::openGameSlug(const QString &slug)
+{
+    auto *window = m_serviceWindows.value(QStringLiteral("games"), nullptr);
+    OtterGamesWidget *page = nullptr;
+    if (window) {
+        window->activateWindow();
+        updateServiceButtonStates(window);
+        page = window->findChild<OtterGamesWidget *>();
+    } else {
+        page = new OtterGamesWidget(m_client, m_desktop);
+        connect(page, &OtterGamesWidget::serviceRequested, this, [this](const QString &service) {
+            if (service.startsWith(QStringLiteral("native-news:")))
+                openNativeArticle(service.mid(QStringLiteral("native-news:").size()));
+            else if (service.startsWith(QStringLiteral("game:")))
+                openGameSlug(service.mid(QStringLiteral("game:").size()));
+            else if (service == QStringLiteral("people"))
+                ui->peopleButton->click();
+            else if (service == QStringLiteral("chat"))
+                ui->chatButton->click();
+            else if (service == QStringLiteral("mail"))
+                ui->mailButton->click();
+            else if (service == QStringLiteral("boards"))
+                ui->boardsButton->click();
+            else if (service == QStringLiteral("news"))
+                ui->newsButton->click();
+            else if (service == QStringLiteral("games"))
+                ui->gamesButton->click();
+            else if (service == QStringLiteral("events"))
+                ui->eventsButton->click();
+        });
+        openServiceWindow(QStringLiteral("games"), QStringLiteral("Games"), page);
+    }
+    if (page && !slug.trimmed().isEmpty())
+        page->launchGameSlug(slug);
 }
 
 void MainWindow::openNativeArticle(const QString &slug)
@@ -714,6 +758,8 @@ void MainWindow::updateServiceButtonStates(OtterServiceWindow *activeWindow)
         activeButton = ui->chatButton;
     else if (activeService == QStringLiteral("news"))
         activeButton = ui->newsButton;
+    else if (activeService == QStringLiteral("games"))
+        activeButton = ui->gamesButton;
 
     setActiveServiceButton(activeButton, {
         ui->homeButton, ui->peopleButton, ui->mailButton, ui->chatButton,

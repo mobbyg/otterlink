@@ -24,6 +24,7 @@ qt_add_executable(otterlink
     otterhomepage.h
     otterlinkclient.cpp
     otterlinkclient.h
+    ottergamesclient.cpp
     otterlinkstyle.cpp
     otterlinkstyle.h
     otterchatwidget.cpp
@@ -36,6 +37,8 @@ qt_add_executable(otterlink
     ottereventswidget.h
     otternewswidget.cpp
     otternewswidget.h
+    ottergameswidget.cpp
+    ottergameswidget.h
     otterwebwidget.cpp
     otterwebwidget.h
     otterservicewindow.cpp

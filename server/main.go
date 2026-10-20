@@ -24,6 +24,7 @@ import (
 	"github.com/mobbyg/otterlink/server/internal/db"
 	"github.com/mobbyg/otterlink/server/internal/dm"
 	"github.com/mobbyg/otterlink/server/internal/events"
+	"github.com/mobbyg/otterlink/server/internal/games"
 	"github.com/mobbyg/otterlink/server/internal/news"
 	"github.com/mobbyg/otterlink/server/internal/keywords"
 	"github.com/mobbyg/otterlink/server/internal/oscar"
@@ -39,6 +40,7 @@ const (
 	defaultOscarAddr    = ":5190"
 	defaultDB           = "data/otterlink.db"
 	defaultAssetRoot    = "data/assets"
+	defaultGameRoot     = "data/games"
 )
 
 type healthResponse struct {
@@ -52,6 +54,7 @@ func main() {
 	oscarAddr := getenv("OTTERLINK_OSCAR_ADDR", defaultOscarAddr)
 	dbPath := getenv("OTTERLINK_DB", defaultDB)
 	assetRoot := getenv("OTTERLINK_ASSET_ROOT", defaultAssetRoot)
+	gameRoot := getenv("OTTERLINK_GAMES_ROOT", defaultGameRoot)
 
 	if err := os.MkdirAll(filepath.Dir(dbPath), 0o755); err != nil {
 		log.Fatalf("create database directory: %v", err)
@@ -96,11 +99,19 @@ func main() {
 	keywordService := keywords.NewService(database)
 	contentService := content.Service{DB: database}
 	assetService := assets.Service{DB: database, Root: assetRoot}
+	gameService := games.NewService(database, gameRoot)
+	if err := gameService.Initialize(); err != nil {
+		log.Fatalf("initialize games service: %v", err)
+	}
+	defer gameService.Close()
 	if err := content.EnsureDefaultHome(database); err != nil {
 		log.Fatalf("initialize default home screen: %v", err)
 	}
+	if err := content.EnsureDefaultGames(database); err != nil {
+		log.Fatalf("initialize default games screen: %v", err)
+	}
 	authAPI := api.AuthAPI{DB: database, Accounts: accountService, Presence: presenceService, Chat: chatHub}
-	webServer := &web.Server{Accounts: accountService, Buddies: buddyService, Presence: presenceService, Chat: chatHub, DM: dmService, Events: eventsService, News: newsService, Keywords: keywordService, Content: contentService, Assets: assetService}
+	webServer := &web.Server{Accounts: accountService, Buddies: buddyService, Presence: presenceService, Chat: chatHub, DM: dmService, Events: eventsService, News: newsService, Keywords: keywordService, Content: contentService, Assets: assetService, Games: gameService}
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/health", healthHandler)
