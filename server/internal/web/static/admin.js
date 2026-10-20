@@ -284,8 +284,22 @@ async function deleteNewsSource() {
 
 function showEventError(message) { $('event-error').textContent = message || ''; }
 function localEventValue(value) { if (!value) return ''; return new Date(value).toISOString(); }
+function syncEventDateInputs() {
+  const allDay = $('event-all-day').checked;
+  for (const [id, fallbackTime] of [['event-start', '09:00'], ['event-end', '10:00']]) {
+    const input = $(id);
+    const value = input.value;
+    if (allDay && input.type !== 'date') {
+      input.type = 'date';
+      input.value = value ? value.slice(0, 10) : '';
+    } else if (!allDay && input.type !== 'datetime-local') {
+      input.type = 'datetime-local';
+      input.value = value ? (value.length === 10 ? value + 'T' + fallbackTime : value.slice(0, 16)) : '';
+    }
+  }
+}
 function eventWhen(event) {
-  if (event.all_day) return event.start_at === event.end_at ? event.start_at : event.start_at + ' → ' + event.end_at;
+  if (event.all_day) return event.start_at === event.end_at ? event.start_at + ' (all day)' : event.start_at + ' → ' + event.end_at + ' (all day)';
   return formatDate(event.start_at) + ' → ' + formatDate(event.end_at);
 }
 function renderEventRow(event) {
@@ -316,7 +330,7 @@ async function createEvent() {
   const start = $('event-start').value;
   const end = $('event-end').value;
   if (!title || !start || !end) { showEventError('Title, start, and end are required.'); return; }
-  const payload = { title, description, all_day: allDay };
+  const payload = { title, description, all_day: allDay, event_type: 'server', target_type: 'none' };
   if (allDay) {
     payload.start_at = start.slice(0,10); payload.end_at = end.slice(0,10);
   } else {
@@ -324,7 +338,11 @@ async function createEvent() {
   }
   try {
     await request('/api/admin/events', { method: 'POST', body: JSON.stringify(payload) });
-    $('event-title').value=''; $('event-description').value=''; $('event-start').value=''; $('event-end').value='';
+    // Show the month containing the new event so it doesn't appear to vanish
+    // when it is scheduled outside the currently selected month.
+    $('event-month').value = start.slice(0, 7);
+    $('event-title').value = ''; $('event-description').value = '';
+    $('event-start').value = ''; $('event-end').value = '';
     await refreshEvents(); await refreshAudit();
   } catch (error) { showEventError(error.message || String(error)); }
 }
@@ -592,6 +610,8 @@ $('test-news-source').addEventListener('click', testNewsSource);
 $('refresh-news-source').addEventListener('click', refreshNewsSource);
 $('delete-news-source').addEventListener('click', deleteNewsSource);
 $('event-month').addEventListener('change', refreshEvents);
+$('event-all-day').addEventListener('change', syncEventDateInputs);
+syncEventDateInputs();
 $('create-event').addEventListener('click', createEvent);
 refreshRegistrationMode();
 refresh();
