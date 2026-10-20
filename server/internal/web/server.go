@@ -13,6 +13,7 @@ import (
 	"github.com/mobbyg/otterlink/server/internal/content"
 	"github.com/mobbyg/otterlink/server/internal/dm"
 	"github.com/mobbyg/otterlink/server/internal/events"
+	"github.com/mobbyg/otterlink/server/internal/games"
 	"github.com/mobbyg/otterlink/server/internal/news"
 	"github.com/mobbyg/otterlink/server/internal/keywords"
 	"github.com/mobbyg/otterlink/server/internal/presence"
@@ -28,6 +29,7 @@ type Server struct {
 	Chat     *chat.Hub
 	DM       dm.Service
 	Events   events.Service
+	Games    *games.Service
 	News     news.Service
 	Keywords keywords.Service
 	Content  content.Service
@@ -51,11 +53,18 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /api/messages/read", s.messageRead)
 	mux.HandleFunc("GET /api/messages/unread", s.messageUnread)
 	mux.HandleFunc("GET /api/events", s.eventList)
+	mux.HandleFunc("GET /api/games", s.gameList)
+	mux.HandleFunc("GET /api/games/{gameID}", s.gameGet)
+	mux.HandleFunc("POST /api/games/{gameID}/sessions", s.gameSessionStart)
+	mux.HandleFunc("GET /api/game-sessions/{sessionID}/output", s.gameSessionOutput)
+	mux.HandleFunc("POST /api/game-sessions/{sessionID}/input", s.gameSessionInput)
+	mux.HandleFunc("DELETE /api/game-sessions/{sessionID}", s.gameSessionStop)
 	mux.HandleFunc("GET /api/news", s.newsList)
 	mux.HandleFunc("GET /api/news/sources", s.newsSources)
 	mux.HandleFunc("GET /api/native-news/{slug}", s.nativeNewsArticle)
 	mux.HandleFunc("GET /api/content/home", s.contentHome)
 	mux.HandleFunc("GET /api/content/screens/{screenID}", s.contentScreen)
+	mux.HandleFunc("GET /api/content/screens/slug/{slug}", s.contentScreenBySlug)
 	mux.HandleFunc("GET /api/content/assets/{assetID}", s.contentAsset)
 	mux.HandleFunc("GET /api/keywords/{keyword}", s.keywordResolve)
 	mux.HandleFunc("POST /api/events", s.eventCreate)
@@ -91,6 +100,11 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("DELETE /api/admin/chat/channels/{channelID}", s.adminChatChannelDelete)
 	mux.HandleFunc("POST /api/admin/chat/channels/{channelID}/users/{username}/role", s.adminChatChannelRole)
 	mux.HandleFunc("GET /api/admin/events", s.adminEvents)
+	mux.HandleFunc("GET /api/admin/games", s.adminGames)
+	mux.HandleFunc("POST /api/admin/games", s.adminGames)
+	mux.HandleFunc("POST /api/admin/games/files", s.adminGameFileUpload)
+	mux.HandleFunc("PUT /api/admin/games/{gameID}", s.adminGame)
+	mux.HandleFunc("DELETE /api/admin/games/{gameID}", s.adminGame)
 	mux.HandleFunc("GET /api/admin/content/screens", s.adminContentScreens)
 	mux.HandleFunc("PUT /api/admin/content/screens", s.adminContentSave)
 	mux.HandleFunc("DELETE /api/admin/content/screens/{screenID}", s.adminContentDelete)
@@ -137,7 +151,7 @@ func (s *Server) static(w http.ResponseWriter, r *http.Request) {
 	switch path {
 	case "static/admin.html", "static/admin.js",
 		"static/content.html", "static/content.js",
-		"static/native-news.html", "static/native-news.js":
+		"static/native-news.html", "static/native-news.js", "static/games-admin.js":
 		if !s.requireAdminPage(w, r) {
 			return
 		}

@@ -447,7 +447,7 @@ Authenticated clients can retrieve the currently active Home screen with GET /ap
 
 A screen response contains metadata plus structured JSON content. The current Qt6 renderer understands hero, announcements, services, footer, an optional background asset, and an optional normalized `elements` overlay layer. The content format is intentionally structured rather than arbitrary HTML, CSS, or JavaScript. Unknown fields may be ignored by clients.
 
-Individual published or future screens can be retrieved with GET /api/content/screens/{screenID}. Draft/unpublished screens are not exposed through client content endpoints.
+Individual published or future screens can be retrieved with GET /api/content/screens/{screenID}; the active Games Home screen is available at GET /api/content/screens/slug/games. Draft/unpublished screens are not exposed through client content endpoints. The Games window uses the same structured renderer and asset model as Home. A button destination with type `game` and a registered game `slug` launches that story in the Games client.
 
 ### Content administration
 
@@ -619,3 +619,34 @@ The long-term goal is **one service, many clients**: Qt, web, and future native 
 - `POST /api/admin/users` — create a normal user account with username, display name, optional email, and a password of at least 12 characters; admin role required. This works in every registration mode and is audit-logged.
 
 Registration mode changes are persisted in the existing SQLite database and survive server restarts. The server initializes the setting to `invite-only` without changing existing accounts.
+
+## Games and Interactive Fiction
+
+The first Games runtime uses the existing Z-machine interpreter ecosystem. OtterLink invokes the server's `dfrotz` executable without a shell; it does not bundle commercial story files or execute arbitrary commands supplied by a client.
+
+On Debian/Ubuntu servers, install the `frotz` package so `dfrotz` is available. Story files must be installed by the server administrator in the configured games directory before a catalog entry can be saved. The directory defaults to `data/games` and can be changed with `OTTERLINK_GAMES_ROOT`. If `dfrotz` is not on `PATH` or under `/usr/games`, set `OTTERLINK_DFROTZ` to its executable path. Supported story formats are Z-machine `.z1` through `.z8` and standalone Blorb `.blorb` or `.zblorb` files. Companion `.blb` files are copied alongside a Z-code story when present.
+
+### Player endpoints
+
+All player endpoints require an authenticated bearer token.
+
+- `GET /api/games` — list published catalog entries. Each game includes an `available` flag that reflects runtime and story-file availability.
+- `GET /api/games/{gameID}` — retrieve one published game.
+- `POST /api/games/{gameID}/sessions` — start a session for the authenticated user.
+- `GET /api/game-sessions/{sessionID}/output?after=0` — retrieve output chunks newer than the supplied sequence number. The response includes the current session status, `next_sequence`, and a `truncated` flag if old output was trimmed.
+- `POST /api/game-sessions/{sessionID}/input` — send one command line as `{"text":"look"}`.
+- `DELETE /api/game-sessions/{sessionID}` — stop the session. Users may control their own sessions; administrators may inspect or stop any session.
+
+Sessions are user-owned. A user may have at most three active sessions and only one active session for a given game. Output is bounded in memory, and idle sessions are stopped after 30 minutes. Save files are stored separately for each user and game under the configured games directory's hidden `.saves` directory; the interpreter is restricted to that user's save directory.
+
+### Administration endpoints
+
+These endpoints require an administrator account.
+
+- `GET /api/admin/games` — list all games, including unpublished entries, and report whether the runtime is installed.
+- `POST /api/admin/games` — register a game.
+- `POST /api/admin/games/files` — upload one story or companion file (multipart `story_file`, maximum 20 MiB, no overwrite).
+- `PUT /api/admin/games/{gameID}` — update catalog metadata or publication state.
+- `DELETE /api/admin/games/{gameID}` — remove the catalog entry and stop its active sessions.
+
+The JSON game fields are `slug`, `title`, `author`, `description`, `category`, `engine` (currently `zmachine`), `story_file` (a filename, not a path), and `published`. Story files can be uploaded through the protected admin page or installed directly on the server. `POST /api/admin/games/files` accepts a multipart field named `story_file`, is limited to 20 MiB, rejects unsupported extensions and path components, and never overwrites an existing file. The catalog entry must then be saved separately. Only host games and story files you have permission to distribute.

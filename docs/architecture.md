@@ -56,6 +56,8 @@ The original server bootstrap milestone is complete. The implementation now incl
 - Chat moderation, bans, kicks, unbanning, and role management
 - Protected web administration for chat channels and roles
 - A dedicated Qt 6 Community Chat service window
+- A persistent SQLite-backed Community Boards service with board-scoped moderation and unread tracking
+- An Interactive Fiction catalog and user-owned Z-machine sessions through an external Frotz runtime
 
 The next implementation focus is building out the service model and client experience around these working foundations, rather than expanding the initial server bootstrap in isolation.
 
@@ -234,3 +236,10 @@ The browser and portal should be useful before the crawler and search system are
 8. Begin implementing the first actual retro-platform client.
 
 The project should continue to favor small, testable service increments over attempting to implement the entire historical service at once.
+
+
+## Games and Interactive Fiction
+
+The Games service owns the catalog, publication state, user sessions, output sequencing, and per-user save directories. It does not expose the database schema to clients. The Games Home screen is a normal server-managed content screen (`slug=games`) rendered by the same Qt content renderer and asset pipeline as the main Home screen. Structured buttons can target a game by slug. The initial runtime adapter uses the external `dfrotz` executable for Z-machine stories, while the service boundary is kept separate so other runtimes can be added later.
+
+Story files are uploaded through protected administration or installed by the server administrator under `OTTERLINK_GAMES_ROOT` (default `data/games`) and registered through the catalog. The initial version does not upload story files through the web UI and does not bundle commercial or otherwise copyrighted games. Runtime execution uses fixed arguments without a shell; story filenames are restricted to the configured root, saves are restricted to the owning user's game directory, output is bounded, and idle sessions are stopped.

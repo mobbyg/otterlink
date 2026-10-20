@@ -40,4 +40,5 @@ The public website must not be the security boundary. Download and account-creat
 - Verify open, invite-only, and closed behavior after server restart.
 - Review public listener/firewall configuration and Nginx routing.
 - Keep existing-user login and all existing services working through policy changes.
+- If Games is enabled, verify `dfrotz` availability, story-file distribution rights, per-user save isolation, idle-session cleanup, and process termination on shutdown.
 - Before open registration, decide any additional abuse controls, moderation process, and support contact.
