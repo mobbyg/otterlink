@@ -265,3 +265,69 @@ label > input[type="checkbox"] { width:auto; flex:0 0 auto; margin:0; }
   font-size: 1rem;
   min-width: 38px;
 }
+
+
+/* Community Boards administration layout */
+.boards-admin-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 0.9fr) minmax(320px, 1.1fr);
+  gap: 20px;
+  align-items: start;
+  margin-top: 4px;
+}
+.boards-admin-layout > * { min-width: 0; }
+.board-editor, .board-list-panel {
+  padding: 16px;
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  background: #101c24;
+}
+.board-editor h2, .board-list-panel h2 { margin-bottom: 10px; }
+.board-list-panel .section-title { align-items: center; gap: 12px; }
+.board-list-panel .section-title h2 { margin: 0; }
+.board-admin-list {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  max-height: 440px;
+  overflow: auto;
+}
+.board-admin-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--card-border);
+}
+.board-admin-item:first-child { border-top: 1px solid var(--card-border); }
+.board-admin-details { min-width: 0; overflow-wrap: anywhere; }
+.board-admin-details strong { color: #fff; }
+.board-admin-details p { margin: 5px 0 0; font-size: .82rem; }
+.board-admin-stats { color: var(--text-muted); }
+.board-admin-actions { flex: 0 0 auto; margin-top: 0; }
+.board-admin-actions button { padding: 8px 11px; }
+.board-empty { padding: 14px 0; }
+.board-user-list {
+  display: block;
+  width: 100%;
+  margin-top: 6px;
+  padding: 6px;
+  min-height: 190px;
+  border: 1px solid #3b5667;
+  border-radius: 9px;
+  background: #0c151c;
+  color: #fff;
+}
+.board-user-list option { padding: 6px 8px; }
+.board-user-list option:checked { background: var(--ocean-deep); color: #fff; }
+.user-picker-panel label { margin-bottom: 8px; }
+.user-picker-panel .admin-actions { margin-top: 10px; }
+.user-picker-panel .status { font-size: .8rem; line-height: 1.45; margin-top: 10px; }
+@media (max-width: 900px) {
+  .boards-admin-layout { grid-template-columns: 1fr; }
+  .board-admin-list { max-height: 360px; }
+}
+@media (max-width: 600px) {
+  .board-admin-item { align-items: flex-start; flex-direction: column; }
+}
