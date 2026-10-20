@@ -149,7 +149,7 @@
 
 
     <section id="events-section" class="card" style="margin-top:20px">
-      <div class="section-title"><div><small>EVENTS</small><h1>Server Events</h1></div><div><input id="event-month" type="month"><button id="refresh-events" class="secondary">Refresh</button></div></div>
+      <div class="section-title"><div><small>EVENTS</small><h1>Server Events</h1></div><div class="event-month-filter"><label for="event-month">Month<select id="event-month"><option value="1">January</option><option value="2">February</option><option value="3">March</option><option value="4">April</option><option value="5">May</option><option value="6">June</option><option value="7">July</option><option value="8">August</option><option value="9">September</option><option value="10">October</option><option value="11">November</option><option value="12">December</option></select></label><label for="event-year">Year<select id="event-year"></select></label><button id="refresh-events" class="secondary">Refresh</button></div></div>
       <p class="status">Server events are managed here. The client does not expose server administration controls.</p>
       <p id="event-error" class="error"></p>
       <div class="event-form">
