@@ -190,7 +190,7 @@ func TestDeletingOpeningPostDeletesWholeThread(t *testing.T) {
 	if len(posts) != 1 {
 		t.Fatalf("expected one opening post, got %d", len(posts))
 	}
-	if err := service.Reply(thread.ID, owner, "A reply."); err != nil {
+	if _, err := service.Reply(thread.ID, owner, "A reply."); err != nil {
 		t.Fatal(err)
 	}
 	if err := service.DeletePost(posts[0].ID); err != nil {
