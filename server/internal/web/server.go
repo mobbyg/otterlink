@@ -9,6 +9,7 @@ import (
 	"github.com/mobbyg/otterlink/server/internal/accounts"
 	"github.com/mobbyg/otterlink/server/internal/assets"
 	"github.com/mobbyg/otterlink/server/internal/buddies"
+	"github.com/mobbyg/otterlink/server/internal/boards"
 	"github.com/mobbyg/otterlink/server/internal/chat"
 	"github.com/mobbyg/otterlink/server/internal/content"
 	"github.com/mobbyg/otterlink/server/internal/dm"
@@ -26,6 +27,7 @@ type Server struct {
 	Buddies  buddies.Service
 	Presence *presence.Service
 	Chat     *chat.Hub
+	Boards   boards.Service
 	DM       dm.Service
 	Events   events.Service
 	News     news.Service
@@ -41,6 +43,22 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /admin/content", s.adminContentIndex)
 	mux.HandleFunc("GET /admin/news/publishing", s.adminNativeNewsIndex)
 	mux.HandleFunc("GET /static/", s.static)
+	mux.HandleFunc("GET /api/boards", s.boardList)
+	mux.HandleFunc("GET /api/boards/{boardID}/threads", s.boardThreads)
+	mux.HandleFunc("POST /api/boards/{boardID}/threads", s.boardCreateThread)
+	mux.HandleFunc("GET /api/board-threads/{threadID}", s.boardGetThread)
+	mux.HandleFunc("DELETE /api/board-threads/{threadID}", s.boardDeleteThread)
+	mux.HandleFunc("DELETE /api/board-posts/{postID}", s.boardDeletePost)
+	mux.HandleFunc("POST /api/board-threads/{threadID}/replies", s.boardReply)
+	mux.HandleFunc("POST /api/board-threads/{threadID}/read", s.boardMarkRead)
+	mux.HandleFunc("PATCH /api/board-threads/{threadID}/moderation", s.boardModerateThread)
+	mux.HandleFunc("POST /api/boards/{boardID}/users/{username}/ban", s.boardBan)
+	mux.HandleFunc("GET /api/admin/boards", s.adminBoards)
+	mux.HandleFunc("POST /api/admin/boards", s.adminBoards)
+	mux.HandleFunc("PUT /api/admin/boards/{boardID}", s.adminBoard)
+	mux.HandleFunc("DELETE /api/admin/boards/{boardID}", s.adminBoard)
+	mux.HandleFunc("PUT /api/admin/boards/{boardID}/moderators/{username}", s.adminBoardModerator)
+
 	mux.HandleFunc("GET /api/presence", s.presenceList)
 	mux.HandleFunc("POST /api/presence/away", s.presenceAway)
 	mux.HandleFunc("GET /api/buddies", s.buddyList)
@@ -137,7 +155,8 @@ func (s *Server) static(w http.ResponseWriter, r *http.Request) {
 	switch path {
 	case "static/admin.html", "static/admin.js",
 		"static/content.html", "static/content.js",
-		"static/native-news.html", "static/native-news.js":
+		"static/native-news.html", "static/native-news.js",
+		"static/boards-admin.js":
 		if !s.requireAdminPage(w, r) {
 			return
 		}

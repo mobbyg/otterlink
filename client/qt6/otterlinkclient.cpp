@@ -499,6 +499,129 @@ void OtterLinkClient::resolveKeyword(const QString &keyword)
     });
 }
 
+
+void OtterLinkClient::loadBoards()
+{
+    auto *reply = m_network.get(request(QStringLiteral("/api/boards")));
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+        if (reply->error() != QNetworkReply::NoError) {
+            emit errorOccurred(serverErrorMessage(reply, reply->errorString()));
+        } else {
+            const QJsonObject obj = QJsonDocument::fromJson(reply->readAll()).object();
+            emit boardsLoaded(obj.value(QStringLiteral("boards")).toArray());
+        }
+        reply->deleteLater();
+    });
+}
+
+void OtterLinkClient::loadBoardThreads(qint64 boardId)
+{
+    if (boardId < 1) return;
+    auto *reply = m_network.get(request(QStringLiteral("/api/boards/%1/threads").arg(boardId)));
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+        if (reply->error() != QNetworkReply::NoError) {
+            emit errorOccurred(serverErrorMessage(reply, reply->errorString()));
+        } else {
+            const QJsonObject obj = QJsonDocument::fromJson(reply->readAll()).object();
+            emit boardThreadsLoaded(obj.value(QStringLiteral("board")).toObject(),
+                                    obj.value(QStringLiteral("threads")).toArray());
+        }
+        reply->deleteLater();
+    });
+}
+
+void OtterLinkClient::loadBoardThread(qint64 threadId)
+{
+    if (threadId < 1) return;
+    auto *reply = m_network.get(request(QStringLiteral("/api/board-threads/%1").arg(threadId)));
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+        if (reply->error() != QNetworkReply::NoError) {
+            emit errorOccurred(serverErrorMessage(reply, reply->errorString()));
+        } else {
+            const QJsonObject obj = QJsonDocument::fromJson(reply->readAll()).object();
+            emit boardThreadLoaded(obj.value(QStringLiteral("thread")).toObject(),
+                                   obj.value(QStringLiteral("posts")).toArray());
+        }
+        reply->deleteLater();
+    });
+}
+
+void OtterLinkClient::createBoardThread(qint64 boardId, const QString &subject, const QString &body)
+{
+    QJsonObject payload{{QStringLiteral("subject"), subject}, {QStringLiteral("body"), body}};
+    auto *reply = m_network.post(request(QStringLiteral("/api/boards/%1/threads").arg(boardId)),
+                                 QJsonDocument(payload).toJson(QJsonDocument::Compact));
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+        if (reply->error() != QNetworkReply::NoError) {
+            emit errorOccurred(serverErrorMessage(reply, reply->errorString()));
+        } else {
+            const QJsonObject obj = QJsonDocument::fromJson(reply->readAll()).object();
+            emit boardThreadCreated(obj.value(QStringLiteral("thread")).toObject(),
+                                    obj.value(QStringLiteral("posts")).toArray());
+        }
+        reply->deleteLater();
+    });
+}
+
+void OtterLinkClient::replyBoardThread(qint64 threadId, const QString &body)
+{
+    QJsonObject payload{{QStringLiteral("body"), body}};
+    auto *reply = m_network.post(request(QStringLiteral("/api/board-threads/%1/replies").arg(threadId)),
+                                 QJsonDocument(payload).toJson(QJsonDocument::Compact));
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+        if (reply->error() != QNetworkReply::NoError) {
+            emit errorOccurred(serverErrorMessage(reply, reply->errorString()));
+        } else {
+            emit boardReplyCreated(QJsonDocument::fromJson(reply->readAll()).object());
+        }
+        reply->deleteLater();
+    });
+}
+
+void OtterLinkClient::moderateBoardThread(qint64 threadId, bool locked, bool sticky)
+{
+    QJsonObject payload{{QStringLiteral("locked"), locked}, {QStringLiteral("sticky"), sticky}};
+    auto *reply = m_network.sendCustomRequest(request(QStringLiteral("/api/board-threads/%1/moderation").arg(threadId)),
+                                               QByteArrayLiteral("PATCH"),
+                                               QJsonDocument(payload).toJson(QJsonDocument::Compact));
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+        if (reply->error() != QNetworkReply::NoError)
+            emit errorOccurred(serverErrorMessage(reply, reply->errorString()));
+        else
+            emit boardActionCompleted();
+        reply->deleteLater();
+    });
+}
+
+
+void OtterLinkClient::moderateBoardUser(qint64 boardId, const QString &username,
+                                        const QString &action, const QString &reason)
+{
+    QJsonObject payload{{QStringLiteral("action"), action}, {QStringLiteral("reason"), reason}};
+    const QString path = QStringLiteral("/api/boards/%1/users/%2/ban")
+        .arg(boardId).arg(QString::fromUtf8(QUrl::toPercentEncoding(username.trimmed())));
+    auto *reply = m_network.post(request(path), QJsonDocument(payload).toJson(QJsonDocument::Compact));
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+        if (reply->error() != QNetworkReply::NoError)
+            emit errorOccurred(serverErrorMessage(reply, reply->errorString()));
+        else
+            emit boardActionCompleted();
+        reply->deleteLater();
+    });
+}
+
+void OtterLinkClient::deleteBoardThread(qint64 threadId)
+{
+    auto *reply = m_network.deleteResource(request(QStringLiteral("/api/board-threads/%1").arg(threadId)));
+    connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+        if (reply->error() != QNetworkReply::NoError)
+            emit errorOccurred(serverErrorMessage(reply, reply->errorString()));
+        else
+            emit boardActionCompleted();
+        reply->deleteLater();
+    });
+}
+
 void OtterLinkClient::logout()
 {
     if (m_token.isEmpty()) {

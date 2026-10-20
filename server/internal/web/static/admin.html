@@ -15,6 +15,7 @@
     <nav class="admin-nav" aria-label="Administration sections">
       <a href="#registration-section">Registration</a>
       <a href="#users-section">User Accounts</a>
+      <a href="#boards-section">Community Boards</a>
       <a href="#channels-section">Permanent Channels</a>
       <a href="#events-section">Server Events</a>
       <a href="#news-section">RSS / Atom Feeds</a>
@@ -81,6 +82,30 @@
           </div>
           <p class="warning">Deleting an account is permanent. You will be required to enter your admin password to confirm the deletion.</p>
         </aside>
+      </div>
+    </section>
+
+    <section id="boards-section" class="card" style="margin-top:20px">
+      <div class="section-title"><div><small>COMMUNITY</small><h1>Community Boards</h1></div><button id="refresh-boards" class="secondary">Refresh</button></div>
+      <p class="status">Create and maintain permanent discussion boards. Users can create threads and replies inside these boards; only administrators can create boards.</p>
+      <p id="boards-error" class="error"></p>
+      <div class="event-form">
+        <div class="event-details">
+          <label>Board name<input id="board-name" maxlength="64" placeholder="Retro Computing"></label>
+          <label>Description<input id="board-description" maxlength="500" placeholder="A place to talk about classic computers"></label>
+          <label>Board rules<textarea id="board-rules" rows="4" maxlength="4000" placeholder="Be friendly. Stay on topic."></textarea></label>
+          <div class="admin-actions"><button id="save-board">Create Board</button><button id="cancel-board-edit" class="secondary" hidden>Cancel Edit</button></div>
+        </div>
+      </div>
+      <div class="admin-table-wrap"><table class="admin-table"><thead><tr><th>Board</th><th>Description</th><th>Threads</th><th>Unread</th><th>Manage</th></tr></thead><tbody id="boards"></tbody></table></div>
+      <div class="event-form" style="margin-top:16px">
+        <div class="event-details">
+          <h2>Board Moderators</h2>
+          <p class="status">Moderators can lock or pin threads and ban/unban users only on the board assigned to them. This does not grant global administrator access.</p>
+          <label>Board<select id="board-moderator-board"></select></label>
+          <label>Username<input id="board-moderator-username" maxlength="32" placeholder="username"></label>
+          <div class="admin-actions"><button id="appoint-board-moderator">Appoint Moderator</button><button id="remove-board-moderator" class="secondary">Remove Moderator</button></div>
+        </div>
       </div>
     </section>
 
@@ -222,5 +247,6 @@
     <footer>Otter Link administration • development UI</footer>
   </main>
   <script src="/static/admin.js"></script>
+  <script src="/static/boards-admin.js"></script>
 </body>
 </html>

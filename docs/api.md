@@ -584,6 +584,7 @@ Common responses:
 | `403 Forbidden` | Authenticated but not permitted |
 | `404 Not Found` | Requested resource/user does not exist |
 | `405 Method Not Allowed` | HTTP method is not supported |
+| `409 Conflict` | Requested action conflicts with current state, such as replying to a locked thread |
 | `410 Gone` | Legacy endpoint no longer performs that operation |
 | `415 Unsupported Media Type` | Request is not JSON |
 | `500 Internal Server Error` | Unexpected server failure |
@@ -619,3 +620,67 @@ The long-term goal is **one service, many clients**: Qt, web, and future native 
 - `POST /api/admin/users` — create a normal user account with username, display name, optional email, and a password of at least 12 characters; admin role required. This works in every registration mode and is audit-logged.
 
 Registration mode changes are persisted in the existing SQLite database and survive server restarts. The server initializes the setting to `invite-only` without changing existing accounts.
+
+
+## Community Boards
+
+Community Boards are persistent asynchronous discussions. Unlike Community Chat, board posts are not a live chat stream. All endpoints require an authenticated bearer session.
+
+### List boards
+
+`GET /api/boards`
+
+Returns board name, description, rules, thread count, and the number of threads with posts newer than the caller's read marker.
+
+### List a board's threads
+
+`GET /api/boards/{boardID}/threads`
+
+Returns the board and its threads, ordered with sticky threads first and then by recent activity. Thread summaries include author, reply count, last activity, lock/sticky state, last-post author, and the caller's last-read post marker.
+
+### Create a thread
+
+`POST /api/boards/{boardID}/threads`
+
+Request:
+
+```json
+{ "subject": "C64 setup", "body": "What is everyone running?" }
+```
+
+Subject is limited to 120 characters; post body is limited to 10,000 characters. A board ban prevents posting.
+
+### Read a thread and reply
+
+- `GET /api/board-threads/{threadID}` — returns the thread and its posts and updates the caller's read marker.
+- `POST /api/board-threads/{threadID}/replies` — request body is `{"body":"Your reply"}`; returns the created post.
+- `POST /api/board-threads/{threadID}/read` — explicitly marks the thread read; returns HTTP 204.
+
+Locked threads reject new replies. Board history remains persistent until a board moderator or administrator removes a thread/post, or an administrator deletes the board.
+
+### Thread and post moderation
+
+`PATCH /api/board-threads/{threadID}/moderation`
+
+Board moderators and administrators may set either `locked` and/or `sticky` to a boolean. For example:
+
+```json
+{ "locked": true, "sticky": false }
+```
+
+- `DELETE /api/board-threads/{threadID}` — permanently remove a thread and all replies. Requires an administrator or a moderator assigned to that board.
+- `DELETE /api/board-posts/{postID}` — remove one post. Requires an administrator or a moderator assigned to that post's board. Removing the opening post removes the entire thread and its replies.
+
+`POST /api/boards/{boardID}/users/{username}/ban` accepts `{"action":"ban","reason":"..."}` or `{"action":"unban"}`. The administrator or a moderator assigned to that board is required. A board ban affects only that board.
+
+### Board administration
+
+Administrators manage boards through:
+
+- `GET /api/admin/boards`
+- `POST /api/admin/boards` — `{"name":"Retro Computing","description":"...","rules":"..."}`
+- `PUT /api/admin/boards/{boardID}` — same fields as creation
+- `DELETE /api/admin/boards/{boardID}` — permanently deletes the board and its threads/posts
+- `PUT /api/admin/boards/{boardID}/moderators/{username}` — `{"enabled":true}` appoints a board moderator; `false` removes them
+
+Board moderation is scoped to the assigned board. It does not grant global administrator privileges.

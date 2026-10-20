@@ -224,6 +224,8 @@ The browser and portal should be useful before the crawler and search system are
 
 ### Next
 
+Current feature focus: finish integration testing and polish for Community Boards, then implement Games before the final alpha test pass.
+
 1. Exercise the OSCAR implementation against real clients and capture interoperability gaps.
 2. Complete reliable OSCAR messaging/session behavior needed for an end-to-end IM milestone.
 3. Expand the native service protocol around the same account, presence, chat, and messaging model.

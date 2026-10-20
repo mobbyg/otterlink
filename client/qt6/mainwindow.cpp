@@ -4,6 +4,7 @@
 #include "otterservicewindow.h"
 #include "otterkeywordwidget.h"
 #include "otterchatwidget.h"
+#include "otterboardswidget.h"
 #include "otterpeoplewidget.h"
 #include "otterdmwidget.h"
 #include "ottereventswidget.h"
@@ -546,6 +547,14 @@ void MainWindow::navigateService()
         openServiceWindow(QStringLiteral("people"), QStringLiteral("People"), ui->peoplePage);
     } else if (button == ui->chatButton) {
         openServiceWindow(QStringLiteral("chat"), QStringLiteral("Community Chat"), ui->chatPage);
+    } else if (button == ui->boardsButton) {
+        if (auto *existing = m_serviceWindows.value(QStringLiteral("boards"), nullptr)) {
+            existing->activateWindow();
+            updateServiceButtonStates(existing);
+        } else {
+            auto *page = new OtterBoardsWidget(m_client, m_desktop);
+            openServiceWindow(QStringLiteral("boards"), QStringLiteral("Community Boards"), page);
+        }
     } else if (button == ui->eventsButton) {
         auto *page = new OtterEventsWidget(m_client, m_desktop);
         openServiceWindow(QStringLiteral("events"), QStringLiteral("Events"), page);
@@ -609,6 +618,7 @@ void MainWindow::openServiceWindow(const QString &service, const QString &title,
     // Resizing is an explicit per-window capability, never inferred from the title.
     // The Home canvas stays fixed at its authored 1280x720 coordinate system.
     const bool resizable = service == QStringLiteral("chat")
+        || service == QStringLiteral("boards")
         || service == QStringLiteral("events")
         || service == QStringLiteral("news")
         || service == QStringLiteral("web")
@@ -629,9 +639,9 @@ void MainWindow::openServiceWindow(const QString &service, const QString &title,
         const int titleBarHeight = titleBar ? titleBar->sizeHint().height() : 30;
         window->setFixedSize(1284, 720 + titleBarHeight + 4);
     } else {
-        const int preferredWidth = service == QStringLiteral("events") ? 850 : 620;
+        const int preferredWidth = (service == QStringLiteral("events") || service == QStringLiteral("boards")) ? 850 : 620;
         const int width = qMin(preferredWidth, qMax(360, m_desktop->width() - 70));
-        const int preferredHeight = service == QStringLiteral("events") ? 410 : 440;
+        const int preferredHeight = (service == QStringLiteral("events") || service == QStringLiteral("boards")) ? 520 : 440;
         const int height = qMin(preferredHeight, qMax(250, m_desktop->height() - 70));
         window->resize(width, height);
     }

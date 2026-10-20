@@ -26,6 +26,15 @@ public:
     void sendChatMessage(const QString &message);
     void sendChatMessage(qint64 channelId, const QString &message);
     void loadChatChannels();
+    void loadBoards();
+    void loadBoardThreads(qint64 boardId);
+    void loadBoardThread(qint64 threadId);
+    void createBoardThread(qint64 boardId, const QString &subject, const QString &body);
+    void replyBoardThread(qint64 threadId, const QString &body);
+    void moderateBoardThread(qint64 threadId, bool locked, bool sticky);
+    void moderateBoardUser(qint64 boardId, const QString &username, const QString &action, const QString &reason = QString());
+    void deleteBoardThread(qint64 threadId);
+    void deleteBoardPost(qint64 postId);
     void createChatChannel(const QString &name, bool allowOpsToCreateOps);
     void joinChatChannel(qint64 channelId);
     void leaveChatChannel(qint64 channelId);
@@ -70,6 +79,12 @@ signals:
     void homeBackgroundLoaded(const QJsonObject &screen, const QImage &image);
     void homeAssetLoaded(qint64 assetId, const QImage &image);
     void chatMessageSent();
+    void boardsLoaded(const QJsonArray &boards);
+    void boardThreadsLoaded(const QJsonObject &board, const QJsonArray &threads);
+    void boardThreadLoaded(const QJsonObject &thread, const QJsonArray &posts);
+    void boardThreadCreated(const QJsonObject &thread, const QJsonArray &posts);
+    void boardReplyCreated(const QJsonObject &post);
+    void boardActionCompleted();
     void chatChannelsLoaded(const QJsonArray &channels);
     void chatChannelLoaded(const QJsonObject &channel, const QJsonArray &members,
                            const QJsonArray &messages, const QString &role);

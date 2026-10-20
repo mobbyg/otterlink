@@ -19,6 +19,7 @@ import (
 	"github.com/mobbyg/otterlink/server/internal/assets"
 	"github.com/mobbyg/otterlink/server/internal/api"
 	"github.com/mobbyg/otterlink/server/internal/buddies"
+	"github.com/mobbyg/otterlink/server/internal/boards"
 	"github.com/mobbyg/otterlink/server/internal/chat"
 	"github.com/mobbyg/otterlink/server/internal/content"
 	"github.com/mobbyg/otterlink/server/internal/db"
@@ -84,6 +85,11 @@ func main() {
 		}
 	}
 
+	boardService := boards.Service{DB: database}
+	if err := boardService.Initialize(); err != nil {
+		log.Fatalf("initialize boards service: %v", err)
+	}
+
 	buddyService := buddies.Service{DB: database}
 	presenceService := presence.NewService()
 	chatHub := chat.NewHub(database, 100)
@@ -100,7 +106,7 @@ func main() {
 		log.Fatalf("initialize default home screen: %v", err)
 	}
 	authAPI := api.AuthAPI{DB: database, Accounts: accountService, Presence: presenceService, Chat: chatHub}
-	webServer := &web.Server{Accounts: accountService, Buddies: buddyService, Presence: presenceService, Chat: chatHub, DM: dmService, Events: eventsService, News: newsService, Keywords: keywordService, Content: contentService, Assets: assetService}
+	webServer := &web.Server{Accounts: accountService, Buddies: buddyService, Presence: presenceService, Chat: chatHub, Boards: boardService, DM: dmService, Events: eventsService, News: newsService, Keywords: keywordService, Content: contentService, Assets: assetService}
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /api/health", healthHandler)
