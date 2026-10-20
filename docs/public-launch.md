@@ -35,6 +35,8 @@ The public website must not be the security boundary. Download and account-creat
 - Use generic responses for invalid/expired/revoked invitations to avoid leaking key status.
 - Log administrative mode changes, invitation creation/revocation/redemption, and account creation without logging passwords, raw invite keys, or session tokens.
 - Test direct API calls, not only the browser UI.
+- Verify unauthenticated and regular-user sessions cannot access `/admin`, `/admin/content`, `/admin/news/publishing`, or their direct HTML/JavaScript assets; verify an admin can access them.
+- Verify admin session cookies use the expected HttpOnly/SameSite settings and Secure when served over HTTPS, and are cleared on logout or when a non-admin logs in.
 - Verify open, invite-only, and closed behavior after server restart.
 - Review public listener/firewall configuration and Nginx routing.
 - Keep existing-user login and all existing services working through policy changes.
