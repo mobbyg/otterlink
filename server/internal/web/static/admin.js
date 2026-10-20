@@ -315,8 +315,8 @@ function renderEventRow(event) {
 async function refreshEvents() {
   showEventError('');
   const now = new Date();
-  const monthValue = $('event-month').value || `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-  const [year, month] = monthValue.split('-').map(Number);
+  const year = Number($('event-year').value || now.getFullYear());
+  const month = Number($('event-month').value || now.getMonth() + 1);
   try {
     const result = await request(`/api/admin/events?year=${year}&month=${month}`);
     const body = $('events'); body.innerHTML = '';
@@ -340,7 +340,9 @@ async function createEvent() {
     await request('/api/admin/events', { method: 'POST', body: JSON.stringify(payload) });
     // Show the month containing the new event so it doesn't appear to vanish
     // when it is scheduled outside the currently selected month.
-    $('event-month').value = start.slice(0, 7);
+    const eventDate = start.slice(0, 10).split('-').map(Number);
+    $('event-year').value = String(eventDate[0]);
+    $('event-month').value = String(eventDate[1]);
     $('event-title').value = ''; $('event-description').value = '';
     $('event-start').value = ''; $('event-end').value = '';
     await refreshEvents(); await refreshAudit();
@@ -609,8 +611,23 @@ $('save-news-source').addEventListener('click', saveNewsSource);
 $('test-news-source').addEventListener('click', testNewsSource);
 $('refresh-news-source').addEventListener('click', refreshNewsSource);
 $('delete-news-source').addEventListener('click', deleteNewsSource);
+function initializeEventMonthFilter() {
+  const now = new Date();
+  const yearSelect = $('event-year');
+  const currentYear = now.getFullYear();
+  for (let year = currentYear - 2; year <= currentYear + 10; year++) {
+    const option = document.createElement('option');
+    option.value = String(year);
+    option.textContent = String(year);
+    yearSelect.appendChild(option);
+  }
+  yearSelect.value = String(currentYear);
+  $('event-month').value = String(now.getMonth() + 1);
+}
 $('event-month').addEventListener('change', refreshEvents);
+$('event-year').addEventListener('change', refreshEvents);
 $('event-all-day').addEventListener('change', syncEventDateInputs);
+initializeEventMonthFilter();
 syncEventDateInputs();
 $('create-event').addEventListener('click', createEvent);
 refreshRegistrationMode();
