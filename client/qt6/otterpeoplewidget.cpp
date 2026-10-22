@@ -216,10 +216,18 @@ void OtterPeopleWidget::buddySelectionChanged()
 
 void OtterPeopleWidget::showContextMenu(const QPoint &pos)
 {
-    const QString username = selectedUsername();
+    QTreeWidgetItem *item = m_tree->itemAt(pos);
+    if (!item) return;
+
+    const QString username = item->data(0, Qt::UserRole).toString();
     if (username.isEmpty()) return;
+
+    m_tree->setCurrentItem(item);
+
     QMenu menu(this);
     QAction *message = menu.addAction(QStringLiteral("Send Private Message"));
-    connect(message, &QAction::triggered, this, &OtterPeopleWidget::privateMessage);
+    connect(message, &QAction::triggered, this, [this, username]() {
+        emit privateMessageRequested(username);
+    });
     menu.exec(m_tree->viewport()->mapToGlobal(pos));
 }

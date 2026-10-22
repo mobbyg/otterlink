@@ -284,8 +284,22 @@ async function deleteNewsSource() {
 
 function showEventError(message) { $('event-error').textContent = message || ''; }
 function localEventValue(value) { if (!value) return ''; return new Date(value).toISOString(); }
+function syncEventDateInputs() {
+  const allDay = $('event-all-day').checked;
+  for (const [id, fallbackTime] of [['event-start', '09:00'], ['event-end', '10:00']]) {
+    const input = $(id);
+    const value = input.value;
+    if (allDay && input.type !== 'date') {
+      input.type = 'date';
+      input.value = value ? value.slice(0, 10) : '';
+    } else if (!allDay && input.type !== 'datetime-local') {
+      input.type = 'datetime-local';
+      input.value = value ? (value.length === 10 ? value + 'T' + fallbackTime : value.slice(0, 16)) : '';
+    }
+  }
+}
 function eventWhen(event) {
-  if (event.all_day) return event.start_at === event.end_at ? event.start_at : event.start_at + ' → ' + event.end_at;
+  if (event.all_day) return event.start_at === event.end_at ? event.start_at + ' (all day)' : event.start_at + ' → ' + event.end_at + ' (all day)';
   return formatDate(event.start_at) + ' → ' + formatDate(event.end_at);
 }
 function renderEventRow(event) {
@@ -301,8 +315,8 @@ function renderEventRow(event) {
 async function refreshEvents() {
   showEventError('');
   const now = new Date();
-  const monthValue = $('event-month').value || `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-  const [year, month] = monthValue.split('-').map(Number);
+  const year = Number($('event-year').value || now.getFullYear());
+  const month = Number($('event-month').value || now.getMonth() + 1);
   try {
     const result = await request(`/api/admin/events?year=${year}&month=${month}`);
     const body = $('events'); body.innerHTML = '';
@@ -316,7 +330,7 @@ async function createEvent() {
   const start = $('event-start').value;
   const end = $('event-end').value;
   if (!title || !start || !end) { showEventError('Title, start, and end are required.'); return; }
-  const payload = { title, description, all_day: allDay };
+  const payload = { title, description, all_day: allDay, event_type: 'server', target_type: 'none' };
   if (allDay) {
     payload.start_at = start.slice(0,10); payload.end_at = end.slice(0,10);
   } else {
@@ -324,7 +338,13 @@ async function createEvent() {
   }
   try {
     await request('/api/admin/events', { method: 'POST', body: JSON.stringify(payload) });
-    $('event-title').value=''; $('event-description').value=''; $('event-start').value=''; $('event-end').value='';
+    // Show the month containing the new event so it doesn't appear to vanish
+    // when it is scheduled outside the currently selected month.
+    const eventDate = start.slice(0, 10).split('-').map(Number);
+    $('event-year').value = String(eventDate[0]);
+    $('event-month').value = String(eventDate[1]);
+    $('event-title').value = ''; $('event-description').value = '';
+    $('event-start').value = ''; $('event-end').value = '';
     await refreshEvents(); await refreshAudit();
   } catch (error) { showEventError(error.message || String(error)); }
 }
@@ -591,7 +611,24 @@ $('save-news-source').addEventListener('click', saveNewsSource);
 $('test-news-source').addEventListener('click', testNewsSource);
 $('refresh-news-source').addEventListener('click', refreshNewsSource);
 $('delete-news-source').addEventListener('click', deleteNewsSource);
+function initializeEventMonthFilter() {
+  const now = new Date();
+  const yearSelect = $('event-year');
+  const currentYear = now.getFullYear();
+  for (let year = currentYear - 2; year <= currentYear + 10; year++) {
+    const option = document.createElement('option');
+    option.value = String(year);
+    option.textContent = String(year);
+    yearSelect.appendChild(option);
+  }
+  yearSelect.value = String(currentYear);
+  $('event-month').value = String(now.getMonth() + 1);
+}
 $('event-month').addEventListener('change', refreshEvents);
+$('event-year').addEventListener('change', refreshEvents);
+$('event-all-day').addEventListener('change', syncEventDateInputs);
+initializeEventMonthFilter();
+syncEventDateInputs();
 $('create-event').addEventListener('click', createEvent);
 refreshRegistrationMode();
 refresh();

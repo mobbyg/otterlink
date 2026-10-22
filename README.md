@@ -25,6 +25,7 @@ Otter Link is an active development project. The server, development web client,
 - OSCAR authentication/login, session/BOS, rate information, and location/user-info flows
 - Buddy list add/delete and buddy watcher lookup
 - Online/offline presence tracking and presence fan-out
+- Persistent Community Boards with threads, replies, per-user read markers, and board-scoped moderation
 - Multi-room Community Chat with persistent message history
 - Temporary user-created rooms and permanent administrator-created rooms
 - Chat channel roles, moderation, bans, kicks, unbanning, and role management
@@ -69,6 +70,11 @@ Selected core HTTP endpoints include:
 - `GET /api/buddies`
 - `POST /api/buddies`
 - `DELETE /api/buddies?username=...`
+- `GET /api/boards` — list persistent discussion boards
+- `GET /api/boards/{boardID}/threads` — list a board’s threads
+- `GET /api/board-threads/{threadID}` — retrieve a thread and mark it read
+- `POST /api/boards/{boardID}/threads` — create a thread
+- `POST /api/board-threads/{threadID}/replies` — reply to a thread
 - `GET /api/chat/channels`
 - `POST /api/chat/channels`
 - `GET /api/chat/channels/{id}`
@@ -202,7 +208,7 @@ The web client is embedded in the Go server and requires no separate frontend bu
 
 ### Qt 6 client
 
-The Qt client currently provides a desktop workspace with Home, People, Community Chat, and News service windows. Home content is delivered by the server and can include scheduled screens, graphics, and clickable destinations. The News service supports RSS/Atom articles and native OtterLink-published articles, with an article reader for supported content. People includes buddy/presence information and private messaging; Community Chat includes room selection, room creation, message history, active-user display, roles, and moderation controls.
+The Qt client currently provides a desktop workspace with Home, People, Community Chat, Community Boards, and News service windows. Home content is delivered by the server and can include scheduled screens, graphics, and clickable destinations. The News service supports RSS/Atom articles and native OtterLink-published articles, with an article reader for supported content. People includes buddy/presence information and private messaging; Community Chat includes room selection, room creation, message history, active-user display, roles, and moderation controls.
 
 The desktop presentation is still under development. The client architecture keeps service-specific behavior in dedicated service components rather than putting it into generic window infrastructure.
 

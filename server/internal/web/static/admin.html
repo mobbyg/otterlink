@@ -15,6 +15,7 @@
     <nav class="admin-nav" aria-label="Administration sections">
       <a href="#registration-section">Registration</a>
       <a href="#users-section">User Accounts</a>
+      <a href="#boards-section">Community Boards</a>
       <a href="#channels-section">Permanent Channels</a>
       <a href="#events-section">Server Events</a>
       <a href="#news-section">RSS / Atom Feeds</a>
@@ -84,6 +85,42 @@
       </div>
     </section>
 
+    <section id="boards-section" class="card" style="margin-top:20px">
+      <div class="section-title"><div><small>COMMUNITY</small><h1>Community Boards</h1></div><button id="refresh-boards" class="secondary">Refresh</button></div>
+      <p class="status">Create and maintain permanent discussion boards. Users can create threads and replies inside these boards; only administrators can create boards.</p>
+      <p id="boards-error" class="error"></p>
+      <div class="boards-admin-layout">
+        <div class="event-details board-editor">
+          <h2>Create or Edit a Board</h2>
+          <label>Board name<input id="board-name" maxlength="64" placeholder="Retro Computing"></label>
+          <label>Description<input id="board-description" maxlength="500" placeholder="A place to talk about classic computers"></label>
+          <label>Board rules<textarea id="board-rules" rows="4" maxlength="4000" placeholder="Be friendly. Stay on topic."></textarea></label>
+          <div class="admin-actions"><button id="save-board">Create Board</button><button id="cancel-board-edit" class="secondary" hidden>Cancel Edit</button></div>
+        </div>
+        <aside class="board-list-panel">
+          <div class="section-title"><h2>Existing Boards</h2><span id="board-count" class="status"></span></div>
+          <p class="status">Select Edit to load a board into the form.</p>
+          <ul id="boards" class="board-admin-list" aria-label="Existing community boards"></ul>
+        </aside>
+      </div>
+      <div class="boards-admin-layout moderator-admin-layout" style="margin-top:16px">
+        <div class="event-details">
+          <h2>Board Moderators</h2>
+          <p class="status">Moderators can lock or pin threads and ban/unban users only on the board assigned to them. This does not grant global administrator access.</p>
+          <label>Board<select id="board-moderator-board"></select></label>
+          <label>Username<input id="board-moderator-username" maxlength="32" placeholder="Choose a user from the list or type a username"></label>
+          <div class="admin-actions"><button id="appoint-board-moderator">Appoint Moderator</button><button id="remove-board-moderator" class="secondary">Remove Moderator</button></div>
+        </div>
+        <aside class="board-list-panel user-picker-panel">
+          <div class="section-title"><h2>All Users</h2><span id="board-user-count" class="status"></span></div>
+          <label>Filter users<input id="board-user-filter" type="search" placeholder="Type to filter usernames"></label>
+          <select id="board-user-list" class="board-user-list" size="9" aria-label="All users; double-click to fill username"></select>
+          <div class="admin-actions"><button id="use-board-user" class="secondary">Use Selected Username →</button></div>
+          <p class="status">Select a user and click the button, or double-click their name, to fill the username field.</p>
+        </aside>
+      </div>
+    </section>
+
     <section id="channels-section" class="card" style="margin-top:20px">
       <div class="section-title">
         <div><small>CHAT</small><h1>Permanent Channels</h1></div>
@@ -112,7 +149,7 @@
 
 
     <section id="events-section" class="card" style="margin-top:20px">
-      <div class="section-title"><div><small>EVENTS</small><h1>Server Events</h1></div><div><input id="event-month" type="month"><button id="refresh-events" class="secondary">Refresh</button></div></div>
+      <div class="section-title"><div><small>EVENTS</small><h1>Server Events</h1></div><div class="event-month-filter"><label for="event-month">Month<select id="event-month"><option value="1">January</option><option value="2">February</option><option value="3">March</option><option value="4">April</option><option value="5">May</option><option value="6">June</option><option value="7">July</option><option value="8">August</option><option value="9">September</option><option value="10">October</option><option value="11">November</option><option value="12">December</option></select></label><label for="event-year">Year<select id="event-year"></select></label><button id="refresh-events" class="secondary">Refresh</button></div></div>
       <p class="status">Server events are managed here. The client does not expose server administration controls.</p>
       <p id="event-error" class="error"></p>
       <div class="event-form">
@@ -222,5 +259,6 @@
     <footer>Otter Link administration • development UI</footer>
   </main>
   <script src="/static/admin.js"></script>
+  <script src="/static/boards-admin.js"></script>
 </body>
 </html>
